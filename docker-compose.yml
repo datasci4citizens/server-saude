@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    container_name: saude_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: saude_db
+      POSTGRES_USER: saude_user
+      POSTGRES_PASSWORD: saude_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
