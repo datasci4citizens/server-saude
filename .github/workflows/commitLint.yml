@@ -1,0 +1,26 @@
+name: Lint commits
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install commitlint
+        run: |
+          npm install --save-dev commitlint @commitlint/config-conventional
+
+      - name: Lint PR commit messages
+        run: |
+          COMMIT_MESSAGES=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:%s)
+          echo "$COMMIT_MESSAGES" | npx commitlint
