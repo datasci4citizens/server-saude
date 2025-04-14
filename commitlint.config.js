@@ -13,4 +13,3 @@ module.exports = {
       'header-pattern': [2, 'always', /^(\w+)\((SAU-\d+)\): (.+)$/],
     },
   };
-  
