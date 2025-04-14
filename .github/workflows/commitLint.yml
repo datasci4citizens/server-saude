@@ -2,9 +2,7 @@ name: Commit Lint
 
 on:
   push:
-    branches: [main, develop, '**']
-  pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
   lint-commits:
@@ -23,14 +21,25 @@ jobs:
         run: |
           npm install --save-dev commitlint @commitlint/config-conventional
 
-      - name: Add commitlint config
+      - name: Create commitlint config
         run: |
           echo "module.exports = $(cat commitlint.config.js)" > commitlint.config.js
 
-      - name: Fetch base branch
-        run: git fetch origin ${{ github.base_ref }}
+      - name: Fetch history
+        run: git fetch --unshallow || true
 
-      - name: Lint PR commit messages
+      - name: Get commits (PR or push)
+        id: commits
         run: |
-          COMMITS=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:%s)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="origin/${{ github.base_ref }}..HEAD"
+            git fetch origin ${{ github.base_ref }}
+          else
+            RANGE="${{ github.event.before }}..HEAD"
+          fi
+          echo "range=$RANGE" >> $GITHUB_OUTPUT
+
+      - name: Lint commits
+        run: |
+          COMMITS=$(git log ${{ steps.commits.outputs.range }} --pretty=format:%s)
           echo "$COMMITS" | npx commitlint

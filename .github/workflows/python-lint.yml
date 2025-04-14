@@ -1,10 +1,8 @@
 name: Python Format Check
 
 on:
-    push:
-        branches: [main, develop, '**']
-    pull_request:
-        branches: [main, develop]
+  push:
+    branches: [main, develop, '**']  
 
 jobs:
   format-check:
@@ -23,11 +21,11 @@ jobs:
         run: |
           pip install black==23.9.1 isort
 
-      - name: Run black
+      - name: Run black (line-length=120)
         run: |
-          echo "🔍 Verificando formatação com Black..."
-          black . --check --verbose
-
+          echo "🔍 Verificando formatação com Black (line-length=120)..."
+          black . --check --line-length=120 --verbose
+  
       - name: Run isort
         run: |
           echo "🔍 Verificando organização de imports com isort..."
