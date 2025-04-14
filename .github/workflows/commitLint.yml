@@ -2,7 +2,7 @@ name: Commit Lint
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop, '**']
 
 jobs:
   lint-commits:
