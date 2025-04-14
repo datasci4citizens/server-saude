@@ -1,0 +1,32 @@
+name: Python Format Check
+
+on:
+  push:
+    branches: [main, develop, '**']  
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install formatters (black and isort)
+        run: |
+          pip install black==23.9.1 isort
+
+      - name: Run black (line-length=120)
+        run: |
+          echo "🔍 Verificando formatação com Black (line-length=120)..."
+          black . --check --line-length=120 --verbose
+  
+      - name: Run isort
+        run: |
+          echo "🔍 Verificando organização de imports com isort..."
+          isort . --check-only --diff

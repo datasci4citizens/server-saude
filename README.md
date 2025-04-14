@@ -164,4 +164,4 @@ E sempre adicione:
 
 - O **contexto** da mudança
 - Se afeta algo que precisa ser testado
-- Link para o card no Trello (se aplicável)
+- Link para o card no Trello

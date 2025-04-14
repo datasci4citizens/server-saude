@@ -1,0 +1,45 @@
+name: Commit Lint
+
+on:
+  push:
+    branches: [main, develop, '**']
+
+jobs:
+  lint-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install commitlint
+        run: |
+          npm install --save-dev commitlint @commitlint/config-conventional
+
+      - name: Create commitlint config
+        run: |
+          echo "module.exports = $(cat commitlint.config.js)" > commitlint.config.js
+
+      - name: Fetch history
+        run: git fetch --unshallow || true
+
+      - name: Get commits (PR or push)
+        id: commits
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="origin/${{ github.base_ref }}..HEAD"
+            git fetch origin ${{ github.base_ref }}
+          else
+            RANGE="${{ github.event.before }}..HEAD"
+          fi
+          echo "range=$RANGE" >> $GITHUB_OUTPUT
+
+      - name: Lint commits
+        run: |
+          COMMITS=$(git log ${{ steps.commits.outputs.range }} --pretty=format:%s)
+          echo "$COMMITS" | npx commitlint
