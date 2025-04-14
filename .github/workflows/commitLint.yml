@@ -21,9 +21,12 @@ jobs:
         run: |
           npm install --save-dev commitlint @commitlint/config-conventional
 
-      - name: Create commitlint config file
+      - name: Add commitlint config
         run: |
           echo "module.exports = $(cat commitlint.config.js)" > commitlint.config.js
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }}
 
       - name: Lint PR commit messages
         run: |
