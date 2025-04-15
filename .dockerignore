@@ -1,0 +1,33 @@
+# Ignorar ambientes e lixo
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+*.db
+
+# Node stuff (para semantic-release)
+node_modules/
+package-lock.json
+npm-debug.log
+
+# Git
+.git/
+.gitignore
+
+# VSCode ou IDE
+.vscode/
+.idea/
+
+# Test files, dumps
+*.coverage
+.coverage.*
+htmlcov/
+.tox/
+.env*
+.DS_Store
+
+# Docker
+docker-compose.yml
