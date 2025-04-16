@@ -24,7 +24,7 @@ jobs:
       - name: Run black (line-length=120)
         run: |
           echo "🔍 Verificando formatação com Black (line-length=120)..."
-          black . --check --line-length=120 --verbose
+          black --check --line-length=120 --exclude '/migrations/' .
   
       - name: Run isort
         run: |
