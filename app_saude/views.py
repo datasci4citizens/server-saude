@@ -5,15 +5,18 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from app_saude.serializers import AuthSerializer
 from libs.google import google_get_user_data
 
+from rest_framework import viewsets
+from rest_framework.decorators import api_view, permission_classes
+from .models import Person, Provider
+from .serializers import PersonSerializer, ProviderSerializer
+
 User = get_user_model()
-
-
 logger = logging.getLogger(__name__)
-
 
 # Just a test endpoint to check if the user is logged in and return user info
 class MeView(APIView):
@@ -30,7 +33,6 @@ class MeView(APIView):
                 "last_name": user.last_name,
             }
         )
-
 
 class GoogleLoginView(APIView):
     serializer_class = AuthSerializer
@@ -60,3 +62,25 @@ class GoogleLoginView(APIView):
         }
 
         return Response(response, status=200)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_role(request):
+    user = request.user
+    if Provider.objects.filter(user=user).exists():
+        return Response({'role': 'provider'})
+    elif Person.objects.filter(user=user).exists():
+        return Response({'role': 'person'})
+    else:
+        return Response({'role': 'none'})
+
+class PersonViewSet(viewsets.ModelViewSet):
+    queryset = Person.objects.all()
+    serializer_class = PersonSerializer
+    permission_classes = [IsAuthenticated]
+
+class ProviderViewSet(viewsets.ModelViewSet):
+    queryset = Provider.objects.all()
+    serializer_class = ProviderSerializer
+    permission_classes = [IsAuthenticated]
+
