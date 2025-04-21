@@ -8,7 +8,7 @@ class Concept(models.Model):
         max_length=255,
         blank=True,
         null=True,
-        db_comment="Name of the concept (e.g. 'Feminino', 'Tomar remÚdio')",
+        db_comment="Name of the concept (e.g. 'Feminino', 'Tomar remédio')",
     )
     domain_id = models.CharField(
         max_length=100,
@@ -38,10 +38,10 @@ class Domain(models.Model):
 
 
 class Person(models.Model):
-    person_id = models.IntegerField(primary_key=True, db_comment="Primary key of the Person table")
+    person_id = models.AutoField(primary_key=True, db_comment="Primary key of the Person table")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        models.DO_NOTHING,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         db_comment="Reference to the base auth_user entity",
@@ -60,7 +60,7 @@ class Person(models.Model):
         models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Biological sex as a reference to Concept (e.g. Male, Female)",
+        db_comment="Biological sex a    s a reference to Concept (e.g. Male, Female)",
     )
     gender_identity = models.ForeignKey(
         Concept,
@@ -88,10 +88,10 @@ class Person(models.Model):
 
 
 class Provider(models.Model):
-    provider_id = models.IntegerField(primary_key=True, db_comment="Primary key of the Provider table")
+    provider_id = models.AutoField(primary_key=True, db_comment="Primary key of the Provider table")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        models.DO_NOTHING,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         db_comment="Reference to the base auth_user entity",
