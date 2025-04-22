@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from app_saude.views import GoogleLoginView, MeView, PersonViewSet, ProviderViewSet, user_role
+from app_saude.views import GoogleLoginView, MeView, PersonViewSet, ProviderViewSet
 
 router = DefaultRouter()
 router.register(r'person', PersonViewSet)
@@ -16,5 +16,4 @@ urlpatterns = [
     path("", lambda request: HttpResponse("🎉 Login bem-sucedido!")),
     path("auth/me/", MeView.as_view(), name="me"),
     path('api/', include(router.urls)),
-    path('auth/role/', user_role),
 ]

@@ -2,10 +2,10 @@ import logging
 
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from app_saude.serializers import AuthSerializer
 from libs.google import google_get_user_data
@@ -54,33 +54,51 @@ class GoogleLoginView(APIView):
             last_name=user_data.get("given_name"),
         )
 
+        role = 'none'
+        if Provider.objects.filter(user=user).exists():
+            role = 'provider'
+        elif Person.objects.filter(user=user).exists():
+            role = 'person'
+
         # generate jwt token for the user
         token = RefreshToken.for_user(user)
         response = {
             "access": str(token.access_token),
             "refresh": str(token),
+            "role": role
         }
 
         return Response(response, status=200)
     
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def user_role(request):
-    user = request.user
-    if Provider.objects.filter(user=user).exists():
-        return Response({'role': 'provider'})
-    elif Person.objects.filter(user=user).exists():
-        return Response({'role': 'person'})
-    else:
-        return Response({'role': 'none'})
-
 class PersonViewSet(viewsets.ModelViewSet):
     queryset = Person.objects.all()
     serializer_class = PersonSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+         return Person.objects.filter(user=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        if Person.objects.filter(user=request.user).exists():
+            raise ValidationError("You already have a person registration.")
+        return super().create(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        raise PermissionDenied("DELETE not allowed.")
+
 class ProviderViewSet(viewsets.ModelViewSet):
     queryset = Provider.objects.all()
     serializer_class = ProviderSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+         return Person.objects.filter(user=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        if Person.objects.filter(user=request.user).exists():
+            raise ValidationError("You already have a provider registration.")
+        return super().create(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        raise PermissionDenied("DELETE not allowed.")
 
