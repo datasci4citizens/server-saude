@@ -1,10 +1,11 @@
 from django.contrib import admin
-from .models import Provider, Person, Concept, CareSite, Observation, Emergencymessage, DrugExposure, Address, LinkedProvider, EmergencyProvider, ProviderCareSite, ProviderConcept, VisitOccurrence
+from .models import *
 
 admin.site.register(Provider)
 admin.site.register(Person)
 admin.site.register(Concept)
 admin.site.register(CareSite)
+admin.site.register(Domain)
 admin.site.register(Observation)
 admin.site.register(Emergencymessage)
 admin.site.register(DrugExposure)

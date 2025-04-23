@@ -10,10 +10,9 @@ class Concept(models.Model):
         null=True,
         db_comment="Name of the concept (e.g. 'Feminino', 'Tomar remédio')",
     )
-    domain_id = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
+    domain = models.ForeignKey(
+        'Domain',
+        on_delete=models.CASCADE,
         db_comment="Categorization of concept purpose (e.g. 'gender', 'observation_type')",
     )
     created_at = models.DateTimeField(blank=True, null=True)

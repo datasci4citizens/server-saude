@@ -12,8 +12,8 @@ from app_saude.serializers import AuthSerializer
 from libs.google import google_get_user_data
 
 from rest_framework import viewsets
-from .models import Person, Provider, LinkedProvider
-from .serializers import PersonSerializer, ProviderSerializer, LinkedProviderSerializer
+from .models import *
+from .serializers import *
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -144,3 +144,9 @@ class LinkPersonToProviderView(APIView):
         linked_providers = LinkedProvider.objects.filter(provider=provider).select_related('person')
         serializer = LinkedProviderSerializer(linked_providers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK) 
+
+class DomainsWithConceptsView(APIView):
+    def get(self, request):
+        domains = Domain.objects.all()
+        serializer = DomainSerializer(domains, many=True)
+        return Response(serializer.data)

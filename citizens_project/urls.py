@@ -3,8 +3,7 @@ from django.http import HttpResponse
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from app_saude.views import GoogleLoginView, MeView, PersonViewSet, ProviderViewSet, LinkPersonToProviderView
-
+from app_saude.views import *
 router = DefaultRouter()
 router.register(r'person', PersonViewSet)
 router.register(r'provider', ProviderViewSet)
@@ -17,4 +16,5 @@ urlpatterns = [
     path("auth/me/", MeView.as_view(), name="me"),
     path('api/', include(router.urls)),
     path('link/', LinkPersonToProviderView.as_view(), name='link-person-to-provider'),
+    path('api/domains/', DomainsWithConceptsView.as_view(), name='domains-with-concepts'),
 ]
