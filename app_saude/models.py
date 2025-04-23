@@ -271,11 +271,12 @@ class EmergencyProvider(models.Model):
 
 class LinkedProvider(models.Model):
     linked_provider_id = models.AutoField(primary_key=True)  # Field name made lowercase.
-    person = models.ForeignKey(Person, models.DO_NOTHING, blank=True, null=True)
-    provider = models.ForeignKey(Provider, models.DO_NOTHING, blank=True, null=True)
+    person = models.ForeignKey(Person, models.CASCADE)
+    provider = models.ForeignKey(Provider, models.CASCADE)
 
     class Meta:
         managed = True
+        unique_together = ('person', 'provider')
         db_table = "linked_provider"
         db_table_comment = "Links patients to providers. Enables shared visibility of patient data."
 

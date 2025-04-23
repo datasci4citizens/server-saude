@@ -1,9 +1,8 @@
 from rest_framework import serializers
-from .models import Person, Provider
+from .models import Person, Provider, LinkedProvider
 
 class AuthSerializer(serializers.Serializer):
     code = serializers.CharField(required=True, allow_null=False, allow_blank=False)
-
 
 class PersonSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,7 +13,6 @@ class PersonSerializer(serializers.ModelSerializer):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
 
-
 class ProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Provider
@@ -24,3 +22,7 @@ class ProviderSerializer(serializers.ModelSerializer):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
 
+class LinkedProviderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LinkedProvider
+        fields = '__all__'
