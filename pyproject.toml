@@ -2,7 +2,7 @@
 version_source = "tag"
 branch = "main"
 upload_to_pypi = false
-commit_parser = "angular"
+commit_parser = "conventional"
 
-[tool.semantic_release.changelog]
+[tool.semantic_release.changelog.default_templates]
 changelog_file = "CHANGELOG.md"
