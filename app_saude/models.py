@@ -11,9 +11,10 @@ class Concept(models.Model):
         db_comment="Name of the concept (e.g. 'Feminino', 'Tomar remédio')",
     )
     domain = models.ForeignKey(
-        'Domain',
+        "Domain",
         on_delete=models.CASCADE,
         db_comment="Categorization of concept purpose (e.g. 'gender', 'observation_type')",
+        null=True,
     )
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
@@ -37,7 +38,7 @@ class Domain(models.Model):
 
 
 class Person(models.Model):
-    person_id = models.AutoField(primary_key=True, db_comment="Primary key of the Person table")
+    id = models.AutoField(primary_key=True, db_column="person_id")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -270,12 +271,12 @@ class EmergencyProvider(models.Model):
 
 class LinkedProvider(models.Model):
     linked_provider_id = models.AutoField(primary_key=True)  # Field name made lowercase.
-    person = models.ForeignKey(Person, models.CASCADE)
-    provider = models.ForeignKey(Provider, models.CASCADE)
+    person = models.ForeignKey(Person, models.CASCADE, null=False, default=1)
+    provider = models.ForeignKey(Provider, models.CASCADE, null=False, default=1)
 
     class Meta:
         managed = True
-        unique_together = ('person', 'provider')
+        unique_together = ("person", "provider")
         db_table = "linked_provider"
         db_table_comment = "Links patients to providers. Enables shared visibility of patient data."
 
