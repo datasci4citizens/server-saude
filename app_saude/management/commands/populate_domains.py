@@ -17,8 +17,7 @@ class Command(BaseCommand):
         domain_map = {}  # To store created domain instances
         for name in domain_names:
             domain, created = Domain.objects.get_or_create(
-                domain_name=name,
-                defaults={"created_at": now(), "updated_at": now()}
+                domain_name=name
             )
             domain_map[name] = domain
             if created:
@@ -42,8 +41,7 @@ class Command(BaseCommand):
             for concept_name in concepts:
                 concept, created = Concept.objects.get_or_create(
                     concept_name=concept_name,
-                    domain=domain,
-                    defaults={"created_at": now(), "updated_at": now()}
+                    domain=domain
                 )
                 if created:
                     self.stdout.write(self.style.SUCCESS(f'Created concept: {concept_name} (domain: {domain_name})'))

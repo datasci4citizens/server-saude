@@ -16,8 +16,8 @@ class Concept(models.Model):
         db_comment="Categorization of concept purpose (e.g. 'gender', 'observation_type')",
         null=True,
     )
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
@@ -28,8 +28,8 @@ class Concept(models.Model):
 class Domain(models.Model):
     domain_id = models.AutoField(primary_key=True)
     domain_name = models.CharField(max_length=255, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
@@ -78,8 +78,8 @@ class Person(models.Model):
         null=True,
         db_comment="Self-declared race/ethnicity as Concept",
     )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Record creation timestamp")
-    updated_at = models.DateTimeField(blank=True, null=True, db_comment="Last update timestamp")
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
@@ -113,8 +113,8 @@ class Provider(models.Model):
         null=True,
         db_comment="Registration number in official professional board (e.g. CRM, CRP, COREN)",
     )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Record creation timestamp")
-    updated_at = models.DateTimeField(blank=True, null=True, db_comment="Last update timestamp")
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
@@ -143,8 +143,8 @@ class CareSite(models.Model):
     care_site_id = models.AutoField(primary_key=True)  # Field name made lowercase.
     care_site_name = models.CharField(max_length=255, blank=True, null=True)
     location_id = models.IntegerField(blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
@@ -201,8 +201,8 @@ class DrugExposure(models.Model):
         null=True,
         db_comment="Free-text instructions for the patient (e.g. '1x ao dia em jejum')",
     )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Record creation timestamp")
-    updated_at = models.DateTimeField(blank=True, null=True, db_comment="Record update timestamp")
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
@@ -224,12 +224,8 @@ class Emergencymessage(models.Model):
         null=True,
         db_comment="Free-text description of the emergency situation",
     )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Timestamp when the emergency was reported")
-    updated_at = models.DateTimeField(
-        blank=True,
-        null=True,
-        db_comment="Last update time (optional edits or resolutions)",
-    )
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
@@ -312,8 +308,8 @@ class Observation(models.Model):
         null=True,
         db_comment="Whether this data is visible to the assigned provider",
     )
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
@@ -374,8 +370,8 @@ class VisitOccurrence(models.Model):
         null=True,
         db_comment="Free-text field for summarizing key points or outcomes of the visit",
     )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Timestamp of record creation")
-    updated_at = models.DateTimeField(blank=True, null=True, db_comment="Timestamp of last update")
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Record creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Last update timestamp")
 
     class Meta:
         managed = True
