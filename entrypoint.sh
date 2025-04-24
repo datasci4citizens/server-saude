@@ -22,7 +22,7 @@ else
 fi
 
 # Criação automática do SocialApp do Google
-if [ "$GOOGLE_CLIENT_ID" ] && [ "$GOOGLE_CLIENT_SECRET" ]; then
+if [ "$VITE_GOOGLE_CLIENT_ID" ] && [ "$VITE_GOOGLE_CLIENT_SECRET" ]; then
   echo "Configurando SocialApp do Google (se necessário)..."
   python manage.py shell <<EOF
 from allauth.socialaccount.models import SocialApp
@@ -35,8 +35,8 @@ if not SocialApp.objects.filter(provider="google").exists():
     app = SocialApp.objects.create(
         provider="google",
         name="Google",
-        client_id="$GOOGLE_CLIENT_ID",
-        secret="$GOOGLE_CLIENT_SECRET"
+        client_id="$VITE_GOOGLE_CLIENT_ID",
+        secret="$VITE_GOOGLE_CLIENT_SECRET"
     )
     app.sites.add(site)
     print("SocialApp criado.")
@@ -44,7 +44,7 @@ else:
     print("ℹSocialApp já existe.")
 EOF
 else
-  echo "GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET não definidos. Ignorando SocialApp."
+  echo "VITE_GOOGLE_CLIENT_ID ou VITE_GOOGLE_CLIENT_SECRET não definidos. Ignorando SocialApp."
 fi
 
 echo "Iniciando servidor Django..."
