@@ -33,7 +33,7 @@ SECRET_KEY = "django-insecure-!==jvo%w%7+9bk)e6aix55*k%tuwnfl%=$bam%avwi%c$ru32n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 
 # Application definition
@@ -139,8 +139,8 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 
 SOCIALACCOUNT_ADAPTER = "allauth.socialaccount.adapter.DefaultSocialAccountAdapter"
 
-GOOGLE_OAUTH2_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
-GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_OAUTH2_CLIENT_ID = os.environ.get("VITE_GOOGLE_CLIENT_ID", "")
+GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get("VITE_GOOGLE_CLIENT_SECRET", "")
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
