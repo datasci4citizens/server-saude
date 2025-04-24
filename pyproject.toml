@@ -1,0 +1,8 @@
+[tool.semantic_release]
+version_source = "tag"
+branch = "main"
+upload_to_pypi = false
+commit_parser = "angular"
+
+[tool.semantic_release.changelog]
+changelog_file = "CHANGELOG.md"

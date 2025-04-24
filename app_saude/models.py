@@ -8,13 +8,13 @@ class Concept(models.Model):
         max_length=255,
         blank=True,
         null=True,
-        db_comment="Name of the concept (e.g. 'Feminino', 'Tomar remÚdio')",
+        db_comment="Name of the concept (e.g. 'Feminino', 'Tomar remédio')",
     )
-    domain_id = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
+    domain = models.ForeignKey(
+        "Domain",
+        on_delete=models.CASCADE,
         db_comment="Categorization of concept purpose (e.g. 'gender', 'observation_type')",
+        null=True,
     )
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
@@ -38,10 +38,10 @@ class Domain(models.Model):
 
 
 class Person(models.Model):
-    person_id = models.IntegerField(primary_key=True, db_comment="Primary key of the Person table")
+    id = models.AutoField(primary_key=True, db_column="person_id")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        models.DO_NOTHING,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         db_comment="Reference to the base auth_user entity",
@@ -60,7 +60,7 @@ class Person(models.Model):
         models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Biological sex as a reference to Concept (e.g. Male, Female)",
+        db_comment="Biological sex a    s a reference to Concept (e.g. Male, Female)",
     )
     gender_identity = models.ForeignKey(
         Concept,
@@ -88,10 +88,10 @@ class Person(models.Model):
 
 
 class Provider(models.Model):
-    provider_id = models.IntegerField(primary_key=True, db_comment="Primary key of the Provider table")
+    provider_id = models.AutoField(primary_key=True, db_comment="Primary key of the Provider table")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        models.DO_NOTHING,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         db_comment="Reference to the base auth_user entity",
@@ -271,11 +271,12 @@ class EmergencyProvider(models.Model):
 
 class LinkedProvider(models.Model):
     linked_provider_id = models.AutoField(primary_key=True)  # Field name made lowercase.
-    person = models.ForeignKey(Person, models.DO_NOTHING, blank=True, null=True)
-    provider = models.ForeignKey(Provider, models.DO_NOTHING, blank=True, null=True)
+    person = models.ForeignKey(Person, models.CASCADE, null=False, default=1)
+    provider = models.ForeignKey(Provider, models.CASCADE, null=False, default=1)
 
     class Meta:
         managed = True
+        unique_together = ("person", "provider")
         db_table = "linked_provider"
         db_table_comment = "Links patients to providers. Enables shared visibility of patient data."
 

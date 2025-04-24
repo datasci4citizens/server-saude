@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from corsheaders.defaults import default_headers
@@ -33,7 +34,7 @@ SECRET_KEY = "django-insecure-!==jvo%w%7+9bk)e6aix55*k%tuwnfl%=$bam%avwi%c$ru32n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 
 # Application definition
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "corsheaders",
+    "drf_yasg",
 ]
 
 MIDDLEWARE = [
@@ -144,7 +146,10 @@ GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get("VITE_GOOGLE_CLIENT_SECRET", "")
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
-        "APP": {"client_id": GOOGLE_OAUTH2_CLIENT_ID, "secret": GOOGLE_OAUTH2_CLIENT_SECRET},
+        "APP": {
+            "client_id": GOOGLE_OAUTH2_CLIENT_ID,
+            "secret": GOOGLE_OAUTH2_CLIENT_SECRET,
+        },
     }
 }
 
@@ -183,4 +188,22 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_simplejwt.authentication.JWTAuthentication",),
+}
+
+REST_USE_JWT = True
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Digite: Bearer <seu_token_jwt>",
+        }
+    }
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }

@@ -4,6 +4,9 @@ echo "Rodando migrations..."
 python manage.py makemigrations --noinput
 python manage.py migrate
 
+echo "Populando tabelas"
+python manage.py populate_domains
+
 # Criação automática do superusuário
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
   echo "👤 Criando superusuário (se necessário)..."
