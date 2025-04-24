@@ -47,7 +47,7 @@ else:
     print("ℹSocialApp já existe.")
 EOF
 else
-  echo "GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET não definidos. Ignorando SocialApp."
+  echo "VITE_GOOGLE_CLIENT_ID ou VITE_GOOGLE_CLIENT_SECRET não definidos. Ignorando SocialApp."
 fi
 
 echo "Iniciando servidor Django..."
