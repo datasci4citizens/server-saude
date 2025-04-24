@@ -146,7 +146,10 @@ GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get("VITE_GOOGLE_CLIENT_SECRET", "")
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
-        "APP": {"client_id": GOOGLE_OAUTH2_CLIENT_ID, "secret": GOOGLE_OAUTH2_CLIENT_SECRET},
+        "APP": {
+            "client_id": GOOGLE_OAUTH2_CLIENT_ID,
+            "secret": GOOGLE_OAUTH2_CLIENT_SECRET,
+        },
     }
 }
 
