@@ -96,7 +96,13 @@ class PersonViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        raise PermissionDenied("DELETE not allowed.")
+        if Person.objects.filter(user=request.user).exists():
+            if request.user == self.get_object().user:
+                # Delete the user and their related Person object
+                return super().destroy(request, *args, **kwargs)
+            else:
+                # If not, raise a permission denied error
+                raise PermissionDenied("You can only delete your own account.")
 
 
 class ProviderViewSet(viewsets.ModelViewSet):
