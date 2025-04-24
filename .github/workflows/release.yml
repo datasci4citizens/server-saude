@@ -25,11 +25,11 @@ jobs:
           pip install --upgrade pip
           pip install python-semantic-release
 
-          - name: Configure Git
-          run: |
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+    
       - name: Create changelog and tag
         run: |
           semantic-release version
