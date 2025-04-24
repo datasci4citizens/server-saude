@@ -54,30 +54,22 @@ class GoogleLoginView(APIView):
             last_name=user_data.get("given_name"),
         )
 
-        role = 'none'
-        if Provider.objects.filter(user=user).exists():
-            role = 'provider'
-        elif Person.objects.filter(user=user).exists():
-            role = 'person'
+        refresh = RefreshToken.for_user(user)
+        refresh["role"] = get_user_role(user)
 
-        # generate jwt token for the user
-        token = RefreshToken.for_user(user)
         response = {
-            "access": str(token.access_token),
-            "refresh": str(token),
-            "role": role
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
         }
 
         return Response(response, status=200)
     
-class UserRole:
-    def get_role(self, request):
-        role = 'none'
-        if Provider.objects.filter(user=request.user).exists():
-            role = 'provider'
-        elif Person.objects.filter(user=request.user).exists():
-            role = 'person'
-        return role
+def get_user_role(user):
+    if Provider.objects.filter(user=user).exists():
+        return "provider"
+    elif Person.objects.filter(user=user).exists():
+        return "person"
+    return "none"
     
 class PersonViewSet(viewsets.ModelViewSet):
     queryset = Person.objects.all()
@@ -90,7 +82,16 @@ class PersonViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         if Person.objects.filter(user=request.user).exists():
             raise ValidationError("You already have a person registration.")
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+
+        user = request.user
+        refresh = RefreshToken.for_user(user)
+        refresh["role"] = "person" 
+        
+        response.data["access"] = str(refresh.access_token)
+        response.data["refresh"] = str(refresh)
+        
+        return Response(response.data)
 
     def destroy(self, request, *args, **kwargs):
         raise PermissionDenied("DELETE not allowed.")
@@ -106,15 +107,24 @@ class ProviderViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         if Person.objects.filter(user=request.user).exists():
             raise ValidationError("You already have a provider registration.")
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+
+        user = request.user
+        refresh = RefreshToken.for_user(user)
+        refresh["role"] = "provider" 
+        
+        response.data["access"] = str(refresh.access_token)
+        response.data["refresh"] = str(refresh)
+        
+        return Response(response.data)
 
     def destroy(self, request, *args, **kwargs):
         raise PermissionDenied("DELETE not allowed.")
     
 class IsProviderOrAdmin(BasePermission):
     def has_permission(self, request, view):
-        role = UserRole().get_role(request)
-        return role == 'provider' or request.user.is_staff
+        role = get_user_role(request.user)
+        return role == "provider" or request.user.is_staff
 
 class LinkPersonToProviderView(APIView):
     permission_classes = [IsAuthenticated, IsProviderOrAdmin]
@@ -123,10 +133,10 @@ class LinkPersonToProviderView(APIView):
         try:
             provider = Provider.objects.get(user=request.user)
         except Provider.DoesNotExist:
-            return Response({'detail': 'Provider not found for this user.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Provider not found for this user."}, status=status.HTTP_404_NOT_FOUND)
         
-        if str(request.data.get('provider')) != str(provider.pk):
-            return Response({'detail': 'You can only create links for your own provider account.'},
+        if str(request.data.get("provider")) != str(provider.pk):
+            return Response({"detail": "You can only create links for your own provider account."},
                             status=status.HTTP_403_FORBIDDEN)
         
         serializer = LinkedProviderSerializer(data=request.data)
@@ -139,9 +149,9 @@ class LinkPersonToProviderView(APIView):
         try:
             provider = Provider.objects.get(user=request.user)
         except Provider.DoesNotExist:
-            return Response({'detail': 'Provider not found for this user.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Provider not found for this user."}, status=status.HTTP_404_NOT_FOUND)
 
-        linked_providers = LinkedProvider.objects.filter(provider=provider).select_related('person')
+        linked_providers = LinkedProvider.objects.filter(provider=provider).select_related("person")
         serializer = LinkedProviderSerializer(linked_providers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK) 
 
