@@ -4,6 +4,9 @@ echo "Rodando migrations..."
 python manage.py makemigrations --noinput
 python manage.py migrate
 
+echo "Populando tabelas"
+python manage.py populate_domains
+
 # Criação automática do superusuário
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
   echo "👤 Criando superusuário (se necessário)..."
@@ -22,7 +25,7 @@ else
 fi
 
 # Criação automática do SocialApp do Google
-if [ "$GOOGLE_CLIENT_ID" ] && [ "$GOOGLE_CLIENT_SECRET" ]; then
+if [ "$VITE_GOOGLE_CLIENT_ID" ] && [ "$VITE_GOOGLE_CLIENT_SECRET" ]; then
   echo "Configurando SocialApp do Google (se necessário)..."
   python manage.py shell <<EOF
 from allauth.socialaccount.models import SocialApp
@@ -35,8 +38,8 @@ if not SocialApp.objects.filter(provider="google").exists():
     app = SocialApp.objects.create(
         provider="google",
         name="Google",
-        client_id="$GOOGLE_CLIENT_ID",
-        secret="$GOOGLE_CLIENT_SECRET"
+        client_id="$VITE_GOOGLE_CLIENT_ID",
+        secret="$VITE_GOOGLE_CLIENT_SECRET"
     )
     app.sites.add(site)
     print("SocialApp criado.")
