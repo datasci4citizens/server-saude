@@ -2,382 +2,424 @@ from django.conf import settings
 from django.db import models
 
 
-class Concept(models.Model):
-    concept_id = models.AutoField(primary_key=True)
-    concept_name = models.CharField(
-        max_length=255,
+class TimestampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True, db_comment="Creation timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_comment="Update timestamp")
+
+    class Meta:
+        abstract = True
+
+
+class MyAbstractUser(TimestampedModel):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True)
+    social_name = models.CharField(max_length=255, blank=True, null=True)
+    birth_datetime = models.DateTimeField(blank=True, null=True, db_comment="Date and time of birth")
+
+    class Meta:
+        abstract = True
+
+
+class Vocabulary(TimestampedModel):
+    vocabulary_id = models.CharField(max_length=20, primary_key=True, db_comment="Primary key of Vocabulary")
+    vocabulary_name = models.CharField(max_length=255, blank=True, null=True, db_comment="Name of the vocabulary")
+    vocabulary_concept = models.ForeignKey(
+        "Concept",
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Name of the concept (e.g. 'Feminino', 'Tomar remédio')",
+        db_comment="Reference to Concept representing the vocabulary",
     )
+
+    class Meta:
+        db_table = "vocabulary"
+        db_table_comment = "Vocabulary definitions in OMOP."
+
+
+class ConceptClass(TimestampedModel):
+    concept_class_id = models.CharField(max_length=20, primary_key=True, db_comment="Primary key of Concept Class")
+    concept_class_name = models.CharField(max_length=255, blank=True, null=True, db_comment="Name of the Concept Class")
+    concept_class_concept = models.ForeignKey(
+        "Concept",
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        db_comment="Reference to Concept representing the Concept Class",
+    )
+
+    class Meta:
+        db_table = "concept_class"
+        db_table_comment = "Concept class categorization in OMOP."
+
+
+class Concept(TimestampedModel):
+    concept_id = models.AutoField(primary_key=True, db_comment="Primary key of Concept")
+    concept_name = models.CharField(max_length=255, blank=True, null=True, db_comment="Name of the concept")
     domain = models.ForeignKey(
         "Domain",
         on_delete=models.CASCADE,
-        db_comment="Categorization of concept purpose (e.g. 'gender', 'observation_type')",
+        blank=True,
         null=True,
+        related_name="concept_domain_set",
+        db_comment="Reference to Domain",
     )
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    concept_class_id = models.CharField(max_length=20, blank=True, null=True, db_comment="Class of the concept")
+    concept_code = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        db_comment="Code of the concept in source vocabulary",
+    )
+    valid_start_date = models.DateField(blank=True, null=True, db_comment="Start date of concept validity")
+    valide_end_date = models.DateField(blank=True, null=True, db_comment="End date of concept validity")
 
     class Meta:
-        managed = True
         db_table = "concept"
-        db_table_comment = "OMOP-compliant table for storing standardized values and custom entries such as habits, tasks, and symptoms."
+        db_table_comment = "OMOP-compliant table for standardized concepts."
 
 
-class Domain(models.Model):
-    domain_id = models.AutoField(primary_key=True)
-    domain_name = models.CharField(max_length=255, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+class ConceptSynonym(TimestampedModel):
+    concept = models.ForeignKey(
+        Concept,
+        on_delete=models.CASCADE,
+        related_name="concept_synonym_concept_set",
+        db_comment="Reference to Concept",
+    )
+    concept_synonym_name = models.CharField(max_length=1000, blank=True, null=True, db_comment="Synonym name")
+    language_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        related_name="concept_synonym_language_concept_set",
+        db_comment="Language Concept of the synonym",
+    )
 
     class Meta:
-        managed = True
+        db_table = "concept_synonym"
+        db_table_comment = "Synonyms for concepts in OMOP."
+        indexes = [models.Index(fields=["concept"], name="idx_concept_synonym_id")]
+
+
+class Domain(TimestampedModel):
+    domain_id = models.AutoField(primary_key=True, db_comment="Primary key of Domain")
+    domain_name = models.CharField(max_length=255, blank=True, null=True, db_comment="Name of the domain")
+    domain_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        related_name="domain_concept_set",
+        db_comment="Reference to Concept representing the domain",
+    )
+
+    class Meta:
         db_table = "domain"
-        db_table_comment = "Reference table for organizing types of concepts."
+        db_table_comment = "Domain definitions grouping concepts."
 
 
-class Person(models.Model):
-    id = models.AutoField(primary_key=True, db_column="person_id")
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        db_comment="Reference to the base auth_user entity",
-    )
-    social_name = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        db_comment="Optional name used by the person in social or preferred contexts",
-    )
-    birth = models.DateField(blank=True, null=True, db_comment="Date of birth")
-    height = models.FloatField(blank=True, null=True, db_comment="Height in meters (or preferred unit)")
-    weight = models.FloatField(blank=True, null=True, db_comment="Weight in kilograms (or preferred unit)")
-    biological_sex = models.ForeignKey(
+class Location(TimestampedModel):
+    location_id = models.AutoField(primary_key=True, db_comment="Primary key of Location")
+    address_1 = models.CharField(max_length=50, blank=True, null=True, db_comment="Street and number")
+    address_2 = models.CharField(max_length=50, blank=True, null=True, db_comment="Complement")
+    city = models.CharField(max_length=255, blank=True, null=True, db_comment="City")
+    state = models.CharField(max_length=255, blank=True, null=True, db_comment="State")
+    zip = models.CharField(max_length=20, blank=True, null=True, db_comment="Postal code")
+    country_concept = models.ForeignKey(
         Concept,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Biological sex a    s a reference to Concept (e.g. Male, Female)",
+        db_comment="Country Concept",
     )
-    gender_identity = models.ForeignKey(
+
+    class Meta:
+        db_table = "location"
+        db_table_comment = "Stores geographical locations (address information)."
+
+
+class Person(MyAbstractUser):
+    person_id = models.AutoField(primary_key=True, db_comment="Primary key of Person")
+    year_of_birth = models.IntegerField(blank=True, null=True, db_comment="Year of birth")
+    gender_concept = models.ForeignKey(
         Concept,
-        models.DO_NOTHING,
-        related_name="person_gender_identity_set",
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Self-declared gender identity as Concept (e.g. Non-binary)",
+        related_name="person_gender_concept_set",
+        db_comment="Gender Concept",
+    )
+    ethnicity_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        related_name="person_ethnicity_concept_set",
+        db_comment="Ethnicity Concept",
     )
     race_concept = models.ForeignKey(
         Concept,
-        models.DO_NOTHING,
-        related_name="person_race_concept_set",
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Self-declared race/ethnicity as Concept",
+        related_name="person_racer_concept_set",
+        db_comment="Race Concept",
     )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Record creation timestamp")
-    updated_at = models.DateTimeField(blank=True, null=True, db_comment="Last update timestamp")
+    location = models.ForeignKey(
+        Location,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        db_comment="Location of residence",
+    )
 
     class Meta:
-        managed = True
         db_table = "person"
-        db_table_comment = "Represents an individual user who is a patient in the system. Each person is linked to a base User account and may optionally declare social identifiers, demographics, and physical attributes. Compatible with OMOP conventions for population-based data."
+        db_table_comment = "Represents an individual user who is a patient."
 
 
-class Provider(models.Model):
-    provider_id = models.AutoField(primary_key=True, db_comment="Primary key of the Provider table")
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        db_comment="Reference to the base auth_user entity",
-    )
-    social_name = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        db_comment="Optional name used in social or professional contexts",
-    )
-    professional_email = models.CharField(
-        unique=True,
-        blank=True,
-        null=True,
-        db_comment="Official work email address of the provider",
-    )
+class Provider(MyAbstractUser):
+    provider_id = models.AutoField(primary_key=True, db_comment="Primary key of Provider")
     professional_registration = models.IntegerField(
+        blank=True, null=True, db_comment="Professional registration number"
+    )
+    specialty_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Registration number in official professional board (e.g. CRM, CRP, COREN)",
+        db_comment="Specialty Concept",
     )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Record creation timestamp")
-    updated_at = models.DateTimeField(blank=True, null=True, db_comment="Last update timestamp")
+    care_site = models.ForeignKey(
+        "CareSite",
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        db_comment="Reference to Care Site",
+    )
 
     class Meta:
-        managed = True
         db_table = "provider"
-        db_table_comment = "Represents a healthcare professional, such as a Community Health Agent (ACS), psychologist, or psychiatrist. Each provider is linked to a User account and may interact with multiple patients through LinkedProvider."
+        db_table_comment = "Healthcare providers in OMOP."
 
 
-class Address(models.Model):
-    address_id = models.AutoField(primary_key=True)
-    person = models.ForeignKey(Person, models.DO_NOTHING, blank=True, null=True)
-    street = models.CharField(max_length=255, blank=True, null=True)
-    number = models.CharField(max_length=10, blank=True, null=True)
-    complement = models.CharField(max_length=255, blank=True, null=True)
-    neighborhood = models.CharField(max_length=255, blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
-    state = models.CharField(max_length=50, blank=True, null=True)
-    postal_code = models.CharField(max_length=20, blank=True, null=True)
-
-    class Meta:
-        managed = True
-        db_table = "address"
-        db_table_comment = "Stores residential address for a person."
-
-
-class CareSite(models.Model):
-    care_site_id = models.AutoField(primary_key=True)  # Field name made lowercase.
-    care_site_name = models.CharField(max_length=255, blank=True, null=True)
-    location_id = models.IntegerField(blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+class CareSite(TimestampedModel):
+    care_site_id = models.AutoField(primary_key=True, db_comment="Primary key of Care Site")
+    care_site_name = models.CharField(max_length=255, blank=True, null=True, db_comment="Name of the Care Site")
+    location = models.ForeignKey(
+        Location,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        db_comment="Location of Care Site",
+    )
+    place_of_service_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        db_comment="Place of Service Concept",
+    )
 
     class Meta:
-        managed = True
         db_table = "care_site"
-        db_table_comment = "Healthcare facility or unit where a provider may be associated. Currently not used in UI, but useful for future multi-site features."
+        db_table_comment = "Facilities where care is provided."
 
 
-class DrugExposure(models.Model):
-    drug_exposure_id = models.AutoField(
-        primary_key=True,
-        db_comment="Primary key of the drug exposure record",
-    )  # Field name made lowercase.
+class DrugExposure(TimestampedModel):
+    drug_exposure_id = models.AutoField(primary_key=True, db_comment="Primary key of Drug Exposure")
     person = models.ForeignKey(
         Person,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="The patient using the medication",
+        db_comment="Patient receiving the drug",
     )
     drug_concept = models.ForeignKey(
         Concept,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="The prescribed or used drug (mapped to a concept)",
+        related_name="drug_concept_set",
+        db_comment="Drug Concept",
     )
-    drug_exposure_start_date = models.DateField(
-        blank=True, null=True, db_comment="Date when the medication regimen begins"
+    drug_type_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        related_name="drug_type_concept_set",
+        db_comment="Drug Type Concept",
     )
-    drug_exposure_end_date = models.DateField(
-        blank=True, null=True, db_comment="Optional end date for the medication regimen"
-    )
+    drug_exposure_start_date = models.DateField(blank=True, null=True, db_comment="Start date of drug exposure")
+    drug_exposure_end_date = models.DateField(blank=True, null=True, db_comment="End date of drug exposure")
     stop_reason = models.CharField(
         max_length=255,
         blank=True,
         null=True,
-        db_comment="Optional reason for stopping the medication",
+        db_comment="Reason for stopping medication",
     )
-    quantity = models.IntegerField(
-        blank=True,
-        null=True,
-        db_comment="Total number of units prescribed or dispensed (e.g., 30 pills)",
-    )
-    interval_hours = models.IntegerField(
-        blank=True,
-        null=True,
-        db_comment="Interval between doses in hours (e.g. 8 = every 8 hours)",
-    )
-    dose_times = models.TextField(
-        blank=True, null=True, db_comment="Fixed intake times (e.g. ['08:00', '20:00'])"
-    )  # This field type is a guess.
-    sig = models.TextField(
-        blank=True,
-        null=True,
-        db_comment="Free-text instructions for the patient (e.g. '1x ao dia em jejum')",
-    )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Record creation timestamp")
-    updated_at = models.DateTimeField(blank=True, null=True, db_comment="Record update timestamp")
+    quantity = models.IntegerField(blank=True, null=True, db_comment="Quantity administered")
+    interval_hours = models.IntegerField(blank=True, null=True, db_comment="Interval between doses in hours")
+    dose_times = models.TextField(blank=True, null=True, db_comment="Scheduled dose times")
+    sig = models.TextField(blank=True, null=True, db_comment="Free-text dosage instructions")
 
     class Meta:
-        managed = True
         db_table = "drug_exposure"
-        db_table_comment = "Captures medication prescriptions or usage. Supports structured tracking for reminders, notifications, and clinical follow-up. Aligned with OMOP, with local extensions for real-time alerts based on dosage schedule."
+        db_table_comment = "Records of drug prescriptions or administration."
 
 
-class Emergencymessage(models.Model):
-    emergency_message_id = models.AutoField(primary_key=True, db_comment="Primary key for the emergency message")
+class Observation(TimestampedModel):
+    observation_id = models.AutoField(primary_key=True, db_comment="Primary key of Observation")
     person = models.ForeignKey(
         Person,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Patient who triggered the emergency alert",
+        db_comment="Patient linked to the observation",
     )
-    message = models.TextField(
-        blank=True,
-        null=True,
-        db_comment="Free-text description of the emergency situation",
-    )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Timestamp when the emergency was reported")
-    updated_at = models.DateTimeField(
-        blank=True,
-        null=True,
-        db_comment="Last update time (optional edits or resolutions)",
-    )
-
-    class Meta:
-        managed = True
-        db_table = "emergency_message"
-        db_table_comment = "Represents an urgent message initiated by the patient to signal psychological distress or critical situations. Can be shared with one or more providers."
-
-
-class EmergencyProvider(models.Model):
     provider = models.ForeignKey(
         Provider,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Professional assigned to respond to the emergency",
-    )
-    emergency_message = models.ForeignKey(
-        Emergencymessage,
-        models.DO_NOTHING,
-        blank=True,
-        null=True,
-        db_comment="Emergency message associated with the provider",
-    )
-    acknowledged = models.BooleanField(
-        blank=True,
-        null=True,
-        db_comment="Whether the provider acknowledged the emergency",
-    )
-    response_note = models.TextField(
-        blank=True,
-        null=True,
-        db_comment="Optional note or summary written by the provider in response",
-    )
-
-    class Meta:
-        managed = True
-        db_table = "emergency_provider"
-        db_table_comment = "Many-to-many relationship linking emergency alerts to responsible or notified healthcare professionals. Tracks acknowledgment and responses to urgent cases."
-
-
-class LinkedProvider(models.Model):
-    linked_provider_id = models.AutoField(primary_key=True)  # Field name made lowercase.
-    person = models.ForeignKey(Person, models.CASCADE, null=False, default=1)
-    provider = models.ForeignKey(Provider, models.CASCADE, null=False, default=1)
-
-    class Meta:
-        managed = True
-        unique_together = ("person", "provider")
-        db_table = "linked_provider"
-        db_table_comment = "Links patients to providers. Enables shared visibility of patient data."
-
-
-class Observation(models.Model):
-    observation_id = models.AutoField(primary_key=True)
-    person = models.ForeignKey(
-        Person,
-        models.DO_NOTHING,
-        blank=True,
-        null=True,
-        db_comment="Patient who made or received the observation",
+        db_comment="Provider attending the visit",
     )
     observation_concept = models.ForeignKey(
         Concept,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="What is being observed (e.g., mood, symptom, task)",
+        related_name="observation_concept_set",
+        db_comment="Observation Concept",
     )
     value_as_concept = models.ForeignKey(
         Concept,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
         related_name="observation_value_as_concept_set",
+        db_comment="Value as Concept",
+    )
+    value_as_string = models.CharField(max_length=60, blank=True, null=True, db_comment="Free-text value")
+    observation_date = models.DateTimeField(blank=True, null=True, db_comment="Date and time of observation")
+    observation_type_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Recorded answer, when categorical (e.g., 'Sad', '4 times')",
+        related_name="observation_type_concept_set",
+        db_comment="Observation Type Concept",
     )
-    value_as_text = models.TextField(blank=True, null=True, db_comment="Free-text input (e.g. diary, thought, notes)")
-    observation_date = models.DateTimeField(blank=True, null=True, db_comment="When the observation occurred")
-    shared_with_provider = models.BooleanField(
-        blank=True,
-        null=True,
-        db_comment="Whether this data is visible to the assigned provider",
-    )
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    shared_with_provider = models.BooleanField(blank=True, null=True, db_comment="Visibility to assigned provider")
 
     class Meta:
-        managed = True
         db_table = "observation"
-        db_table_comment = "Core table for capturing all patient-reported or observed data, including symptoms, habits, notes, tasks, etc. OMOP-aligned and extensible."
+        db_table_comment = "Captured patient-reported observations."
 
 
-class ProviderCareSite(models.Model):
-    provider = models.ForeignKey(Provider, models.DO_NOTHING, blank=True, null=True)
-    care_site_id = models.ForeignKey(CareSite, models.DO_NOTHING, blank=True, null=True)  # Field name made lowercase.
-
-    class Meta:
-        managed = True
-        db_table = "provider_care_site"
-        db_table_comment = "Many-to-many relation between providers and care sites."
-
-
-class ProviderConcept(models.Model):
-    provider = models.ForeignKey(Provider, models.DO_NOTHING, blank=True, null=True)
-    concept = models.ForeignKey(Concept, models.DO_NOTHING, blank=True, null=True)
-
-    class Meta:
-        managed = True
-        db_table = "provider_concept"
-        db_table_comment = "Represents provider specialities or roles via concepts (e.g. 'Psic¾logo')."
-
-
-class VisitOccurrence(models.Model):
-    visit_occurrence_id = models.AutoField(
-        primary_key=True,
-        db_comment="Primary key for the visit record",
-    )  # Field name made lowercase.
+class VisitOccurrence(TimestampedModel):
+    visit_occurrence_id = models.AutoField(primary_key=True, db_comment="Primary key of Visit Occurrence")
     person = models.ForeignKey(
         Person,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="The patient involved in the visit",
+        db_comment="Patient involved in the visit",
     )
     provider = models.ForeignKey(
         Provider,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="The healthcare professional attending the visit (optional)",
+        db_comment="Provider attending the visit",
     )
-    care_site_id = models.ForeignKey(
+    care_site = models.ForeignKey(
         CareSite,
-        models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
-        db_comment="Healthcare location where the visit occurred (optional)",
-    )  # Field name made lowercase.
-    visit_date = models.DateTimeField(blank=True, null=True, db_comment="Start date and time of the visit")
-    visit_end_date = models.DateTimeField(blank=True, null=True, db_comment="End date and time of the visit (optional)")
-    observations = models.TextField(
-        blank=True,
-        null=True,
-        db_comment="Free-text field for summarizing key points or outcomes of the visit",
+        db_comment="Care Site location",
     )
-    created_at = models.DateTimeField(blank=True, null=True, db_comment="Timestamp of record creation")
-    updated_at = models.DateTimeField(blank=True, null=True, db_comment="Timestamp of last update")
+    visit_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        related_name="vistit_concept_set",
+        db_comment="Visit Concept",
+    )
+    visit_start_date = models.DateTimeField(blank=True, null=True, db_comment="Visit start date and time")
+    visit_end_date = models.DateTimeField(blank=True, null=True, db_comment="Visit end date and time")
+    visit_type_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        related_name="visit_type_concept_set",
+        db_comment="Visit Type Concept",
+    )
+    observations = models.TextField(blank=True, null=True, db_comment="Summary notes of the visit")
 
     class Meta:
-        managed = True
         db_table = "visit_occurrence"
-        db_table_comment = "Stores scheduled or completed interactions between a patient and a healthcare professional. Can be used for consultations, check-ins, or assessments. Extensible to multiple providers and care sites."
+        db_table_comment = "Interactions between patients and healthcare providers."
+
+
+class Measurement(TimestampedModel):
+    measurement_id = models.AutoField(primary_key=True, db_comment="Primary key of Measurement")
+    person = models.ForeignKey(
+        Person,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        db_comment="Patient linked to the measurement",
+    )
+    measurement_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        related_name="measurement_concept_set",
+        db_comment="Measurement Concept",
+    )
+    measurement_date = models.DateTimeField(blank=True, null=True, db_comment="Date and time of measurement")
+    measurement_type_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True,
+        related_name="measurement_type_concept_set",
+        db_comment="Measurement Type Concept",
+    )
+
+    class Meta:
+        db_table = "measurement"
+        db_table_comment = "Measurements taken on persons (e.g., height, weight, labs)."
+
+
+class FactRelationship(TimestampedModel):
+    domain_concept_id_1 = models.ForeignKey(
+        Concept,
+        related_name="factrel_domain_concept_1_set",
+        on_delete=models.DO_NOTHING,
+        db_comment="Domain Concept of first fact",
+    )
+    fact_id_1 = models.IntegerField(db_comment="ID of first fact")
+    domain_concept_id_2 = models.ForeignKey(
+        Concept,
+        related_name="factrel_domain_concept_2_set",
+        on_delete=models.DO_NOTHING,
+        db_comment="Domain Concept of second fact",
+    )
+    fact_id_2 = models.IntegerField(db_comment="ID of second fact")
+    relationship_concept = models.ForeignKey(
+        Concept,
+        related_name="factrel_relationship_concept_set",
+        on_delete=models.DO_NOTHING,
+        db_comment="Type of relationship Concept",
+    )
+
+    class Meta:
+        db_table = "fact_relationship"
+        db_table_comment = "Relates different entities (facts) within OMOP."
+        unique_together = ("fact_id_1", "fact_id_2", "relationship_concept_id")

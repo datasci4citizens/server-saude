@@ -1,9 +1,11 @@
 import logging
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
+from drf_spectacular.utils import extend_schema
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -37,7 +39,9 @@ class MeView(APIView):
 
 class GoogleLoginView(APIView):
     serializer_class = AuthSerializer
+    permission_classes = [AllowAny]
 
+    @extend_schema(request=AuthSerializer, responses={200: AuthTokenResponseSerializer})
     def post(self, request, *args, **kwargs):
         auth_serializer = self.serializer_class(data=request.data)
         auth_serializer.is_valid(raise_exception=True)
@@ -72,6 +76,40 @@ class GoogleLoginView(APIView):
         return Response(response, status=200)
 
 
+class AdminLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(request_body=AdminLoginSerializer)
+    def post(self, request, *args, **kwargs):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        user = authenticate(username=username, password=password)
+
+        if not user:
+            return Response(
+                {"detail": "Invalid credentials."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not user.is_staff:
+            return Response(
+                {"detail": "You do not have permission to access this endpoint."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response(
+            {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user_id": user.id,
+                "username": user.username,
+            }
+        )
+
+
 class UserRole:
     def get_role(self, request):
         role = "none"
@@ -82,6 +120,7 @@ class UserRole:
         return role
 
 
+@extend_schema(tags=["Person"])
 class PersonViewSet(viewsets.ModelViewSet):
     queryset = Person.objects.all()
     serializer_class = PersonSerializer
@@ -105,6 +144,7 @@ class PersonViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("You can only delete your own account.")
 
 
+@extend_schema(tags=["Provider"])
 class ProviderViewSet(viewsets.ModelViewSet):
     queryset = Provider.objects.all()
     serializer_class = ProviderSerializer
@@ -131,43 +171,151 @@ class IsProviderOrAdmin(BasePermission):
 class LinkPersonToProviderView(APIView):
     permission_classes = [IsAuthenticated, IsProviderOrAdmin]
 
-    def post(self, request):
+    def get_provider(self, request):
         try:
-            provider = Provider.objects.get(user=request.user)
+            return Provider.objects.get(user=request.user)
         except Provider.DoesNotExist:
+            return None
+
+    def post(self, request):
+        provider = self.get_provider(request)
+        if not provider:
             return Response(
                 {"detail": "Provider not found for this user."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if str(request.data.get("provider")) != str(provider.pk):
+        person_id = request.data.get("person_id")
+        if not person_id:
             return Response(
-                {"detail": "You can only create links for your own provider account."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"detail": "Missing person_id in request."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = LinkedProviderSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Certifique-se de que existe a pessoa
+        try:
+            person = Person.objects.get(pk=person_id)
+        except Person.DoesNotExist:
+            return Response(
+                {"detail": "Person not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Buscando o conceito "CUIDADOR" para o relacionamento
+        try:
+            relationship_concept = Concept.objects.get(concept_name="CUIDADOR")
+        except Concept.DoesNotExist:
+            return Response(
+                {"detail": "Relationship concept 'CUIDADOR' not configured."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        # Criar o FactRelationship
+        fact_relationship = FactRelationship.objects.create(
+            domain_concept_id_1=Concept.objects.get(concept_name="Person"),
+            fact_id_1=person.pk,
+            domain_concept_id_2=Concept.objects.get(concept_name="Provider"),
+            fact_id_2=provider.pk,
+            relationship_concept_id=relationship_concept,
+        )
+
+        serializer = FactRelationshipSerializer(fact_relationship)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
-        try:
-            provider = Provider.objects.get(user=request.user)
-        except Provider.DoesNotExist:
+        provider = self.get_provider(request)
+        if not provider:
             return Response(
                 {"detail": "Provider not found for this user."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        linked_providers = LinkedProvider.objects.filter(provider=provider).select_related("person")
-        serializer = LinkedProviderSerializer(linked_providers, many=True)
+        try:
+            relationship_concept = Concept.objects.get(concept_name="CUIDADOR")
+        except Concept.DoesNotExist:
+            return Response(
+                {"detail": "Relationship concept 'CUIDADOR' not configured."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        relationships = FactRelationship.objects.filter(
+            fact_id_2=provider.pk,
+            relationship_concept_id=relationship_concept,
+            domain_concept_id_1__concept_name="Person",
+            domain_concept_id_2__concept_name="Provider",
+        ).select_related("domain_concept_id_1", "domain_concept_id_2", "relationship_concept_id")
+
+        serializer = FactRelationshipSerializer(relationships, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class DomainsWithConceptsView(APIView):
-    def get(self, request):
-        domains = Domain.objects.all()
-        serializer = DomainSerializer(domains, many=True)
-        return Response(serializer.data)
+@extend_schema(tags=["Vocabulary"])
+class VocabularyViewSet(viewsets.ModelViewSet):
+    queryset = Vocabulary.objects.all()
+    serializer_class = VocabularySerializer
+
+
+@extend_schema(tags=["ConceptClass"])
+class ConceptClassViewSet(viewsets.ModelViewSet):
+    queryset = ConceptClass.objects.all()
+    serializer_class = ConceptClassSerializer
+
+
+@extend_schema(tags=["Concept"])
+class ConceptViewSet(viewsets.ModelViewSet):
+    queryset = Concept.objects.all()
+    serializer_class = ConceptSerializer
+
+
+@extend_schema(tags=["ConceptSynonym"])
+class ConceptSynonymViewSet(viewsets.ModelViewSet):
+    queryset = ConceptSynonym.objects.all()
+    serializer_class = ConceptSynonymSerializer
+
+
+@extend_schema(tags=["Domain"])
+class DomainViewSet(viewsets.ModelViewSet):
+    queryset = Domain.objects.all()
+    serializer_class = DomainSerializer
+
+
+@extend_schema(tags=["Location"])
+class LocationViewSet(viewsets.ModelViewSet):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+
+
+@extend_schema(tags=["CareSite"])
+class CareSiteViewSet(viewsets.ModelViewSet):
+    queryset = CareSite.objects.all()
+    serializer_class = CareSiteSerializer
+
+
+@extend_schema(tags=["DrugExposure"])
+class DrugExposureViewSet(viewsets.ModelViewSet):
+    queryset = DrugExposure.objects.all()
+    serializer_class = DrugExposureSerializer
+
+
+@extend_schema(tags=["Observation"])
+class ObservationViewSet(viewsets.ModelViewSet):
+    queryset = Observation.objects.all()
+    serializer_class = ObservationSerializer
+
+
+@extend_schema(tags=["VisitOccurrence"])
+class VisitOccurrenceViewSet(viewsets.ModelViewSet):
+    queryset = VisitOccurrence.objects.all()
+    serializer_class = VisitOccurrenceSerializer
+
+
+@extend_schema(tags=["Measurement"])
+class MeasurementViewSet(viewsets.ModelViewSet):
+    queryset = Measurement.objects.all()
+    serializer_class = MeasurementSerializer
+
+
+@extend_schema(tags=["FactRelationship"])
+class FactRelationshipViewSet(viewsets.ModelViewSet):
+    queryset = FactRelationship.objects.all()
+    serializer_class = FactRelationshipSerializer

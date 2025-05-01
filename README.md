@@ -68,14 +68,7 @@ pip install -r requirements.txt
 docker-compose up -d
 ```
 
-### 5. Carregue o banco e os dados iniciais
-
-```bash
-psql -U saude_user -d saude_db -f ./scripts/saude.sql
-python manage.py loaddata initial_fixtures.json
-```
-
-### 6. Rode o servidor
+### 5. Rode o servidor
 
 ```bash
 python manage.py runserver
@@ -165,3 +158,57 @@ E sempre adicione:
 - O **contexto** da mudança
 - Se afeta algo que precisa ser testado
 - Link para o card no Trello
+
+Que bom que ficou lindo!! 🔥  
+Agora aqui está o texto para você colocar no seu **README.md** explicando direitinho o processo de **mudanças no banco de dados**:
+
+---
+
+### 🛠️ Mudanças no Banco de Dados
+
+Sempre que houver alterações no banco de dados, siga este fluxo:
+
+1. **Atualizar o `models.py`**
+
+   - Faça as mudanças necessárias nas classes Django (`app_saude/models.py`).
+
+2. **Atualizar o `.dbml`**
+
+   - Atualize o arquivo DBML correspondente na pasta `db/` (`db/saude.dbml`) para refletir as mudanças feitas no `models.py`.
+   - O DBML é usado para gerar a documentação visual do banco.
+
+3. **Subir o banco de dados local**
+
+   - Suba o PostgreSQL usando Docker:
+   
+     ```bash
+     docker-compose up -d
+     ```
+
+4. **Gerar e aplicar migrações**
+
+   - Rode o `makemigrations` e `migrate` para aplicar as mudanças no Postgres:
+   
+     ```bash
+     python manage.py makemigrations
+     python manage.py migrate
+     ```
+
+   - Se o Django pedir valor default para novos campos, forneça quando aplicável.
+
+5. **Atualizar a documentação DBML**
+
+   - Após tudo estar correto, atualize a documentação no [dbdocs.io](https://dbdocs.io/):
+
+     ```bash
+     dbdocs login    # apenas na primeira vez
+     dbdocs build ./db/saude.dbml
+     ```
+
+   - Isso irá reconstruir e publicar a documentação atualizada.
+
+---
+
+#### 📋 Observações Importantes
+- Sempre mantenha o **`models.py`** e o **`saude.dbml`** **sincronizados**.
+- O arquivo `.dbdocs.yml` controla o projeto que será publicado no dbdocs.io.

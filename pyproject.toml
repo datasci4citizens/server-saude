@@ -6,3 +6,15 @@ commit_parser = "conventional"
 
 [tool.semantic_release.changelog.default_templates]
 changelog_file = "CHANGELOG.md"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.flake8]
+max-line-length = 120
