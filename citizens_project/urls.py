@@ -31,7 +31,6 @@ router.register(r"fact-relationship", FactRelationshipViewSet)
 
 
 # path("link/", LinkPersonToProviderView.as_view(), name="link-person-to-provider"),
-#    path("api/domains/", DomainsWithConceptsView.as_view(), name="domains-with-concepts"),
 
 schema_view = get_schema_view(
     openapi.Info(
