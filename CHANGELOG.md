@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.2.0 (2025-05-01)
+
+### Features
+
+- **SAU-XX**: Change tables to OMOP and configure openApi
+  ([`eeb67d5`](https://github.com/datasci4citizens/server-saude/commit/eeb67d5e9fc78aca5f78939b576e4a6ac1799d33))
+
+- **SAU-XX**: Change tables to OMOP and configure openApi
+  ([#6](https://github.com/datasci4citizens/server-saude/pull/6),
+  [`8334b67`](https://github.com/datasci4citizens/server-saude/commit/8334b673e6e07db0fc8338868ce134425ba846e2))
+
+
 ## v0.1.0 (2025-04-24)
 
 ### Chores
