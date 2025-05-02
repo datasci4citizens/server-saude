@@ -101,7 +101,7 @@ class ConceptSynonym(TimestampedModel):
 
 
 class Domain(TimestampedModel):
-    domain_id = models.AutoField(primary_key=True, db_comment="Primary key of Domain")
+    domain_id = models.CharField(max_length=100, primary_key=True, db_comment="Primary key of Domain Class")
     domain_name = models.CharField(max_length=255, blank=True, null=True, db_comment="Name of the domain")
     domain_concept = models.ForeignKey(
         Concept,
