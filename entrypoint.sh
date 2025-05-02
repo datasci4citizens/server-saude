@@ -5,7 +5,10 @@ python manage.py makemigrations --noinput
 python manage.py migrate
 
 echo "Populando tabelas"
-python manage.py populate_domains
+python manage.py seed_concepts
+
+echo "📥 Rodando inserts SQL diretos"
+python manage.py dbshell < /app/scripts/data.sql || echo "⚠️ Erro ao rodar data.sql (talvez já existam os dados)"
 
 # Criação automática do superusuário
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then

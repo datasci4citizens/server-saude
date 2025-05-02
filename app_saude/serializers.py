@@ -33,10 +33,17 @@ class ConceptClassSerializer(serializers.ModelSerializer):
 
 
 class ConceptSerializer(serializers.ModelSerializer):
+    translated_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Concept
-        fields = "__all__"
+        fields = ["concept_id", "concept_name", "translated_name", "concept_class_id", "domain_id", "concept_code"]
         read_only_fields = ("created_at", "updated_at")
+
+    def get_translated_name(self, obj):
+        if hasattr(obj, "translated_synonyms") and obj.translated_synonyms:
+            return obj.translated_synonyms[0].concept_synonym_name
+        return obj.concept_name
 
 
 class ConceptSynonymSerializer(serializers.ModelSerializer):

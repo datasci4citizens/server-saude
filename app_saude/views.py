@@ -1,8 +1,8 @@
 import logging
 
 from django.contrib.auth import authenticate, get_user_model
-from drf_spectacular.utils import extend_schema
-from drf_yasg.utils import swagger_auto_schema
+from django.db.models import Prefetch
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
@@ -79,7 +79,7 @@ class GoogleLoginView(APIView):
 class AdminLoginView(APIView):
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(request_body=AdminLoginSerializer)
+    @extend_schema(request=AdminLoginSerializer)
     def post(self, request, *args, **kwargs):
         username = request.data.get("username")
         password = request.data.get("password")
@@ -261,10 +261,45 @@ class ConceptClassViewSet(viewsets.ModelViewSet):
     serializer_class = ConceptClassSerializer
 
 
-@extend_schema(tags=["Concept"])
+@extend_schema(
+    tags=["Concept"],
+    parameters=[
+        OpenApiParameter(
+            name="class",
+            description="Lista de concept_class_id (ex: class=Gender,Ethnicity)",
+            required=False,
+            type=str,
+            style="form",
+            explode=False,
+        ),
+        OpenApiParameter(name="lang", description="Idioma da tradução (ex: pt)", required=False, type=str),
+    ],
+)
 class ConceptViewSet(viewsets.ModelViewSet):
     queryset = Concept.objects.all()
     serializer_class = ConceptSerializer
+
+    def get_queryset(self):
+        queryset = Concept.objects.all()
+
+        lang = self.request.query_params.get("lang", "pt")
+
+        class_ids = self.request.query_params.get("class")
+        if class_ids:
+            # Suporta múltiplos separados por vírgula
+            class_id_list = [s.strip() for s in class_ids.split(",")]
+            queryset = queryset.filter(concept_class_id__in=class_id_list)
+
+        # traz só os sinônimos no idioma desejado
+        queryset = queryset.prefetch_related(
+            Prefetch(
+                "concept_synonym_concept_set",
+                queryset=ConceptSynonym.objects.filter(language_concept__concept_code=lang),
+                to_attr="translated_synonyms",
+            )
+        )
+
+        return queryset
 
 
 @extend_schema(tags=["ConceptSynonym"])
