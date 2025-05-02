@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.3.0 (2025-05-01)
+
+### Features
+
+- **SAU-XX**: Add concepts and query them
+  ([`2a45768`](https://github.com/datasci4citizens/server-saude/commit/2a4576881bc9f7d269aa46679f998083cf699738))
+
+- **SAU-XX**: Add concepts and query them
+  ([#7](https://github.com/datasci4citizens/server-saude/pull/7),
+  [`f91af6a`](https://github.com/datasci4citizens/server-saude/commit/f91af6a7f043740615bcc78e0510ed82bf28a048))
+
+- **SAU-XX**: Release script
+  ([`13de1d4`](https://github.com/datasci4citizens/server-saude/commit/13de1d4d38d13e67d3accbd0e58661f4fe571540))
+
+
 ## v0.2.0 (2025-05-01)
 
 ### Features
