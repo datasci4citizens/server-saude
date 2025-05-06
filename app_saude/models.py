@@ -69,6 +69,14 @@ class Concept(TimestampedModel):
         null=True,
         db_comment="Code of the concept in source vocabulary",
     )
+    vocabulary_id = models.ForeignKey(
+        "Vocabulary",
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="concept_vocabulary_set",
+        db_comment="Reference to Vocabulary",
+    )
     valid_start_date = models.DateField(blank=True, null=True, db_comment="Start date of concept validity")
     valide_end_date = models.DateField(blank=True, null=True, db_comment="End date of concept validity")
 

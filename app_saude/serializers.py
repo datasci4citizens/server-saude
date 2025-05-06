@@ -74,7 +74,9 @@ class PersonSerializer(serializers.ModelSerializer):
         read_only_fields = ("created_at", "updated_at")
 
     def create(self, validated_data):
-        validated_data["user"] = self.context["request"].user
+        request = self.context.get("request", None)
+        if request and request.user and request.user.is_authenticated: # dummy for testing
+            validated_data["user"] = request.user
         return super().create(validated_data)
 
 
@@ -85,7 +87,9 @@ class ProviderSerializer(serializers.ModelSerializer):
         read_only_fields = ("created_at", "updated_at")
 
     def create(self, validated_data):
-        validated_data["user"] = self.context["request"].user
+        request = self.context.get("request", None)
+        if request and request.user and request.user.is_authenticated: # dummy for testing
+            validated_data["user"] = request.user
         return super().create(validated_data)
 
 
