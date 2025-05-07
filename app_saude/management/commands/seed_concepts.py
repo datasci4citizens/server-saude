@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from django.db import connection
 
 from app_saude.models import *
 
@@ -64,6 +65,9 @@ class Command(BaseCommand):
                 # ethnicity
             )
             return person
+
+        with connection.cursor() as cursor:
+            cursor.execute("TRUNCATE TABLE concept CASCADE;")
 
         # Idioma pt
         concept_class("Language", "Language", 11118)
