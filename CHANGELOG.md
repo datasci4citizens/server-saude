@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.4.0 (2025-05-07)
+
+### Features
+
+- **SAU-XX**: Db populate and fetch full person
+  ([`dccfe6b`](https://github.com/datasci4citizens/server-saude/commit/dccfe6b3cbffda81c5a9c6666ad1183c12bef228))
+
+- **SAU-XX**: Full person onboarding
+  ([`6619f54`](https://github.com/datasci4citizens/server-saude/commit/6619f5421c7e48369410d9143c8a9699e15e2a19))
+
+- **SAU-XX**: Full person onboarding
+  ([`d76a5cd`](https://github.com/datasci4citizens/server-saude/commit/d76a5cd4605d1689e77ed2401bad6b6c6c2e9c8b))
+
+
 ## v0.3.0 (2025-05-01)
 
 ### Features
