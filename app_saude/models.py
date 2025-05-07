@@ -27,6 +27,7 @@ class Vocabulary(TimestampedModel):
         on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
+        related_name="vocabulary_concept_set",
         db_comment="Reference to Concept representing the vocabulary",
     )
 
@@ -62,15 +63,22 @@ class Concept(TimestampedModel):
         related_name="concept_domain_set",
         db_comment="Reference to Domain",
     )
-    concept_class_id = models.CharField(max_length=20, blank=True, null=True, db_comment="Class of the concept")
+    concept_class = models.ForeignKey(
+        ConceptClass,
+        to_field="concept_class_id",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        db_comment="Reference to ConceptClass.concept_class_id",
+    )
     concept_code = models.CharField(
         max_length=50,
         blank=True,
         null=True,
         db_comment="Code of the concept in source vocabulary",
     )
-    vocabulary_id = models.ForeignKey(
-        "Vocabulary",
+    vocabulary = models.ForeignKey(
+        Vocabulary,
         on_delete=models.CASCADE,
         blank=True,
         null=True,
