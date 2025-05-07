@@ -29,6 +29,7 @@ router.register(r"measurement", MeasurementViewSet)
 router.register(r"fact-relationship", FactRelationshipViewSet)
 
 router.register(r"full-person", FullPersonViewSet, basename="full-person")
+router.register(r"full-provider", FullProviderViewSet, basename="full-provider")
 
 schema_view = get_schema_view(
     openapi.Info(

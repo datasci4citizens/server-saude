@@ -248,9 +248,7 @@ class PersonCreateSerializer(BaseCreateSerializer):
         exclude = ["person_id", "created_at", "updated_at", "location", "user"]
 
     def create(self, validated_data):
-        request = self.context.get("request", None)
-        if request and request.user and request.user.is_authenticated:
-            validated_data["user"] = request.user
+        validated_data["user"] = self.context["request"].user
         return super().create(validated_data)
 
 
@@ -372,14 +370,15 @@ class FullPersonRetrieveSerializer(serializers.Serializer):
     drug_exposures = DrugExposureRetrieveSerializer(many=True)
 
 
-# FullProvider
-class FullProviderSerializer(serializers.Serializer):
-    provider = ProviderRetrieveSerializer()
-    care_site = CareSiteRetrieveSerializer()
-    observations = ObservationRetrieveSerializer(many=True)
-    visit_occurrences = VisitOccurrenceRetrieveSerializer(many=True)
-
-
 class FullProviderCreateSerializer(serializers.Serializer):
     provider = ProviderCreateSerializer()
-    care_site = CareSiteCreateSerializer()
+
+    def create(self, validated_data):
+        provider_data = validated_data.pop("provider")
+        provider = Provider.objects.create(**provider_data)
+        return {
+            "provider": provider
+        }
+    
+class FullProviderRetrieveSerializer(serializers.Serializer):
+    provider = ProviderRetrieveSerializer()
