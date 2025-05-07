@@ -235,7 +235,7 @@ class LinkPersonToProviderView(APIView):
             relationship_concept_id=relationship_concept,
         )
 
-        serializer = FactRelationshipSerializer(fact_relationship)
+        serializer = FactRelationshipCreateSerializer(fact_relationship)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
@@ -261,7 +261,7 @@ class LinkPersonToProviderView(APIView):
             domain_concept_id_2__concept_name="Provider",
         ).select_related("domain_concept_id_1", "domain_concept_id_2", "relationship_concept_id")
 
-        serializer = FactRelationshipSerializer(relationships, many=True)
+        serializer = FactRelationshipRetrieveSerializer(relationships, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
