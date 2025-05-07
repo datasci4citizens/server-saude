@@ -1,9 +1,11 @@
 import logging
 
 from django.contrib.auth import authenticate, get_user_model
+from django.db import transaction
 from django.db.models import Prefetch
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
 from rest_framework.response import Response
@@ -43,6 +45,7 @@ class GoogleLoginView(APIView):
 
     @extend_schema(request=AuthSerializer, responses={200: AuthTokenResponseSerializer})
     def post(self, request, *args, **kwargs):
+
         auth_serializer = self.serializer_class(data=request.data)
         auth_serializer.is_valid(raise_exception=True)
 
@@ -120,14 +123,28 @@ class UserRole:
         return role
 
 
+class FlexibleViewSet(viewsets.ModelViewSet):
+    def get_serializer_class(self):
+        prefix = self.__class__.__name__.replace("ViewSet", "")
+        if self.action == "create":
+            return globals()[f"{prefix}CreateSerializer"]
+        elif self.action in ["update", "partial_update"]:
+            return globals()[f"{prefix}UpdateSerializer"]
+        return globals()[f"{prefix}RetrieveSerializer"]
+
+
 @extend_schema(tags=["Person"])
-class PersonViewSet(viewsets.ModelViewSet):
+class PersonViewSet(FlexibleViewSet):
     queryset = Person.objects.all()
-    serializer_class = PersonSerializer
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = "__all__"
+    ordering_fields = "__all__"
+    search_fields = ["social_name"]
+
     def get_queryset(self):
-        return Person.objects.filter(user=self.request.user)
+        return Person.objects.all()
 
     def create(self, request, *args, **kwargs):
         if Person.objects.filter(user=request.user).exists():
@@ -145,9 +162,8 @@ class PersonViewSet(viewsets.ModelViewSet):
 
 
 @extend_schema(tags=["Provider"])
-class ProviderViewSet(viewsets.ModelViewSet):
+class ProviderViewSet(FlexibleViewSet):
     queryset = Provider.objects.all()
-    serializer_class = ProviderSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -219,7 +235,7 @@ class LinkPersonToProviderView(APIView):
             relationship_concept_id=relationship_concept,
         )
 
-        serializer = FactRelationshipSerializer(fact_relationship)
+        serializer = FactRelationshipCreateSerializer(fact_relationship)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
@@ -245,20 +261,18 @@ class LinkPersonToProviderView(APIView):
             domain_concept_id_2__concept_name="Provider",
         ).select_related("domain_concept_id_1", "domain_concept_id_2", "relationship_concept_id")
 
-        serializer = FactRelationshipSerializer(relationships, many=True)
+        serializer = FactRelationshipRetrieveSerializer(relationships, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Vocabulary"])
-class VocabularyViewSet(viewsets.ModelViewSet):
+class VocabularyViewSet(FlexibleViewSet):
     queryset = Vocabulary.objects.all()
-    serializer_class = VocabularySerializer
 
 
 @extend_schema(tags=["ConceptClass"])
-class ConceptClassViewSet(viewsets.ModelViewSet):
+class ConceptClassViewSet(FlexibleViewSet):
     queryset = ConceptClass.objects.all()
-    serializer_class = ConceptClassSerializer
 
 
 @extend_schema(
@@ -275,9 +289,8 @@ class ConceptClassViewSet(viewsets.ModelViewSet):
         OpenApiParameter(name="lang", description="Idioma da tradução (ex: pt)", required=False, type=str),
     ],
 )
-class ConceptViewSet(viewsets.ModelViewSet):
+class ConceptViewSet(FlexibleViewSet):
     queryset = Concept.objects.all()
-    serializer_class = ConceptSerializer
 
     def get_queryset(self):
         queryset = Concept.objects.all()
@@ -288,7 +301,7 @@ class ConceptViewSet(viewsets.ModelViewSet):
         if class_ids:
             # Suporta múltiplos separados por vírgula
             class_id_list = [s.strip() for s in class_ids.split(",")]
-            queryset = queryset.filter(concept_class_id__in=class_id_list)
+            queryset = queryset.filter(concept_class__concept_class_id__in=class_id_list)
 
         # traz só os sinônimos no idioma desejado
         queryset = queryset.prefetch_related(
@@ -303,54 +316,84 @@ class ConceptViewSet(viewsets.ModelViewSet):
 
 
 @extend_schema(tags=["ConceptSynonym"])
-class ConceptSynonymViewSet(viewsets.ModelViewSet):
+class ConceptSynonymViewSet(FlexibleViewSet):
     queryset = ConceptSynonym.objects.all()
-    serializer_class = ConceptSynonymSerializer
 
 
 @extend_schema(tags=["Domain"])
-class DomainViewSet(viewsets.ModelViewSet):
+class DomainViewSet(FlexibleViewSet):
     queryset = Domain.objects.all()
-    serializer_class = DomainSerializer
 
 
 @extend_schema(tags=["Location"])
-class LocationViewSet(viewsets.ModelViewSet):
+class LocationViewSet(FlexibleViewSet):
     queryset = Location.objects.all()
-    serializer_class = LocationSerializer
 
 
 @extend_schema(tags=["CareSite"])
-class CareSiteViewSet(viewsets.ModelViewSet):
+class CareSiteViewSet(FlexibleViewSet):
     queryset = CareSite.objects.all()
-    serializer_class = CareSiteSerializer
 
 
 @extend_schema(tags=["DrugExposure"])
-class DrugExposureViewSet(viewsets.ModelViewSet):
+class DrugExposureViewSet(FlexibleViewSet):
     queryset = DrugExposure.objects.all()
-    serializer_class = DrugExposureSerializer
 
 
 @extend_schema(tags=["Observation"])
-class ObservationViewSet(viewsets.ModelViewSet):
+class ObservationViewSet(FlexibleViewSet):
     queryset = Observation.objects.all()
-    serializer_class = ObservationSerializer
 
 
 @extend_schema(tags=["VisitOccurrence"])
-class VisitOccurrenceViewSet(viewsets.ModelViewSet):
+class VisitOccurrenceViewSet(FlexibleViewSet):
     queryset = VisitOccurrence.objects.all()
-    serializer_class = VisitOccurrenceSerializer
 
 
 @extend_schema(tags=["Measurement"])
-class MeasurementViewSet(viewsets.ModelViewSet):
+class MeasurementViewSet(FlexibleViewSet):
     queryset = Measurement.objects.all()
-    serializer_class = MeasurementSerializer
 
 
 @extend_schema(tags=["FactRelationship"])
-class FactRelationshipViewSet(viewsets.ModelViewSet):
+class FactRelationshipViewSet(FlexibleViewSet):
     queryset = FactRelationship.objects.all()
-    serializer_class = FactRelationshipSerializer
+
+
+@extend_schema(
+    tags=["FullPerson"],
+    request=FullPersonCreateSerializer,
+    responses={201: FullPersonRetrieveSerializer},
+)
+class FullPersonViewSet(FlexibleViewSet):
+    http_method_names = ["post"]  # limita só para POST
+    queryset = Person.objects.none()  # evita problemas, mas não retorna nada se alguém fizer GET
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        data = serializer.validated_data
+        person_data = data["person"]
+        location_data = data["location"]
+        observations_data = data["observations"]
+        drug_exposures_data = data["drug_exposures"]
+
+        try:
+            with transaction.atomic():
+                # 1. Criar Person
+                person = Person.objects.create(**person_data)
+
+                # 2. Criar Location (associada a person)
+                Location.objects.create(person=person, **location_data)
+
+                # 3. Criar Observations
+                for obs in observations_data:
+                    Observation.objects.create(person=person, **obs)
+
+                # 4. Criar Drug Exposures
+                for drug in drug_exposures_data:
+                    DrugExposure.objects.create(person=person, **drug)
+
+                return Response({"message": "Onboarding concluído com sucesso"}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -5,6 +5,7 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from app_saude.views import *
 
@@ -27,10 +28,7 @@ router.register(r"visit-occurrence", VisitOccurrenceViewSet)
 router.register(r"measurement", MeasurementViewSet)
 router.register(r"fact-relationship", FactRelationshipViewSet)
 
-# router.register(r"full-registration", FullPersonRegistrationView, basename="full-registration")
-
-
-# path("link/", LinkPersonToProviderView.as_view(), name="link-person-to-provider"),
+router.register(r"full-person", FullPersonViewSet, basename="full-person")
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -52,6 +50,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
     path("auth/me/", MeView.as_view(), name="me"),
+    path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Complete Api
     path("api/", include(router.urls)),
     # Docs
