@@ -19,7 +19,7 @@ jobs:
 
       - name: Install formatters (black and isort)
         run: |
-          pip install black==23.9.1 isort
+          pip install black==25.1.0 isort
 
       - name: Run black (line-length=120)
         run: |
