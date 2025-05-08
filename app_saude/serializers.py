@@ -248,9 +248,16 @@ class PersonCreateSerializer(BaseCreateSerializer):
         exclude = ["person_id", "created_at", "updated_at", "location", "user"]
 
     def create(self, validated_data):
-        request = self.context.get("request", None)
-        if request and request.user and request.user.is_authenticated:
-            validated_data["user"] = request.user
+        user = self.context.get("request").user
+        if not user:
+            print("Error: User not found in the request context.")
+            raise serializers.ValidationError("User not found in the request context.")
+
+        if Person.objects.filter(user=user).exists():
+            print(f"Error: Provider with user {user} already exists.")
+            raise serializers.ValidationError("A provider with this user already exists.")
+
+        validated_data["user"] = user
         return super().create(validated_data)
 
 
@@ -273,9 +280,16 @@ class ProviderCreateSerializer(BaseCreateSerializer):
         exclude = ["provider_id", "created_at", "updated_at", "user"]
 
     def create(self, validated_data):
-        request = self.context.get("request", None)
-        if request and request.user and request.user.is_authenticated:
-            validated_data["user"] = request.user
+        user = self.context.get("request").user
+        if not user:
+            print("Error: User not found in the request context.")
+            raise serializers.ValidationError("User not found in the request context.")
+
+        if Provider.objects.filter(user=user).exists():
+            print(f"Error: Provider with user {user} already exists.")
+            raise serializers.ValidationError("A provider with this user already exists.")
+
+        validated_data["user"] = user
         return super().create(validated_data)
 
 
@@ -346,7 +360,17 @@ class FullPersonCreateSerializer(serializers.Serializer):
         location = Location.objects.create(**location_data)
 
         # Cria Person com link para Location
-        person = Person.objects.create(location=location, **person_data)
+        person_data["gender_concept"] = person_data.get("gender_concept").concept_id
+        person_data["ethnicity_concept"] = person_data.get("ethnicity_concept").concept_id
+        person_data["race_concept"] = person_data.get("race_concept").concept_id
+
+        # Adiciona a instância de Location ao person_data
+        person_data["location"] = location
+
+        # Valida e cria o Person
+        person_serializer = PersonCreateSerializer(data=person_data, context=self.context)
+        person_serializer.is_valid(raise_exception=True)
+        person = person_serializer.save()
 
         # Cria Observations e DrugExposures
         for obs in observations_data:
@@ -372,14 +396,24 @@ class FullPersonRetrieveSerializer(serializers.Serializer):
     drug_exposures = DrugExposureRetrieveSerializer(many=True)
 
 
-# FullProvider
-class FullProviderSerializer(serializers.Serializer):
-    provider = ProviderRetrieveSerializer()
-    care_site = CareSiteRetrieveSerializer()
-    observations = ObservationRetrieveSerializer(many=True)
-    visit_occurrences = VisitOccurrenceRetrieveSerializer(many=True)
-
-
 class FullProviderCreateSerializer(serializers.Serializer):
     provider = ProviderCreateSerializer()
-    care_site = CareSiteCreateSerializer()
+
+    def create(self, validated_data):
+        provider_data = validated_data.pop("provider")
+
+        # Verifica se specialty_concept é um objeto e extrai o ID
+        specialty_concept = provider_data.get("specialty_concept")
+        if isinstance(specialty_concept, Concept):  # Verifica se é uma instância do modelo Concept
+            provider_data["specialty_concept"] = specialty_concept.concept_id
+
+        # Valida e cria o provider usando o ProviderCreateSerializer
+        provider_serializer = ProviderCreateSerializer(data=provider_data, context=self.context)
+        provider_serializer.is_valid(raise_exception=True)
+        provider = provider_serializer.save()
+
+        return {"provider": provider}
+
+
+class FullProviderRetrieveSerializer(serializers.Serializer):
+    provider = ProviderRetrieveSerializer()

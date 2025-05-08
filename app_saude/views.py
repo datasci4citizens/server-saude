@@ -166,11 +166,16 @@ class ProviderViewSet(FlexibleViewSet):
     queryset = Provider.objects.all()
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = "__all__"
+    ordering_fields = "__all__"
+    search_fields = ["social_name"]
+
     def get_queryset(self):
-        return Person.objects.filter(user=self.request.user)
+        return Provider.objects.all()
 
     def create(self, request, *args, **kwargs):
-        if Person.objects.filter(user=request.user).exists():
+        if Provider.objects.filter(user=request.user).exists():
             raise ValidationError("You already have a provider registration.")
         return super().create(request, *args, **kwargs)
 
@@ -394,6 +399,37 @@ class FullPersonViewSet(FlexibleViewSet):
                     DrugExposure.objects.create(person=person, **drug)
 
                 return Response({"message": "Onboarding concluído com sucesso"}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    tags=["FullProvider"],
+    request=FullProviderCreateSerializer,
+    responses={201: FullProviderRetrieveSerializer},
+)
+class FullProviderViewSet(FlexibleViewSet):
+    http_method_names = ["post"]
+    queryset = Provider.objects.none()
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data, context={"request": request})
+
+        # Valida os dados
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                # Delega a criação ao serializer
+                result = serializer.save()
+
+                return Response(
+                    {"message": "Provider criado com sucesso", "data": result},
+                    status=status.HTTP_201_CREATED,
+                )
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
