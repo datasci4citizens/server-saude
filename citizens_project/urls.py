@@ -54,8 +54,9 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Complete Api
     path("api/", include(router.urls)),
-    path('api/user-entity/', UserRoleView.as_view(), name='user-entity'),
-
+    path("api/user-entity/", UserRoleView.as_view(), name="user-entity"),
+    path("provider/link-code/", GenerateProviderLinkCodeView.as_view(), name="generate-link-code"),
+    path("person/link-code/", PersonLinkProviderView.as_view(), name="person-link-code"),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
@@ -65,3 +66,7 @@ urlpatterns = [
     ),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
+
+if settings.DEBUG:
+    urlpatterns += [path("dev-login-as-provider/", dev_login_as_provider)]
+    urlpatterns += [path("dev-login-as-person/", dev_login_as_person)]

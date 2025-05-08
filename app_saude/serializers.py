@@ -39,20 +39,75 @@ class BaseRetrieveSerializer(serializers.ModelSerializer):
         read_only_fields = "__all__"
 
 
+# RecurrenceRule
+class RecurrenceRuleCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecurrenceRule
+        fields = ["frequency_concept", "interval", "weekday_binary", "valid_start_date", "valid_end_date"]
+
+
+class RecurrenceRuleUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecurrenceRule
+        fields = "__all__"
+
+
+class RecurrenceRuleRetrieveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecurrenceRule
+        fields = "__all__"
+
+
 # DrugExposure
 class DrugExposureCreateSerializer(BaseCreateSerializer):
+    recurrence_rule = RecurrenceRuleCreateSerializer(required=False)
+
     class Meta:
         model = DrugExposure
         exclude = ["drug_exposure_id", "created_at", "updated_at"]
 
+    def create(self, validated_data):
+        recurrence_data = validated_data.pop("recurrence_rule", None)
+
+        recurrence_rule = None
+        if recurrence_data:
+            recurrence_rule, _ = RecurrenceRule.objects.get_or_create(
+                frequency_concept_id=recurrence_data["frequency_concept"].concept_id,
+                interval=recurrence_data.get("interval"),
+                weekday_binary=recurrence_data.get("weekday_binary", None),
+            )
+
+        return DrugExposure.objects.create(recurrence_rule=recurrence_rule, **validated_data)
+
 
 class DrugExposureUpdateSerializer(BaseUpdateSerializer):
+    recurrence_rule = RecurrenceRuleUpdateSerializer(required=False)
+
     class Meta:
         model = DrugExposure
         exclude = ["created_at", "updated_at"]
 
+    def update(self, instance, validated_data):
+        recurrence_data = validated_data.pop("recurrence_rule", None)
+
+        if recurrence_data:
+            recurrence_rule, _ = RecurrenceRule.objects.get_or_create(
+                frequency_concept=recurrence_data["frequency_concept"],
+                interval=recurrence_data.get("interval"),
+                weekday_binary=recurrence_data.get("weekday_binary", None),
+            )
+            instance.recurrence_rule = recurrence_rule
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
 
 class DrugExposureRetrieveSerializer(BaseRetrieveSerializer):
+    recurrence_rule = RecurrenceRuleRetrieveSerializer(required=False)
+
     class Meta:
         model = DrugExposure
         fields = "__all__"
@@ -79,18 +134,54 @@ class ObservationRetrieveSerializer(BaseRetrieveSerializer):
 
 # VisitOccurrence
 class VisitOccurrenceCreateSerializer(BaseCreateSerializer):
+    recurrence_rule = RecurrenceRuleCreateSerializer(required=False)
+
     class Meta:
         model = VisitOccurrence
         exclude = ["visit_occurrence_id", "created_at", "updated_at"]
 
+    def create(self, validated_data):
+        recurrence_data = validated_data.pop("recurrence_rule", None)
+
+        recurrence_rule = None
+        if recurrence_data:
+            recurrence_rule, _ = RecurrenceRule.objects.get_or_create(
+                frequency_concept_id=recurrence_data["frequency_concept_id"],
+                interval=recurrence_data.get("interval"),
+                weekday_binary=recurrence_data.get("weekday_binary", None),
+            )
+
+        return VisitOccurrence.objects.create(recurrence_rule=recurrence_rule, **validated_data)
+
 
 class VisitOccurrenceUpdateSerializer(BaseUpdateSerializer):
+    recurrence_rule = RecurrenceRuleUpdateSerializer(required=False)
+
     class Meta:
         model = VisitOccurrence
         exclude = ["created_at", "updated_at"]
 
+    def update(self, instance, validated_data):
+        recurrence_data = validated_data.pop("recurrence_rule", None)
+
+        if recurrence_data:
+            recurrence_rule, _ = RecurrenceRule.objects.get_or_create(
+                frequency_concept=recurrence_data["frequency_concept"],
+                interval=recurrence_data.get("interval"),
+                weekday_binary=recurrence_data.get("weekday_binary", None),
+            )
+            instance.recurrence_rule = recurrence_rule
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
 
 class VisitOccurrenceRetrieveSerializer(BaseRetrieveSerializer):
+    recurrence_rule = RecurrenceRuleRetrieveSerializer(required=False)
+
     class Meta:
         model = VisitOccurrence
         fields = "__all__"
@@ -420,3 +511,18 @@ class FullProviderCreateSerializer(serializers.Serializer):
 
 class FullProviderRetrieveSerializer(serializers.Serializer):
     provider = ProviderRetrieveSerializer()
+
+
+class ProviderLinkCodeResponseSerializer(serializers.Serializer):
+    code = serializers.CharField(
+        max_length=6, help_text="Código gerado para vincular uma pessoa a este provider (ex: 'A1B2C3')"
+    )
+
+
+class PersonLinkProviderRequestSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=16, help_text="Código de vínculo fornecido pelo provider")
+
+
+class PersonLinkProviderResponseSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["linked"], help_text="Resultado do vínculo")
+    already_existed = serializers.BooleanField(help_text="Indica se o relacionamento já existia antes")

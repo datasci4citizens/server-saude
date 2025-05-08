@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import connection
 
@@ -54,9 +55,13 @@ class Command(BaseCommand):
                 )
 
         def dummy_person(
-            year_of_birth=None, gender_concept=None, ethnicity_concept=None, race_concept=None, location=None
+            name, year_of_birth=None, gender_concept=None, ethnicity_concept=None, race_concept=None, location=None
         ):
+            user, _ = get_user_model().objects.get_or_create(
+                username=name, password="dummy_password", first_name=name, last_name="User", email=f"{name}@email.com"
+            )
             person = Person.objects.create(
+                user_id=user.id,
                 year_of_birth=year_of_birth,
                 gender_concept=Concept.objects.get(concept_id=gender_concept),
                 # ethnicity_concept = Concept.objects.get(concept_id=ethnicity_concept),
@@ -68,7 +73,7 @@ class Command(BaseCommand):
 
         with connection.cursor() as cursor:
             cursor.execute("TRUNCATE TABLE concept CASCADE;")
-
+            cursor.execute("TRUNCATE TABLE auth_user CASCADE;")
         # Idioma pt
         concept_class("Language", "Language", 11118)
         domain("Language", "Language", 4180186)
@@ -97,6 +102,9 @@ class Command(BaseCommand):
         vocabulary("Condition", "OMOP Condition", 2000005)
         vocabulary("Drug", "OMOP Drug", 2000006)
         vocabulary("Substance", "OMOP Substance", 2000007)
+        vocabulary("Observation Type", "OMOP Observation Type", 2000008)
+        vocabulary("Relationship", "OMOP Relationship", 2000009)
+        vocabulary("Domain", "OMOP Domain", 2000010)
 
         # Domains
         domain("Domain", "Domain", 1)
@@ -111,6 +119,9 @@ class Command(BaseCommand):
         domain("Condition", "Condition", 2000015)
         domain("Drug", "Drug", 2000016)
         domain("Substance", "Substance", 2000017)
+        domain("Type", "Type", 2000018)
+        domain("Relationship", "Relationship", 2000019)
+        domain("Domain", "Domain", 2000020)
 
         # Concept Classes
         concept_class("Vocabulary", "Vocabulary", 11111)
@@ -129,6 +140,10 @@ class Command(BaseCommand):
         concept_class("Medication", "Medication", 2000048)
         concept_class("Substance", "Substance", 2000049)
         concept_class("Type", "Type", 2000041)
+        concept_class("Recurrence", "Recurrence", 2000050)
+        concept_class("Relationship", "Relationship", 2000051)
+        concept_class("Observation Type", "Observation Type", 2000052)
+        concept_class("Metadata", "Metadata", 2000053)
 
         # Vocabularies concepts
         add_concept(
@@ -214,9 +229,9 @@ class Command(BaseCommand):
         add_concept(2000053, "CE", "Brazil States", "BR", "Geography", "BR_STATES", "CE")
         add_concept(2000054, "AM", "Brazil States", "BR", "Geography", "BR_STATES", "AM")
 
-        dummy_person(year_of_birth=1990, gender_concept=8507, race_concept=8527)
-        dummy_person(year_of_birth=1999, gender_concept=8532, race_concept=8657)
-        dummy_person(year_of_birth=1981, gender_concept=8551, race_concept=8516)
+        dummy_person("Dummy", year_of_birth=1990, gender_concept=8507, race_concept=8527)
+        dummy_person("Gummy", year_of_birth=1999, gender_concept=8532, race_concept=8657)
+        dummy_person("Sunny", year_of_birth=1981, gender_concept=8551, race_concept=8516)
 
         # Comentei por enquanto por que n tem vocabulários para esses ainda
         # Measurements
@@ -259,4 +274,53 @@ class Command(BaseCommand):
         # Observation Type
         add_concept(38000280, "Self Reported", "Observation", "SR", "Observation", "Observation", "Auto-relatado")
 
+        # Recurrence
+        add_concept(9000100, "Daily", "Recurrence", "DAILY", "Observation", "Observation", "Diariamente")
+        add_concept(9000101, "Weekly", "Recurrence", "WEEKLY", "Observation", "Observation", "Semanalmente")
+        add_concept(9000102, "Monthly", "Recurrence", "MONTHLY", "Observation", "Observation", "Mensalmente")
+        add_concept(9000103, "Yearly", "Recurrence", "YEARLY", "Observation", "Observation", "Anualmente")
+        add_concept(9000104, "Hourly", "Recurrence", "HOURLY", "Observation", "Observation", "A cada hora")
+        add_concept(9000105, "Once", "Recurrence", "ONCE", "Observation", "Observation", "Apenas uma vez")
+
+        # Relationship
+        add_concept(
+            9200010,
+            "Provider Link Code",
+            "Observation",
+            "PROVIDER_LINK_CODE",
+            "Observation",
+            "Observation",
+            "Código de vínculo entre pessoa e profissional",
+        )
+        add_concept(
+            9200011,
+            "Clinician Generated",
+            "Observation Type",
+            "CLINICIAN_GENERATED",
+            "Type",
+            "Observation Type",
+            "Gerado pelo profissional de saúde",
+        )
+        add_concept(
+            9200001,
+            "Person to Provider",
+            "Relationship",
+            "PERSON_PROVIDER",
+            "Relationship",
+            "Relationship",
+            "Pessoa associada ao profissional de saúde",
+        )
+
+        add_concept(
+            9201, "Provider", "Metadata", "PROVIDER", "Domain", "Domain", "Profissional de saúde (domínio provider)"
+        )
+        add_concept(9202, "Person", "Metadata", "PERSON", "Domain", "Domain", "Indivíduo (domínio pessoa)")
+
+        User = get_user_model()
+        user, _ = User.objects.get_or_create(
+            email="mock-provider@email.com",
+            defaults={"username": "mockprovider", "first_name": "Dr. Mock", "last_name": "Provider"},
+        )
+
+        Provider.objects.get_or_create(user=user)
         self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))

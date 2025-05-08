@@ -1,13 +1,18 @@
 import logging
+import uuid
+from datetime import timedelta
 
 from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction
 from django.db.models import Prefetch
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import filters, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -189,7 +194,8 @@ class ProviderViewSet(FlexibleViewSet):
 
     def destroy(self, request, *args, **kwargs):
         raise PermissionDenied("DELETE not allowed.")
-    
+
+
 class UserRoleView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -215,92 +221,6 @@ class UserRoleView(APIView):
             {"detail": "User is not associated with a Person or Provider."},
             status=status.HTTP_404_NOT_FOUND,
         )
-
-class IsProviderOrAdmin(BasePermission):
-    def has_permission(self, request, view):
-        role = UserRole().get_role(request)
-        return role == "provider" or request.user.is_staff
-
-
-class LinkPersonToProviderView(APIView):
-    permission_classes = [IsAuthenticated, IsProviderOrAdmin]
-
-    def get_provider(self, request):
-        try:
-            return Provider.objects.get(user=request.user)
-        except Provider.DoesNotExist:
-            return None
-
-    def post(self, request):
-        provider = self.get_provider(request)
-        if not provider:
-            return Response(
-                {"detail": "Provider not found for this user."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        person_id = request.data.get("person_id")
-        if not person_id:
-            return Response(
-                {"detail": "Missing person_id in request."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Certifique-se de que existe a pessoa
-        try:
-            person = Person.objects.get(pk=person_id)
-        except Person.DoesNotExist:
-            return Response(
-                {"detail": "Person not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # Buscando o conceito "CUIDADOR" para o relacionamento
-        try:
-            relationship_concept = Concept.objects.get(concept_name="CUIDADOR")
-        except Concept.DoesNotExist:
-            return Response(
-                {"detail": "Relationship concept 'CUIDADOR' not configured."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-        # Criar o FactRelationship
-        fact_relationship = FactRelationship.objects.create(
-            domain_concept_id_1=Concept.objects.get(concept_name="Person"),
-            fact_id_1=person.pk,
-            domain_concept_id_2=Concept.objects.get(concept_name="Provider"),
-            fact_id_2=provider.pk,
-            relationship_concept_id=relationship_concept,
-        )
-
-        serializer = FactRelationshipCreateSerializer(fact_relationship)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def get(self, request):
-        provider = self.get_provider(request)
-        if not provider:
-            return Response(
-                {"detail": "Provider not found for this user."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        try:
-            relationship_concept = Concept.objects.get(concept_name="CUIDADOR")
-        except Concept.DoesNotExist:
-            return Response(
-                {"detail": "Relationship concept 'CUIDADOR' not configured."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-        relationships = FactRelationship.objects.filter(
-            fact_id_2=provider.pk,
-            relationship_concept_id=relationship_concept,
-            domain_concept_id_1__concept_name="Person",
-            domain_concept_id_2__concept_name="Provider",
-        ).select_related("domain_concept_id_1", "domain_concept_id_2", "relationship_concept_id")
-
-        serializer = FactRelationshipRetrieveSerializer(relationships, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Vocabulary"])
@@ -466,3 +386,100 @@ class FullProviderViewSet(FlexibleViewSet):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Link-Person-Provider"], responses=ProviderLinkCodeResponseSerializer)
+class GenerateProviderLinkCodeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        provider = get_object_or_404(Provider, user=request.user)
+
+        code = uuid.uuid4().hex[:6].upper()  # Ex: 'A1B2C3'
+
+        Observation.objects.create(
+            person=None,  # ainda sem pessoa vinculada
+            observation_concept_id=9200010,  # PROVIDER_LINK_CODE
+            observation_type_concept_id=9200011,  # CLINICIAN_GENERATED
+            value_as_string=code,
+            observation_date=timezone.now(),
+            provider_id=provider.provider_id,
+        )
+
+        return Response({"code": code})
+
+
+@extend_schema(
+    tags=["Link-Person-Provider"],
+    request=PersonLinkProviderRequestSerializer,
+    responses=PersonLinkProviderResponseSerializer,
+)
+class PersonLinkProviderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        person = get_object_or_404(Person, user=request.user)
+        code = request.data.get("code")
+
+        obs = (
+            Observation.objects.filter(
+                value_as_string=code,
+                observation_concept_id=9200010,
+                observation_date__gte=timezone.now() - timedelta(minutes=10),
+                person__isnull=True,  # ainda não usado
+            )
+            .order_by("-observation_date")
+            .first()
+        )
+
+        if not obs or not obs.provider_id:
+            return Response({"error": "Código inválido ou expirado."}, status=400)
+
+        # Relacionamento person ↔ provider
+        FactRelationship.objects.get_or_create(
+            fact_id_1=person.person_id,
+            domain_concept_1_id=9202,  # Concept ID para "Person" (OMOP)
+            fact_id_2=obs.provider_id,
+            domain_concept_2_id=9201,  # Concept ID para "Provider" (OMOP)
+            relationship_concept_id=9200001,  # Person linked to Provider
+        )
+
+        # Marca como usado
+        obs.person_id = person.person_id
+        obs.save(update_fields=["person_id"])
+
+        return Response({"status": "linked"})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def dev_login_as_provider(request):
+    if not settings.DEBUG:
+        return Response({"detail": "Não disponível em produção"}, status=403)
+
+    User = get_user_model()
+    user = User.objects.get(email="mock-provider@email.com")
+    refresh = RefreshToken.for_user(user)
+    return Response(
+        {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def dev_login_as_person(request):
+    if not settings.DEBUG:
+        return Response({"detail": "Não disponível em produção"}, status=403)
+
+    User = get_user_model()
+    user = User.objects.get(email="Dummy@email.com")
+    refresh = RefreshToken.for_user(user)
+    return Response(
+        {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }
+    )
