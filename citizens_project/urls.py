@@ -54,6 +54,8 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Complete Api
     path("api/", include(router.urls)),
+    path('api/user-entity/', UserRoleView.as_view(), name='user-entity'),
+
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
