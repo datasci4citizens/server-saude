@@ -271,12 +271,18 @@ class ProviderCreateSerializer(BaseCreateSerializer):
         exclude = ["provider_id", "created_at", "updated_at", "user"]
 
     def create(self, validated_data):
-        request = self.context.get("request", None)
-        if request and request.user and request.user.is_authenticated:
-            validated_data["user"] = request.user
+        user = self.context.get("request").user
+        if not user:
+            print("Error: User not found in the request context.")
+            raise serializers.ValidationError("User not found in the request context.")
+        
+        if Provider.objects.filter(user=user).exists():
+            print(f"Error: Provider with user {user} already exists.")
+            raise serializers.ValidationError("A provider with this user already exists.")
+        
+        validated_data["user"] = user   
         return super().create(validated_data)
-
-
+    
 class ProviderUpdateSerializer(BaseUpdateSerializer):
     class Meta:
         model = Provider
@@ -375,7 +381,17 @@ class FullProviderCreateSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         provider_data = validated_data.pop("provider")
-        provider = Provider.objects.create(**provider_data)
+
+        # Verifica se specialty_concept é um objeto e extrai o ID
+        specialty_concept = provider_data.get("specialty_concept")
+        if isinstance(specialty_concept, Concept):  # Verifica se é uma instância do modelo Concept
+            provider_data["specialty_concept"] = specialty_concept.concept_id
+
+        # Valida e cria o provider usando o ProviderCreateSerializer
+        provider_serializer = ProviderCreateSerializer(data=provider_data, context=self.context)
+        provider_serializer.is_valid(raise_exception=True)
+        provider = provider_serializer.save()
+
         return {
             "provider": provider
         }
