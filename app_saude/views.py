@@ -172,7 +172,7 @@ class ProviderViewSet(FlexibleViewSet):
     search_fields = ["social_name"]
 
     def get_queryset(self):
-        return Provider.objects.filter(user=self.request.user)
+        return Provider.objects.all()
 
     def create(self, request, *args, **kwargs):
         if Provider.objects.filter(user=request.user).exists():
