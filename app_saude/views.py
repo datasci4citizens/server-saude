@@ -166,11 +166,16 @@ class ProviderViewSet(FlexibleViewSet):
     queryset = Provider.objects.all()
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = "__all__"
+    ordering_fields = "__all__"
+    search_fields = ["social_name"]
+
     def get_queryset(self):
-        return Person.objects.filter(user=self.request.user)
+        return Provider.objects.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        if Person.objects.filter(user=request.user).exists():
+        if Provider.objects.filter(user=request.user).exists():
             raise ValidationError("You already have a provider registration.")
         return super().create(request, *args, **kwargs)
 
