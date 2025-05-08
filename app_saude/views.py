@@ -62,10 +62,15 @@ class GoogleLoginView(APIView):
             last_name=user_data.get("given_name"),
         )
 
+        # Check if user is already registered as a provider or person
+        provider_id = None
+        person_id = None
         role = "none"
         if Provider.objects.filter(user=user).exists():
+            provider_id = Provider.objects.get(user=user).pk
             role = "provider"
         elif Person.objects.filter(user=user).exists():
+            person_id = Person.objects.get(user=user).pk
             role = "person"
 
         # generate jwt token for the user
@@ -73,7 +78,10 @@ class GoogleLoginView(APIView):
         response = {
             "access": str(token.access_token),
             "refresh": str(token),
+            "provider_id": provider_id,
+            "person_id": person_id,
             "role": role,
+            "user_id": user.pk,
         }
 
         return Response(response, status=200)

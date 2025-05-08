@@ -11,7 +11,7 @@ class TimestampedModel(models.Model):
 
 
 class MyAbstractUser(TimestampedModel):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=False, null=False)
     social_name = models.CharField(max_length=255, blank=True, null=True)
     birth_datetime = models.DateTimeField(blank=True, null=True, db_comment="Date and time of birth")
 
@@ -154,13 +154,6 @@ class Location(TimestampedModel):
 
 
 class Person(MyAbstractUser):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        db_comment="Reference to the user",
-    )
     person_id = models.AutoField(primary_key=True, db_comment="Primary key of Person")
     year_of_birth = models.IntegerField(blank=True, null=True, db_comment="Year of birth")
     gender_concept = models.ForeignKey(
@@ -201,13 +194,6 @@ class Person(MyAbstractUser):
 
 
 class Provider(MyAbstractUser):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        db_comment="Reference to the user",
-    )
     provider_id = models.AutoField(primary_key=True, db_comment="Primary key of Provider")
     professional_registration = models.IntegerField(
         blank=True, null=True, db_comment="Professional registration number"

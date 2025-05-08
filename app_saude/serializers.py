@@ -12,6 +12,9 @@ class AuthTokenResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
     role = serializers.CharField()
+    user_id = serializers.IntegerField()
+    provider_id = serializers.IntegerField(allow_null=True)
+    person_id = serializers.IntegerField(allow_null=True)
 
 
 class AdminLoginSerializer(serializers.Serializer):
