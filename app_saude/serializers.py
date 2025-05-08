@@ -248,9 +248,17 @@ class PersonCreateSerializer(BaseCreateSerializer):
         exclude = ["person_id", "created_at", "updated_at", "location", "user"]
 
     def create(self, validated_data):
-        validated_data["user"] = self.context["request"].user
-        return super().create(validated_data)
+        user = self.context.get("request").user
+        if not user:
+            print("Error: User not found in the request context.")
+            raise serializers.ValidationError("User not found in the request context.")
+        
+        if Person.objects.filter(user=user).exists():
+            print(f"Error: Provider with user {user} already exists.")
+            raise serializers.ValidationError("A provider with this user already exists.")
 
+        validated_data["user"] = user   
+        return super().create(validated_data)
 
 class PersonUpdateSerializer(BaseUpdateSerializer):
     class Meta:
@@ -350,7 +358,17 @@ class FullPersonCreateSerializer(serializers.Serializer):
         location = Location.objects.create(**location_data)
 
         # Cria Person com link para Location
-        person = Person.objects.create(location=location, **person_data)
+        person_data["gender_concept"] = person_data.get("gender_concept").concept_id
+        person_data["ethnicity_concept"] = person_data.get("ethnicity_concept").concept_id
+        person_data["race_concept"] = person_data.get("race_concept").concept_id
+
+        # Adiciona a instância de Location ao person_data
+        person_data["location"] = location
+
+        # Valida e cria o Person
+        person_serializer = PersonCreateSerializer(data=person_data, context=self.context)
+        person_serializer.is_valid(raise_exception=True)
+        person = person_serializer.save()
 
         # Cria Observations e DrugExposures
         for obs in observations_data:
