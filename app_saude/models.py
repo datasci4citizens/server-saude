@@ -156,10 +156,11 @@ class Location(TimestampedModel):
 class Person(MyAbstractUser):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE, 
-        blank=True, 
+        on_delete=models.CASCADE,
+        blank=True,
         null=True,
-        db_comment="Reference to the user",)
+        db_comment="Reference to the user",
+    )
     person_id = models.AutoField(primary_key=True, db_comment="Primary key of Person")
     year_of_birth = models.IntegerField(blank=True, null=True, db_comment="Year of birth")
     gender_concept = models.ForeignKey(

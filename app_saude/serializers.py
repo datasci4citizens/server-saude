@@ -252,13 +252,14 @@ class PersonCreateSerializer(BaseCreateSerializer):
         if not user:
             print("Error: User not found in the request context.")
             raise serializers.ValidationError("User not found in the request context.")
-        
+
         if Person.objects.filter(user=user).exists():
             print(f"Error: Provider with user {user} already exists.")
             raise serializers.ValidationError("A provider with this user already exists.")
 
-        validated_data["user"] = user   
+        validated_data["user"] = user
         return super().create(validated_data)
+
 
 class PersonUpdateSerializer(BaseUpdateSerializer):
     class Meta:
@@ -283,14 +284,15 @@ class ProviderCreateSerializer(BaseCreateSerializer):
         if not user:
             print("Error: User not found in the request context.")
             raise serializers.ValidationError("User not found in the request context.")
-        
+
         if Provider.objects.filter(user=user).exists():
             print(f"Error: Provider with user {user} already exists.")
             raise serializers.ValidationError("A provider with this user already exists.")
-        
-        validated_data["user"] = user   
+
+        validated_data["user"] = user
         return super().create(validated_data)
-    
+
+
 class ProviderUpdateSerializer(BaseUpdateSerializer):
     class Meta:
         model = Provider
@@ -410,9 +412,8 @@ class FullProviderCreateSerializer(serializers.Serializer):
         provider_serializer.is_valid(raise_exception=True)
         provider = provider_serializer.save()
 
-        return {
-            "provider": provider
-        }
-    
+        return {"provider": provider}
+
+
 class FullProviderRetrieveSerializer(serializers.Serializer):
     provider = ProviderRetrieveSerializer()

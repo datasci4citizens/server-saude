@@ -403,19 +403,20 @@ class FullPersonViewSet(FlexibleViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 @extend_schema(
     tags=["FullProvider"],
     request=FullProviderCreateSerializer,
     responses={201: FullProviderRetrieveSerializer},
 )
 class FullProviderViewSet(FlexibleViewSet):
-    http_method_names = ["post"]  
-    queryset = Provider.objects.none() 
+    http_method_names = ["post"]
+    queryset = Provider.objects.none()
     permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data, context={"request": request})
-        
+
         # Valida os dados
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
