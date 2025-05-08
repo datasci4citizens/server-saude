@@ -1,165 +1,862 @@
-
-Project "SAUDE-DB" {
-  database_type: "PostgreSQL"
+Project "SAÚDE" {
+  database_type: 'PostgreSQL'
+  Note: '''None
+  Last Updated At 05-08-2025 11:49PM UTC'''
 }
 
-Table vocabulary {
-  vocabulary_id varchar(20) [pk, note: 'Primary key of Vocabulary']
-  vocabulary_name varchar(255) [note: 'Name of the vocabulary']
-  vocabulary_concept int [ref: > concept.concept_id, note: 'Reference to Concept representing the vocabulary']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
+enum admin.positive_small_integer_logentry_action_flag {
+  "1" [note: '''Addition''']
+  "2" [note: '''Change''']
+  "3" [note: '''Deletion''']
 }
 
-Table concept_class {
-  concept_class_id varchar(20) [pk, note: 'Primary key of Concept Class']
-  concept_class_name varchar(255) [note: 'Name of the Concept Class']
-  concept_class_concept int [ref: > concept.concept_id, note: 'Reference to Concept representing the Concept Class']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+Table account.EmailAddress {
+  Note: '''
+EmailAddress(id, user, email, verified, primary)
 
-Table concept {
-  concept_id serial [pk, note: 'Primary key of Concept']
-  concept_name varchar(255) [note: 'Name of the concept']
-  domain int [ref: > domain.domain_id, note: 'Reference to Domain']
-  concept_class_id varchar(20) [note: 'Class of the concept']
-  concept_code varchar(50) [note: 'Code of the concept in source vocabulary']
-  valid_start_date date [note: 'Start date of concept validity']
-  valide_end_date date [note: 'End date of concept validity']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+*DB table: account_emailaddress*'''
 
-Table concept_synonym {
-  concept int [ref: > concept.concept_id, note: 'Reference to Concept']
-  concept_synonym_name varchar(1000) [note: 'Synonym name']
-  language_concept int [ref: > concept.concept_id, note: 'Language Concept of the synonym']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
+  id auto [pk, unique, not null]
+  user_id foreign_key [not null]
+  email email [not null]
+  verified boolean [default:`False`, not null]
+  primary boolean [default:`False`, not null]
+
   indexes {
-    (concept) [name: 'idx_concept_synonym_id']
+    (email) [name: 'account_emailaddress_email_03be32b2', type: btree]
+    (id) [pk, unique, name: 'account_emailaddress_pkey', type: btree]
+    (user_id) [name: 'account_emailaddress_user_id_2c513194', type: btree]
+    (user_id,email) [unique, name: 'account_emailaddress_user_id_email_987c8728_uniq', type: btree]
+  }
+}
+ref: account.EmailAddress.user_id > auth.User.id
+
+
+Table account.EmailConfirmation {
+  Note: '''
+EmailConfirmation(id, email_address, created, sent, key)
+
+*DB table: account_emailconfirmation*'''
+
+  id auto [pk, unique, not null]
+  email_address_id foreign_key [not null]
+  created date_time [default:`django.utils.timezone.now()`, not null]
+  sent date_time [null]
+  key char [unique, not null]
+
+  indexes {
+    (email_address_id) [name: 'account_emailconfirmation_email_address_id_5b7f8c58', type: btree]
+    (key) [unique, name: 'account_emailconfirmation_key_key', type: btree]
+    (id) [pk, unique, name: 'account_emailconfirmation_pkey', type: btree]
+  }
+}
+ref: account.EmailConfirmation.email_address_id > account.EmailAddress.id
+
+
+Table admin.LogEntry {
+  Note: '''
+LogEntry(id, action_time, user, content_type, object_id, object_repr, action_flag, change_message)
+
+*DB table: django_admin_log*'''
+
+  id auto [pk, unique, not null]
+  action_time date_time [default:`django.utils.timezone.now()`, not null]
+  user_id foreign_key [not null]
+  content_type_id foreign_key [null]
+  object_id text [null]
+  object_repr char [not null]
+  action_flag admin.positive_small_integer_logentry_action_flag [not null]
+  change_message text [not null]
+
+  indexes {
+    (content_type_id) [name: 'django_admin_log_content_type_id_c4bce8eb', type: btree]
+    (id) [pk, unique, name: 'django_admin_log_pkey', type: btree]
+    (user_id) [name: 'django_admin_log_user_id_c564eba6', type: btree]
+  }
+}
+ref: admin.LogEntry.user_id > auth.User.id
+ref: admin.LogEntry.content_type_id > contenttypes.ContentType.id
+
+
+Table app_saude.CareSite {
+  Note: '''
+CareSite(created_at, updated_at, care_site_id, care_site_name, location, place_of_service_concept)
+
+*DB comment: Facilities where care is provided.*
+
+*DB table: care_site*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  care_site_id auto [note: '''Primary key of Care Site''', pk, unique, not null]
+  care_site_name char [note: '''Name of the Care Site''', null]
+  location_id foreign_key [note: '''Location of Care Site''', null]
+  place_of_service_concept_id foreign_key [note: '''Place of Service Concept''', null]
+
+  indexes {
+    (location_id) [name: 'care_site_location_id_f9bdaca1', type: btree]
+    (care_site_id) [pk, unique, name: 'care_site_pkey', type: btree]
+    (place_of_service_concept_id) [name: 'care_site_place_of_service_concept_id_79fea579', type: btree]
+  }
+}
+ref: app_saude.CareSite.location_id > app_saude.Location.location_id
+ref: app_saude.CareSite.place_of_service_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.Concept {
+  Note: '''
+Concept(created_at, updated_at, concept_id, concept_name, domain, concept_class, concept_code, vocabulary, valid_start_date, valide_end_date)
+
+*DB comment: OMOP-compliant table for standardized concepts.*
+
+*DB table: concept*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  concept_id auto [note: '''Primary key of Concept''', pk, unique, not null]
+  concept_name char [note: '''Name of the concept''', null]
+  domain_id foreign_key [note: '''Reference to Domain''', null]
+  concept_class_id foreign_key [note: '''Reference to ConceptClass.concept_class_id''', null]
+  concept_code char [note: '''Code of the concept in source vocabulary''', null]
+  vocabulary_id foreign_key [note: '''Reference to Vocabulary''', null]
+  valid_start_date date [note: '''Start date of concept validity''', null]
+  valide_end_date date [note: '''End date of concept validity''', null]
+
+  indexes {
+    (concept_class_id) [name: 'concept_concept_class_id_c78272c0', type: btree]
+    (domain_id) [name: 'concept_domain_id_9d6a7fd2', type: btree]
+    (concept_id) [pk, unique, name: 'concept_pkey', type: btree]
+    (vocabulary_id) [name: 'concept_vocabulary_id_35eba385', type: btree]
+  }
+}
+ref: app_saude.Concept.domain_id > app_saude.Domain.domain_id
+ref: app_saude.Concept.concept_class_id > app_saude.ConceptClass.concept_class_id
+ref: app_saude.Concept.vocabulary_id > app_saude.Vocabulary.vocabulary_id
+
+
+Table app_saude.ConceptClass {
+  Note: '''
+ConceptClass(created_at, updated_at, concept_class_id, concept_class_name, concept_class_concept)
+
+*DB comment: Concept class categorization in OMOP.*
+
+*DB table: concept_class*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  concept_class_id char [note: '''Primary key of Concept Class''', pk, unique, not null]
+  concept_class_name char [note: '''Name of the Concept Class''', null]
+  concept_class_concept_id foreign_key [note: '''Reference to Concept representing the Concept Class''', null]
+
+  indexes {
+    (concept_class_concept_id) [name: 'concept_class_concept_class_concept_id_e0715a25', type: btree]
+    (concept_class_id) [pk, unique, name: 'concept_class_pkey', type: btree]
+  }
+}
+ref: app_saude.ConceptClass.concept_class_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.ConceptSynonym {
+  Note: '''
+ConceptSynonym(id, created_at, updated_at, concept, concept_synonym_name, language_concept)
+
+*DB comment: Synonyms for concepts in OMOP.*
+
+*DB table: concept_synonym*'''
+
+  id big_auto [pk, unique, not null]
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  concept_id foreign_key [note: '''Reference to Concept''', not null]
+  concept_synonym_name char [note: '''Synonym name''', null]
+  language_concept_id foreign_key [note: '''Language Concept of the synonym''', null]
+
+  indexes {
+    (concept_id) [name: 'concept_synonym_concept_id_7f3ed8fa', type: btree]
+    (language_concept_id) [name: 'concept_synonym_language_concept_id_1e33a682', type: btree]
+    (id) [pk, unique, name: 'concept_synonym_pkey', type: btree]
+    (concept_id) [name: 'idx_concept_synonym_id', type: btree]
+  }
+}
+ref: app_saude.ConceptSynonym.concept_id > app_saude.Concept.concept_id
+ref: app_saude.ConceptSynonym.language_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.Domain {
+  Note: '''
+Domain(created_at, updated_at, domain_id, domain_name, domain_concept)
+
+*DB comment: Domain definitions grouping concepts.*
+
+*DB table: domain*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  domain_id char [note: '''Primary key of Domain Class''', pk, unique, not null]
+  domain_name char [note: '''Name of the domain''', null]
+  domain_concept_id foreign_key [note: '''Reference to Concept representing the domain''', null]
+
+  indexes {
+    (domain_concept_id) [name: 'domain_domain_concept_id_7f6ff90b', type: btree]
+    (domain_id) [pk, unique, name: 'domain_pkey', type: btree]
+  }
+}
+ref: app_saude.Domain.domain_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.DrugExposure {
+  Note: '''
+DrugExposure(created_at, updated_at, drug_exposure_id, person, drug_concept, drug_type_concept, stop_reason, quantity, sig, recurrence_rule)
+
+*DB comment: Records of drug prescriptions or administration.*
+
+*DB table: drug_exposure*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  drug_exposure_id auto [note: '''Primary key of Drug Exposure''', pk, unique, not null]
+  person_id foreign_key [note: '''Patient receiving the drug''', null]
+  drug_concept_id foreign_key [note: '''Drug Concept''', null]
+  drug_type_concept_id foreign_key [note: '''Drug Type Concept''', null]
+  stop_reason char [note: '''Reason for stopping medication''', null]
+  quantity integer [note: '''Quantity administered''', null]
+  sig text [note: '''Free-text dosage instructions''', null]
+  recurrence_rule_id foreign_key [null]
+
+  indexes {
+    (drug_concept_id) [name: 'drug_exposure_drug_concept_id_a1c6a977', type: btree]
+    (drug_type_concept_id) [name: 'drug_exposure_drug_type_concept_id_41fc136f', type: btree]
+    (person_id) [name: 'drug_exposure_person_id_7eaa4964', type: btree]
+    (drug_exposure_id) [pk, unique, name: 'drug_exposure_pkey', type: btree]
+    (recurrence_rule_id) [name: 'drug_exposure_recurrence_rule_id_82b2f5f0', type: btree]
+  }
+}
+ref: app_saude.DrugExposure.person_id > app_saude.Person.person_id
+ref: app_saude.DrugExposure.drug_concept_id > app_saude.Concept.concept_id
+ref: app_saude.DrugExposure.drug_type_concept_id > app_saude.Concept.concept_id
+ref: app_saude.DrugExposure.recurrence_rule_id > app_saude.RecurrenceRule.recurrence_rule_id
+
+
+Table app_saude.FactRelationship {
+  Note: '''
+FactRelationship(id, created_at, updated_at, domain_concept_1, fact_id_1, domain_concept_2, fact_id_2, relationship_concept)
+
+*DB comment: Relates different entities (facts) within OMOP.*
+
+*DB table: fact_relationship*'''
+
+  id big_auto [pk, unique, not null]
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  domain_concept_1_id foreign_key [note: '''Domain Concept of first fact''', not null]
+  fact_id_1 integer [note: '''ID of first fact''', not null]
+  domain_concept_2_id foreign_key [note: '''Domain Concept of second fact''', not null]
+  fact_id_2 integer [note: '''ID of second fact''', not null]
+  relationship_concept_id foreign_key [note: '''Type of relationship Concept''', not null]
+
+  indexes {
+    (domain_concept_1_id) [name: 'fact_relationship_domain_concept_1_id_b7dd7d6c', type: btree]
+    (domain_concept_2_id) [name: 'fact_relationship_domain_concept_2_id_9844a110', type: btree]
+    (fact_id_1,fact_id_2,relationship_concept_id) [unique, name: 'fact_relationship_fact_id_1_fact_id_2_rela_cac403ce_uniq', type: btree]
+    (id) [pk, unique, name: 'fact_relationship_pkey', type: btree]
+    (relationship_concept_id) [name: 'fact_relationship_relationship_concept_id_a10f74c9', type: btree]
+  }
+}
+ref: app_saude.FactRelationship.domain_concept_1_id > app_saude.Concept.concept_id
+ref: app_saude.FactRelationship.domain_concept_2_id > app_saude.Concept.concept_id
+ref: app_saude.FactRelationship.relationship_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.Location {
+  Note: '''
+Location(created_at, updated_at, location_id, address_1, address_2, city, state, zip, country_concept)
+
+*DB comment: Stores geographical locations (address information).*
+
+*DB table: location*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  location_id auto [note: '''Primary key of Location''', pk, unique, not null]
+  address_1 char [note: '''Street and number''', null]
+  address_2 char [note: '''Complement''', null]
+  city char [note: '''City''', null]
+  state char [note: '''State''', null]
+  zip char [note: '''Postal code''', null]
+  country_concept_id foreign_key [note: '''Country Concept''', null]
+
+  indexes {
+    (country_concept_id) [name: 'location_country_concept_id_1359e482', type: btree]
+    (location_id) [pk, unique, name: 'location_pkey', type: btree]
+  }
+}
+ref: app_saude.Location.country_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.Measurement {
+  Note: '''
+Measurement(created_at, updated_at, measurement_id, person, measurement_concept, measurement_date, measurement_type_concept)
+
+*DB comment: Measurements taken on persons (e.g., height, weight, labs).*
+
+*DB table: measurement*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  measurement_id auto [note: '''Primary key of Measurement''', pk, unique, not null]
+  person_id foreign_key [note: '''Patient linked to the measurement''', null]
+  measurement_concept_id foreign_key [note: '''Measurement Concept''', null]
+  measurement_date date_time [note: '''Date and time of measurement''', null]
+  measurement_type_concept_id foreign_key [note: '''Measurement Type Concept''', null]
+
+  indexes {
+    (measurement_concept_id) [name: 'measurement_measurement_concept_id_61eddf57', type: btree]
+    (measurement_type_concept_id) [name: 'measurement_measurement_type_concept_id_adae2488', type: btree]
+    (person_id) [name: 'measurement_person_id_3d1723bd', type: btree]
+    (measurement_id) [pk, unique, name: 'measurement_pkey', type: btree]
+  }
+}
+ref: app_saude.Measurement.person_id > app_saude.Person.person_id
+ref: app_saude.Measurement.measurement_concept_id > app_saude.Concept.concept_id
+ref: app_saude.Measurement.measurement_type_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.Observation {
+  Note: '''
+Observation(created_at, updated_at, observation_id, person, provider, observation_concept, value_as_concept, value_as_string, observation_date, observation_type_concept, shared_with_provider)
+
+*DB comment: Captured patient-reported observations.*
+
+*DB table: observation*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  observation_id auto [note: '''Primary key of Observation''', pk, unique, not null]
+  person_id foreign_key [note: '''Patient linked to the observation''', null]
+  provider_id foreign_key [note: '''Provider attending the visit''', null]
+  observation_concept_id foreign_key [note: '''Observation Concept''', null]
+  value_as_concept_id foreign_key [note: '''Value as Concept''', null]
+  value_as_string char [note: '''Free-text value''', null]
+  observation_date date_time [note: '''Date and time of observation''', null]
+  observation_type_concept_id foreign_key [note: '''Observation Type Concept''', null]
+  shared_with_provider boolean [note: '''Visibility to assigned provider''', null]
+
+  indexes {
+    (observation_concept_id) [name: 'observation_observation_concept_id_437360d0', type: btree]
+    (observation_type_concept_id) [name: 'observation_observation_type_concept_id_5d44170d', type: btree]
+    (person_id) [name: 'observation_person_id_5df71b3d', type: btree]
+    (observation_id) [pk, unique, name: 'observation_pkey', type: btree]
+    (provider_id) [name: 'observation_provider_id_55f1f118', type: btree]
+    (value_as_concept_id) [name: 'observation_value_as_concept_id_5abacf2c', type: btree]
+  }
+}
+ref: app_saude.Observation.person_id > app_saude.Person.person_id
+ref: app_saude.Observation.provider_id > app_saude.Provider.provider_id
+ref: app_saude.Observation.observation_concept_id > app_saude.Concept.concept_id
+ref: app_saude.Observation.value_as_concept_id > app_saude.Concept.concept_id
+ref: app_saude.Observation.observation_type_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.Person {
+  Note: '''
+Person(created_at, updated_at, user, social_name, birth_datetime, person_id, year_of_birth, gender_concept, ethnicity_concept, race_concept, location)
+
+*DB comment: Represents an individual user who is a patient.*
+
+*DB table: person*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  user_id foreign_key [not null]
+  social_name char [null]
+  birth_datetime date_time [note: '''Date and time of birth''', null]
+  person_id auto [note: '''Primary key of Person''', pk, unique, not null]
+  year_of_birth integer [note: '''Year of birth''', null]
+  gender_concept_id foreign_key [note: '''Gender Concept''', null]
+  ethnicity_concept_id foreign_key [note: '''Ethnicity Concept''', null]
+  race_concept_id foreign_key [note: '''Race Concept''', null]
+  location_id foreign_key [note: '''Location of residence''', null]
+
+  indexes {
+    (ethnicity_concept_id) [name: 'person_ethnicity_concept_id_ea633676', type: btree]
+    (gender_concept_id) [name: 'person_gender_concept_id_7ef3c8ca', type: btree]
+    (location_id) [name: 'person_location_id_2c5b92ef', type: btree]
+    (person_id) [pk, unique, name: 'person_pkey', type: btree]
+    (race_concept_id) [name: 'person_race_concept_id_2c5e2e4a', type: btree]
+    (user_id) [name: 'person_user_id_1e34abe8', type: btree]
+  }
+}
+ref: app_saude.Person.user_id > auth.User.id
+ref: app_saude.Person.gender_concept_id > app_saude.Concept.concept_id
+ref: app_saude.Person.ethnicity_concept_id > app_saude.Concept.concept_id
+ref: app_saude.Person.race_concept_id > app_saude.Concept.concept_id
+ref: app_saude.Person.location_id > app_saude.Location.location_id
+
+
+Table app_saude.Provider {
+  Note: '''
+Provider(created_at, updated_at, user, social_name, birth_datetime, provider_id, professional_registration, specialty_concept, care_site)
+
+*DB comment: Healthcare providers in OMOP.*
+
+*DB table: provider*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  user_id foreign_key [not null]
+  social_name char [null]
+  birth_datetime date_time [note: '''Date and time of birth''', null]
+  provider_id auto [note: '''Primary key of Provider''', pk, unique, not null]
+  professional_registration integer [note: '''Professional registration number''', null]
+  specialty_concept_id foreign_key [note: '''Specialty Concept''', null]
+  care_site_id foreign_key [note: '''Reference to Care Site''', null]
+
+  indexes {
+    (care_site_id) [name: 'provider_care_site_id_9ff56d28', type: btree]
+    (provider_id) [pk, unique, name: 'provider_pkey', type: btree]
+    (specialty_concept_id) [name: 'provider_specialty_concept_id_3e1d2784', type: btree]
+    (user_id) [name: 'provider_user_id_aefdb1f6', type: btree]
+  }
+}
+ref: app_saude.Provider.user_id > auth.User.id
+ref: app_saude.Provider.specialty_concept_id > app_saude.Concept.concept_id
+ref: app_saude.Provider.care_site_id > app_saude.CareSite.care_site_id
+
+
+Table app_saude.RecurrenceRule {
+  Note: '''
+RecurrenceRule(recurrence_rule_id, frequency_concept, interval, weekday_binary, valid_start_date, valid_end_date)
+
+*DB table: recurrence_rule*'''
+
+  recurrence_rule_id auto [pk, unique, not null]
+  frequency_concept_id foreign_key [not null]
+  interval positive_integer [null]
+  weekday_binary char [note: '''String binária com 7 posições: SEG=0, TER=1, ..., SAB=6''', null]
+  valid_start_date date [not null]
+  valid_end_date date [default:`"2099-12-31"`, not null]
+
+  indexes {
+    (frequency_concept_id) [name: 'recurrence_rule_frequency_concept_id_a27950d3', type: btree]
+    (recurrence_rule_id) [pk, unique, name: 'recurrence_rule_pkey', type: btree]
+  }
+}
+ref: app_saude.RecurrenceRule.frequency_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.VisitOccurrence {
+  Note: '''
+VisitOccurrence(created_at, updated_at, visit_occurrence_id, person, provider, care_site, visit_concept, visit_start_date, visit_end_date, visit_type_concept, observations, recurrence_rule, recurrence_source_visit)
+
+*DB comment: Interactions between patients and healthcare providers.*
+
+*DB table: visit_occurrence*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  visit_occurrence_id auto [note: '''Primary key of Visit Occurrence''', pk, unique, not null]
+  person_id foreign_key [note: '''Patient involved in the visit''', null]
+  provider_id foreign_key [note: '''Provider attending the visit''', null]
+  care_site_id foreign_key [note: '''Care Site location''', null]
+  visit_concept_id foreign_key [note: '''Visit Concept''', null]
+  visit_start_date date_time [note: '''Visit start date and time''', null]
+  visit_end_date date_time [note: '''Visit end date and time''', null]
+  visit_type_concept_id foreign_key [note: '''Visit Type Concept''', null]
+  observations text [note: '''Summary notes of the visit''', null]
+  recurrence_rule_id foreign_key [null]
+  recurrence_source_visit_id foreign_key [null]
+
+  indexes {
+    (care_site_id) [name: 'visit_occurrence_care_site_id_997e130a', type: btree]
+    (person_id) [name: 'visit_occurrence_person_id_6e925383', type: btree]
+    (visit_occurrence_id) [pk, unique, name: 'visit_occurrence_pkey', type: btree]
+    (provider_id) [name: 'visit_occurrence_provider_id_1f33d66d', type: btree]
+    (recurrence_rule_id) [name: 'visit_occurrence_recurrence_rule_id_f04bcc28', type: btree]
+    (recurrence_source_visit_id) [name: 'visit_occurrence_recurrence_source_visit_id_6992303d', type: btree]
+    (visit_concept_id) [name: 'visit_occurrence_visit_concept_id_ff96c105', type: btree]
+    (visit_type_concept_id) [name: 'visit_occurrence_visit_type_concept_id_849c3905', type: btree]
+  }
+}
+ref: app_saude.VisitOccurrence.person_id > app_saude.Person.person_id
+ref: app_saude.VisitOccurrence.provider_id > app_saude.Provider.provider_id
+ref: app_saude.VisitOccurrence.care_site_id > app_saude.CareSite.care_site_id
+ref: app_saude.VisitOccurrence.visit_concept_id > app_saude.Concept.concept_id
+ref: app_saude.VisitOccurrence.visit_type_concept_id > app_saude.Concept.concept_id
+ref: app_saude.VisitOccurrence.recurrence_rule_id > app_saude.RecurrenceRule.recurrence_rule_id
+ref: app_saude.VisitOccurrence.recurrence_source_visit_id > app_saude.VisitOccurrence.visit_occurrence_id
+
+
+Table app_saude.Vocabulary {
+  Note: '''
+Vocabulary(created_at, updated_at, vocabulary_id, vocabulary_name, vocabulary_concept)
+
+*DB comment: Vocabulary definitions in OMOP.*
+
+*DB table: vocabulary*'''
+
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  vocabulary_id char [note: '''Primary key of Vocabulary''', pk, unique, not null]
+  vocabulary_name char [note: '''Name of the vocabulary''', null]
+  vocabulary_concept_id foreign_key [note: '''Reference to Concept representing the vocabulary''', null]
+
+  indexes {
+    (vocabulary_id) [pk, unique, name: 'vocabulary_pkey', type: btree]
+    (vocabulary_concept_id) [name: 'vocabulary_vocabulary_concept_id_900af135', type: btree]
+  }
+}
+ref: app_saude.Vocabulary.vocabulary_concept_id > app_saude.Concept.concept_id
+
+
+Table auth.Group {
+  Note: '''
+Groups are a generic way of categorizing users to apply permissions, or
+some other label, to those users. A user can belong to any number of
+groups.
+
+A user in a group automatically has all the permissions granted to that
+group. For example, if the group 'Site editors' has the permission
+can_edit_home_page, any user in that group will have that permission.
+
+Beyond permissions, groups are a convenient way to categorize users to
+apply some label, or extended functionality, to them. For example, you
+could create a group 'Special users', and you could write code that would
+do special things to those users -- such as giving them access to a
+members-only portion of your site, or sending them members-only email
+messages.
+
+
+*DB table: auth_group*'''
+
+  id auto [pk, unique, not null]
+  name char [unique, not null]
+
+  indexes {
+    (name) [unique, name: 'auth_group_name_key', type: btree]
+    (id) [pk, unique, name: 'auth_group_pkey', type: btree]
   }
 }
 
-Table domain {
-  domain_id serial [pk, note: 'Primary key of Domain']
-  domain_name varchar(255) [note: 'Name of the domain']
-  domain_concept int [ref: > concept.concept_id, note: 'Reference to Concept representing the domain']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
 
-Table location {
-  location_id serial [pk, note: 'Primary key of Location']
-  address_1 varchar(50) [note: 'Street and number']
-  address_2 varchar(50) [note: 'Complement']
-  city varchar(255) [note: 'City']
-  state varchar(255) [note: 'State']
-  zip varchar(20) [note: 'Postal code']
-  country_concept int [ref: > concept.concept_id, note: 'Country Concept']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+Table auth.Permission {
+  Note: '''
+The permissions system provides a way to assign permissions to specific
+users and groups of users.
 
-Table person {
-  person_id serial [pk, note: 'Primary key of Person']
-  user int [note: 'Reference to Django auth_user']
-  social_name varchar(255)
-  birth_datetime timestamp [note: 'Date and time of birth']
-  year_of_birth int [note: 'Year of birth']
-  gender_concept int [ref: > concept.concept_id, note: 'Gender Concept']
-  ethnicity_concept int [ref: > concept.concept_id, note: 'Ethnicity Concept']
-  race_concept int [ref: > concept.concept_id, note: 'Race Concept']
-  location int [ref: > location.location_id, note: 'Location of residence']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+The permission system is used by the Django admin site, but may also be
+useful in your own code. The Django admin site uses permissions as follows:
 
-Table provider {
-  provider_id serial [pk, note: 'Primary key of Provider']
-  user int [note: 'Reference to Django auth_user']
-  social_name varchar(255)
-  birth_datetime timestamp [note: 'Date and time of birth']
-  professional_registration int [note: 'Professional registration number']
-  specialty_concept int [ref: > concept.concept_id, note: 'Specialty Concept']
-  care_site int [ref: > care_site.care_site_id, note: 'Reference to Care Site']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+- The "add" permission limits the user's ability to view the "add" form
+and add an object.
+- The "change" permission limits a user's ability to view the change
+list, view the "change" form and change an object.
+- The "delete" permission limits the ability to delete an object.
+- The "view" permission limits the ability to view an object.
 
-Table care_site {
-  care_site_id serial [pk, note: 'Primary key of Care Site']
-  care_site_name varchar(255) [note: 'Name of the Care Site']
-  location int [ref: > location.location_id, note: 'Location of Care Site']
-  place_of_service_concept int [ref: > concept.concept_id, note: 'Place of Service Concept']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+Permissions are set globally per type of object, not per specific object
+instance. It is possible to say "Mary may change news stories," but it's
+not currently possible to say "Mary may change news stories, but only the
+ones she created herself" or "Mary may only change news stories that have a
+certain status or publication date."
 
-Table drug_exposure {
-  drug_exposure_id serial [pk, note: 'Primary key of Drug Exposure']
-  person int [ref: > person.person_id, note: 'Patient receiving the drug']
-  drug_concept int [ref: > concept.concept_id, note: 'Drug Concept']
-  drug_type_concept int [ref: > concept.concept_id, note: 'Drug Type Concept']
-  drug_exposure_start_date date [note: 'Start date of drug exposure']
-  drug_exposure_end_date date [note: 'End date of drug exposure']
-  stop_reason varchar(255) [note: 'Reason for stopping medication']
-  quantity int [note: 'Quantity administered']
-  interval_hours int [note: 'Interval between doses in hours']
-  dose_times text [note: 'Scheduled dose times']
-  sig text [note: 'Free-text dosage instructions']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+The permissions listed above are automatically created for each model.
 
-Table observation {
-  observation_id serial [pk, note: 'Primary key of Observation']
-  person int [ref: > person.person_id, note: 'Patient linked to the observation']
-  provider int [ref: > provider.provider_id, note: 'Provider attending the visit']
-  observation_concept int [ref: > concept.concept_id, note: 'Observation Concept']
-  value_as_concept int [ref: > concept.concept_id, note: 'Value as Concept']
-  value_as_string varchar(60) [note: 'Free-text value']
-  observation_date timestamp [note: 'Date and time of observation']
-  observation_type_concept int [ref: > concept.concept_id, note: 'Observation Type Concept']
-  shared_with_provider boolean [note: 'Visibility to assigned provider']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
 
-Table visit_occurrence {
-  visit_occurrence_id serial [pk, note: 'Primary key of Visit Occurrence']
-  person int [ref: > person.person_id, note: 'Patient involved in the visit']
-  provider int [ref: > provider.provider_id, note: 'Provider attending the visit']
-  care_site int [ref: > care_site.care_site_id, note: 'Care Site location']
-  visit_concept int [ref: > concept.concept_id, note: 'Visit Concept']
-  visit_start_date timestamp [note: 'Visit start date and time']
-  visit_end_date timestamp [note: 'Visit end date and time']
-  visit_type_concept int [ref: > concept.concept_id, note: 'Visit Type Concept']
-  observations text [note: 'Summary notes of the visit']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+*DB table: auth_permission*'''
 
-Table measurement {
-  measurement_id serial [pk, note: 'Primary key of Measurement']
-  person int [ref: > person.person_id, note: 'Patient linked to the measurement']
-  measurement_concept int [ref: > concept.concept_id, note: 'Measurement Concept']
-  measurement_date timestamp [note: 'Date and time of measurement']
-  measurement_type_concept int [ref: > concept.concept_id, note: 'Measurement Type Concept']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
-}
+  id auto [pk, unique, not null]
+  name char [not null]
+  content_type_id foreign_key [not null]
+  codename char [not null]
 
-Table fact_relationship {
-  domain_concept_id_1 int [ref: > concept.concept_id, note: 'Domain Concept of first fact']
-  fact_id_1 int [note: 'ID of first fact']
-  domain_concept_id_2 int [ref: > concept.concept_id, note: 'Domain Concept of second fact']
-  fact_id_2 int [note: 'ID of second fact']
-  relationship_concept int [ref: > concept.concept_id, note: 'Type of relationship Concept']
-  created_at timestamp [note: 'Creation timestamp']
-  updated_at timestamp [note: 'Update timestamp']
   indexes {
-    (fact_id_1, fact_id_2, relationship_concept) [unique]
+    (content_type_id) [name: 'auth_permission_content_type_id_2f476e4b', type: btree]
+    (content_type_id,codename) [unique, name: 'auth_permission_content_type_id_codename_01ab375a_uniq', type: btree]
+    (id) [pk, unique, name: 'auth_permission_pkey', type: btree]
   }
 }
+ref: auth.Permission.content_type_id > contenttypes.ContentType.id
+
+
+Table auth.User {
+  Note: '''
+Users within the Django authentication system are represented by this
+model.
+
+Username and password are required. Other fields are optional.
+
+
+*DB table: auth_user*'''
+
+  id auto [pk, unique, not null]
+  password char [not null]
+  last_login date_time [null]
+  is_superuser boolean [note: '''Designates that this user has all permissions without explicitly assigning them.''', default:`False`, not null]
+  username char [note: '''Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.''', unique, not null]
+  first_name char [not null]
+  last_name char [not null]
+  email email [not null]
+  is_staff boolean [note: '''Designates whether the user can log into this admin site.''', default:`False`, not null]
+  is_active boolean [note: '''Designates whether this user should be treated as active. Unselect this instead of deleting accounts.''', default:`True`, not null]
+  date_joined date_time [default:`django.utils.timezone.now()`, not null]
+
+  indexes {
+    (id) [pk, unique, name: 'auth_user_pkey', type: btree]
+    (username) [unique, name: 'auth_user_username_key', type: btree]
+  }
+}
+
+
+Table auth.group_permissions {
+  Note: '''
+This is a Many-To-Many linking table autogenerated by Django.
+
+*DB table: auth_group_permissions*'''
+
+  id auto [pk, not null]
+  permission_id auto
+  group_id auto
+
+  indexes {
+    (group_id) [name: 'auth_group_permissions_group_id_b120cbf9', type: btree]
+    (group_id,permission_id) [unique, name: 'auth_group_permissions_group_id_permission_id_0cd325b0_uniq', type: btree]
+    (permission_id) [name: 'auth_group_permissions_permission_id_84c5c92e', type: btree]
+    (id) [pk, unique, name: 'auth_group_permissions_pkey', type: btree]
+  }
+}
+ref: auth.Group.id > auth.group_permissions.group_id
+ref: auth.Permission.id > auth.group_permissions.permission_id
+
+
+Table auth.user_groups {
+  Note: '''
+This is a Many-To-Many linking table autogenerated by Django.
+
+*DB table: auth_user_groups*'''
+
+  id auto [pk, not null]
+  group_id auto
+  user_id auto
+
+  indexes {
+    (group_id) [name: 'auth_user_groups_group_id_97559544', type: btree]
+    (id) [pk, unique, name: 'auth_user_groups_pkey', type: btree]
+    (user_id) [name: 'auth_user_groups_user_id_6a12ed8b', type: btree]
+    (user_id,group_id) [unique, name: 'auth_user_groups_user_id_group_id_94350c0c_uniq', type: btree]
+  }
+}
+ref: auth.User.id > auth.user_groups.user_id
+ref: auth.Group.id > auth.user_groups.group_id
+
+
+Table auth.user_user_permissions {
+  Note: '''
+This is a Many-To-Many linking table autogenerated by Django.
+
+*DB table: auth_user_user_permissions*'''
+
+  id auto [pk, not null]
+  permission_id auto
+  user_id auto
+
+  indexes {
+    (permission_id) [name: 'auth_user_user_permissions_permission_id_1fbb5f2c', type: btree]
+    (id) [pk, unique, name: 'auth_user_user_permissions_pkey', type: btree]
+    (user_id) [name: 'auth_user_user_permissions_user_id_a95ead1b', type: btree]
+    (user_id,permission_id) [unique, name: 'auth_user_user_permissions_user_id_permission_id_14a6b632_uniq', type: btree]
+  }
+}
+ref: auth.User.id > auth.user_user_permissions.user_id
+ref: auth.Permission.id > auth.user_user_permissions.permission_id
+
+
+Table authtoken.Token {
+  Note: '''
+The default authorization token model.
+
+
+*DB table: authtoken_token*'''
+
+  key char [pk, unique, not null]
+  user_id one_to_one [unique, not null]
+  created date_time [not null]
+
+  indexes {
+    (key) [pk, unique, name: 'authtoken_token_pkey', type: btree]
+    (user_id) [unique, name: 'authtoken_token_user_id_key', type: btree]
+  }
+}
+ref: authtoken.Token.user_id - auth.User.id
+
+
+Table authtoken.TokenProxy {
+  Note: '''
+Proxy mapping pk to user pk for use in admin.
+
+
+*DB table: authtoken_token*'''
+
+  key char [pk, unique, not null]
+  user_id one_to_one [unique, not null]
+  created date_time [not null]
+
+  indexes {
+    (key) [pk, unique, name: 'authtoken_token_pkey', type: btree]
+    (user_id) [unique, name: 'authtoken_token_user_id_key', type: btree]
+  }
+}
+ref: authtoken.TokenProxy.user_id - auth.User.id
+
+
+Table contenttypes.ContentType {
+  Note: '''
+ContentType(id, app_label, model)
+
+*DB table: django_content_type*'''
+
+  id auto [pk, unique, not null]
+  app_label char [not null]
+  model char [not null]
+
+  indexes {
+    (app_label,model) [unique, name: 'django_content_type_app_label_model_76bd3d3b_uniq', type: btree]
+    (id) [pk, unique, name: 'django_content_type_pkey', type: btree]
+  }
+}
+
+
+Table sessions.Session {
+  Note: '''
+Django provides full support for anonymous sessions. The session
+framework lets you store and retrieve arbitrary data on a
+per-site-visitor basis. It stores data on the server side and
+abstracts the sending and receiving of cookies. Cookies contain a
+session ID -- not the data itself.
+
+The Django sessions framework is entirely cookie-based. It does
+not fall back to putting session IDs in URLs. This is an intentional
+design decision. Not only does that behavior make URLs ugly, it makes
+your site vulnerable to session-ID theft via the "Referer" header.
+
+For complete documentation on using Sessions in your code, consult
+the sessions documentation that is shipped with Django (also available
+on the Django web site).
+
+
+*DB table: django_session*'''
+
+  session_key char [pk, unique, not null]
+  session_data text [not null]
+  expire_date date_time [not null]
+
+  indexes {
+    (expire_date) [name: 'django_session_expire_date_a5c62663', type: btree]
+    (session_key) [pk, unique, name: 'django_session_pkey', type: btree]
+  }
+}
+
+
+Table sites.Site {
+  Note: '''
+Site(id, domain, name)
+
+*DB table: django_site*'''
+
+  id auto [pk, unique, not null]
+  domain char [unique, not null]
+  name char [not null]
+
+  indexes {
+    (domain) [unique, name: 'django_site_domain_key', type: btree]
+    (id) [pk, unique, name: 'django_site_pkey', type: btree]
+  }
+}
+
+
+Table socialaccount.SocialAccount {
+  Note: '''
+SocialAccount(id, user, provider, uid, last_login, date_joined, extra_data)
+
+*DB table: socialaccount_socialaccount*'''
+
+  id auto [pk, unique, not null]
+  user_id foreign_key [not null]
+  provider char [not null]
+  uid char [not null]
+  last_login date_time [not null]
+  date_joined date_time [not null]
+  extra_data json [default:`builtins.dict()`, not null]
+
+  indexes {
+    (id) [pk, unique, name: 'socialaccount_socialaccount_pkey', type: btree]
+    (provider,uid) [unique, name: 'socialaccount_socialaccount_provider_uid_fc810c6e_uniq', type: btree]
+    (user_id) [name: 'socialaccount_socialaccount_user_id_8146e70c', type: btree]
+  }
+}
+ref: socialaccount.SocialAccount.user_id > auth.User.id
+
+
+Table socialaccount.SocialApp {
+  Note: '''
+SocialApp(id, provider, provider_id, name, client_id, secret, key, settings)
+
+*DB table: socialaccount_socialapp*'''
+
+  id auto [pk, unique, not null]
+  provider char [not null]
+  provider_id char [not null]
+  name char [not null]
+  client_id char [note: '''App ID, or consumer key''', not null]
+  secret char [note: '''API secret, client secret, or consumer secret''', not null]
+  key char [note: '''Key''', not null]
+  settings json [default:`builtins.dict()`, not null]
+
+  indexes {
+    (id) [pk, unique, name: 'socialaccount_socialapp_pkey', type: btree]
+  }
+}
+
+
+Table socialaccount.SocialToken {
+  Note: '''
+SocialToken(id, app, account, token, token_secret, expires_at)
+
+*DB table: socialaccount_socialtoken*'''
+
+  id auto [pk, unique, not null]
+  app_id foreign_key [null]
+  account_id foreign_key [not null]
+  token text [note: '''\"oauth_token\" (OAuth1) or access token (OAuth2)''', not null]
+  token_secret text [note: '''\"oauth_token_secret\" (OAuth1) or refresh token (OAuth2)''', not null]
+  expires_at date_time [null]
+
+  indexes {
+    (account_id) [name: 'socialaccount_socialtoken_account_id_951f210e', type: btree]
+    (app_id) [name: 'socialaccount_socialtoken_app_id_636a42d7', type: btree]
+    (app_id,account_id) [unique, name: 'socialaccount_socialtoken_app_id_account_id_fca4e0ac_uniq', type: btree]
+    (id) [pk, unique, name: 'socialaccount_socialtoken_pkey', type: btree]
+  }
+}
+ref: socialaccount.SocialToken.app_id > socialaccount.SocialApp.id
+ref: socialaccount.SocialToken.account_id > socialaccount.SocialAccount.id
+
+
+Table socialaccount.socialapp_sites {
+  Note: '''
+This is a Many-To-Many linking table autogenerated by Django.
+
+*DB table: socialaccount_socialapp_sites*'''
+
+  id auto [pk, not null]
+  site_id auto
+  socialapp_id auto
+
+  indexes {
+    (socialapp_id,site_id) [unique, name: 'socialaccount_socialapp__socialapp_id_site_id_71a9a768_uniq', type: btree]
+    (id) [pk, unique, name: 'socialaccount_socialapp_sites_pkey', type: btree]
+    (site_id) [name: 'socialaccount_socialapp_sites_site_id_2579dee5', type: btree]
+    (socialapp_id) [name: 'socialaccount_socialapp_sites_socialapp_id_97fb6e7d', type: btree]
+  }
+}
+ref: socialaccount.SocialApp.id > socialaccount.socialapp_sites.socialapp_id
+ref: sites.Site.id > socialaccount.socialapp_sites.site_id

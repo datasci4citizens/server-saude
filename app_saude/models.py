@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -11,7 +12,7 @@ class TimestampedModel(models.Model):
 
 
 class MyAbstractUser(TimestampedModel):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=False, null=False)
     social_name = models.CharField(max_length=255, blank=True, null=True)
     birth_datetime = models.DateTimeField(blank=True, null=True, db_comment="Date and time of birth")
 
@@ -241,6 +242,37 @@ class CareSite(TimestampedModel):
         db_table_comment = "Facilities where care is provided."
 
 
+def validate_weekday_binary(value):
+    if len(value) != 7 or any(c not in "01" for c in value):
+        raise ValidationError("weekday_binary deve ter exatamente 7 caracteres de '0' ou '1'")
+
+
+class RecurrenceRule(models.Model):
+    recurrence_rule_id = models.AutoField(primary_key=True)
+    frequency_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.PROTECT,
+        related_name="recurrence_rules",
+        limit_choices_to={"domain_id": "Observation", "concept_class_id": "Recurrence"},
+    )
+
+    interval = models.PositiveIntegerField(null=True, blank=True)
+
+    # 7-char string: '0110010' → segunda, terça e sexta
+    weekday_binary = models.CharField(
+        null=True,
+        max_length=7,
+        validators=[validate_weekday_binary],
+        help_text="String binária com 7 posições: SEG=0, TER=1, ..., SAB=6",
+    )
+
+    valid_start_date = models.DateField(auto_now_add=True)
+    valid_end_date = models.DateField(default="2099-12-31")
+
+    class Meta:
+        db_table = "recurrence_rule"
+
+
 class DrugExposure(TimestampedModel):
     drug_exposure_id = models.AutoField(primary_key=True, db_comment="Primary key of Drug Exposure")
     person = models.ForeignKey(
@@ -266,8 +298,6 @@ class DrugExposure(TimestampedModel):
         related_name="drug_type_concept_set",
         db_comment="Drug Type Concept",
     )
-    drug_exposure_start_date = models.DateField(blank=True, null=True, db_comment="Start date of drug exposure")
-    drug_exposure_end_date = models.DateField(blank=True, null=True, db_comment="End date of drug exposure")
     stop_reason = models.CharField(
         max_length=255,
         blank=True,
@@ -275,9 +305,11 @@ class DrugExposure(TimestampedModel):
         db_comment="Reason for stopping medication",
     )
     quantity = models.IntegerField(blank=True, null=True, db_comment="Quantity administered")
-    interval_hours = models.IntegerField(blank=True, null=True, db_comment="Interval between doses in hours")
-    dose_times = models.TextField(blank=True, null=True, db_comment="Scheduled dose times")
     sig = models.TextField(blank=True, null=True, db_comment="Free-text dosage instructions")
+
+    recurrence_rule = models.ForeignKey(
+        RecurrenceRule, null=True, blank=True, on_delete=models.SET_NULL, related_name="drug_exposures"
+    )
 
     class Meta:
         db_table = "drug_exposure"
@@ -375,6 +407,12 @@ class VisitOccurrence(TimestampedModel):
         db_comment="Visit Type Concept",
     )
     observations = models.TextField(blank=True, null=True, db_comment="Summary notes of the visit")
+    recurrence_rule = models.ForeignKey(
+        RecurrenceRule, null=True, blank=True, on_delete=models.SET_NULL, related_name="visit_occurrences"
+    )
+    recurrence_source_visit = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="recurrence_instances"
+    )
 
     class Meta:
         db_table = "visit_occurrence"
@@ -414,14 +452,14 @@ class Measurement(TimestampedModel):
 
 
 class FactRelationship(TimestampedModel):
-    domain_concept_id_1 = models.ForeignKey(
+    domain_concept_1 = models.ForeignKey(
         Concept,
         related_name="factrel_domain_concept_1_set",
         on_delete=models.DO_NOTHING,
         db_comment="Domain Concept of first fact",
     )
     fact_id_1 = models.IntegerField(db_comment="ID of first fact")
-    domain_concept_id_2 = models.ForeignKey(
+    domain_concept_2 = models.ForeignKey(
         Concept,
         related_name="factrel_domain_concept_2_set",
         on_delete=models.DO_NOTHING,

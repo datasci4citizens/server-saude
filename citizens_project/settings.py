@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "drf_spectacular",
     "django_filters",
+    "django_dbml",
 ]
 
 MIDDLEWARE = [
