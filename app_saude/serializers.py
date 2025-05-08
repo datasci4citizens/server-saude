@@ -359,7 +359,7 @@ class FullPersonCreateSerializer(serializers.Serializer):
         # Cria Location
         location = Location.objects.create(**location_data)
 
-        # Cria Person com link para Location
+        # Converte os conceitos em int para o Serializer
         person_data["gender_concept"] = person_data.get("gender_concept").concept_id
         person_data["ethnicity_concept"] = person_data.get("ethnicity_concept").concept_id
         person_data["race_concept"] = person_data.get("race_concept").concept_id

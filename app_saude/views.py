@@ -181,7 +181,32 @@ class ProviderViewSet(FlexibleViewSet):
 
     def destroy(self, request, *args, **kwargs):
         raise PermissionDenied("DELETE not allowed.")
+    
+class UserRoleView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        user = request.user
+
+        # Verifica se o usuário está associado a um Person
+        try:
+            person = Person.objects.get(user=user)
+            return Response({"person_id": person.person_id}, status=status.HTTP_200_OK)
+        except Person.DoesNotExist:
+            pass
+
+        # Verifica se o usuário está associado a um Provider
+        try:
+            provider = Provider.objects.get(user=user)
+            return Response({"provider_id": provider.provider_id}, status=status.HTTP_200_OK)
+        except Provider.DoesNotExist:
+            pass
+
+        # Caso o usuário não esteja associado a nenhum dos dois
+        return Response(
+            {"detail": "User is not associated with a Person or Provider."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
 class IsProviderOrAdmin(BasePermission):
     def has_permission(self, request, view):
