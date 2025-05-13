@@ -1,6 +1,52 @@
 # CHANGELOG
 
 
+## v0.5.0 (2025-05-08)
+
+### Bug Fixes
+
+- **SAU-XX**: Link Table User to Provider
+  ([`1a847fd`](https://github.com/datasci4citizens/server-saude/commit/1a847fd795772fbacb4f0603811933499d616edc))
+
+- **SAU-XX**: Provider get method
+  ([`43e2b48`](https://github.com/datasci4citizens/server-saude/commit/43e2b4895d8d5a6b5c0e0368e1db3d278adf48a1))
+
+- **SAU-XX**: Provider get method
+  ([`56c4246`](https://github.com/datasci4citizens/server-saude/commit/56c424643c864eef0cd2d67e418ac8c05b06bb6a))
+
+### Features
+
+- Initial full provider
+  ([`1d57c13`](https://github.com/datasci4citizens/server-saude/commit/1d57c13ccff39ce7e31432b480cd45261de7ac68))
+
+- **SAU-XX**: Create retrive id route
+  ([`ae6fa6b`](https://github.com/datasci4citizens/server-saude/commit/ae6fa6b18afd54bdf4dc5a647e55909e243e0bfd))
+
+- **SAU-XX**: Link person to provider
+  ([`ac646e0`](https://github.com/datasci4citizens/server-saude/commit/ac646e053821180eefd29cbf195426fe965b2710))
+
+- **SAU-XX**: Link person to provider
+  ([`a3b5f45`](https://github.com/datasci4citizens/server-saude/commit/a3b5f45258a6e8edf1d3cda731b267bb48eb17ba))
+
+- **SAU-XX**: Link person to provider
+  ([`3f9a2e6`](https://github.com/datasci4citizens/server-saude/commit/3f9a2e6c87b73d87155a0670b0085580df392070))
+
+- **SAU-XX**: Link user to person and provider
+  ([`9171182`](https://github.com/datasci4citizens/server-saude/commit/917118234abd458fc4451ec00991f9e7bc1ea247))
+
+- **SAU-XX**: Link user to Person)
+  ([`cb4a2b2`](https://github.com/datasci4citizens/server-saude/commit/cb4a2b2b21cc61f22c1c0de8b5b107899e50d043))
+
+- **SAU-XX**: Return ids in the login
+  ([`da6b5da`](https://github.com/datasci4citizens/server-saude/commit/da6b5daee28ac4341c688f0980170a13c5d000b7))
+
+- **SAU-XX**: Return ids in the login
+  ([`ccc2dea`](https://github.com/datasci4citizens/server-saude/commit/ccc2dea22688d8fd28e9aa853796cff4ec8a8d6f))
+
+- **SAU-XX**: Small fixes
+  ([`f57b153`](https://github.com/datasci4citizens/server-saude/commit/f57b1538e770436ed12844865c3f2760b882022c))
+
+
 ## v0.4.0 (2025-05-07)
 
 ### Features
