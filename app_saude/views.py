@@ -397,14 +397,22 @@ class GenerateProviderLinkCodeView(APIView):
 
         code = uuid.uuid4().hex[:6].upper()  # Ex: 'A1B2C3'
 
-        Observation.objects.create(
-            person=None,  # ainda sem pessoa vinculada
+        obs, created = Observation.objects.get_or_create(
+            person=None,
             observation_concept_id=9200010,  # PROVIDER_LINK_CODE
             observation_type_concept_id=9200011,  # CLINICIAN_GENERATED
-            value_as_string=code,
-            observation_date=timezone.now(),
             provider_id=provider.provider_id,
+            defaults={
+                "value_as_string": code,
+                "observation_date": timezone.now(),
+            }
         )
+
+        if not created:
+            # Atualiza o código e a data se já existe
+            obs.value_as_string = code
+            obs.observation_date = timezone.now()
+            obs.save(update_fields=["value_as_string", "observation_date"])
 
         return Response({"code": code})
 
