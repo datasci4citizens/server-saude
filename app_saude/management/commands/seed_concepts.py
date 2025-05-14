@@ -189,7 +189,7 @@ class Command(BaseCommand):
         # Gender
         add_concept(8507, "MALE", "Gender", "M", "Gender", "Gender", "Masculino")
         add_concept(8532, "FEMALE", "Gender", "F", "Gender", "Gender", "Feminino")
-        add_concept(8551, "UNKNOWN", "Gender", "U", "Gender", "Gender", "Desconhecido")
+        # add_concept(8551, "UNKNOWN", "Gender", "U", "Gender", "Gender", "Desconhecido") Não é Standard
 
         # Race
         add_concept(8527, "WHITE", "Race", "W", "Race", "Race", "Branco")
