@@ -559,3 +559,86 @@ def dev_login_as_person(request):
             "refresh": str(refresh),
         }
     )
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    tags=["Link-Person-Provider"],
+    responses={"200": {"type": "array", "items": {"type": "object", "properties": {
+        "person_id": {"type": "integer"},
+        "name": {"type": "string"},
+        "age": {"type": "integer", "nullable": True},
+        "last_emergency_date": {"type": "string", "format": "date-time", "nullable": True}
+    }}}}
+)
+def provider_persons(request):
+    """
+    Função para obter todos os pacientes vinculados ao médico (provider) autenticado
+    
+    Returns:
+        lista de dicionários com os dados de cada paciente:
+            - person_id: ID do paciente
+            - name: Nome do paciente (social_name ou nome do usuário)
+            - age: Idade calculada com base na data de nascimento ou ano de nascimento
+            - last_emergency_date: Data da última emergência registrada
+    """
+    # Verifica se o usuário é um provider e obtém seu ID
+    provider = get_object_or_404(Provider, user=request.user)
+    provider_id = provider.provider_id
+    
+    # O restante do código permanece o mesmo
+    # Encontra os IDs de pessoas vinculadas ao provider através do FactRelationship
+    linked_persons_ids = FactRelationship.objects.filter(
+        fact_id_2=provider_id,
+        domain_concept_1_id=9202,  # Person
+        domain_concept_2_id=9201,  # Provider
+        relationship_concept_id=9200001  # Person linked to Provider
+    ).values_list('fact_id_1', flat=True)
+    
+    # Busca as pessoas com esses IDs
+    persons = Person.objects.filter(person_id__in=linked_persons_ids)
+    
+    # Prepara os dados da resposta com informações adicionais
+    result = []
+    for person in persons:
+        today = timezone.now()
+        age = None
+        
+        # Calcula a idade
+        if person.birth_datetime:
+            age = today.year - person.birth_datetime.year
+            # Ajusta se ainda não fez aniversário este ano
+            if today.month < person.birth_datetime.month or (
+                today.month == person.birth_datetime.month and
+                today.day < person.birth_datetime.day
+            ):
+                age -= 1
+        elif person.year_of_birth:
+            age = today.year - person.year_of_birth
+            
+        # Busca a última emergência
+        last_emergency = None
+        emergency_observation = Observation.objects.filter(
+            person=person,
+            observation_concept_id=9200020,  # Código para emergência
+            observation_date__isnull=False
+        ).order_by('-observation_date').first()
+        
+        if emergency_observation:
+            last_emergency = emergency_observation.observation_date
+            
+        # Nome pode estar em social_name ou no user associado
+        name = person.social_name
+        if not name and person.user:
+            name = f"{person.user.first_name} {person.user.last_name}".strip()
+            if not name:
+                name = person.user.username
+        
+        result.append({
+            "person_id": person.person_id,
+            "name": name,
+            "age": age,
+            "last_emergency_date": last_emergency
+        })
+        
+    return Response(result)
