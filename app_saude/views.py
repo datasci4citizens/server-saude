@@ -559,3 +559,48 @@ def dev_login_as_person(request):
             "refresh": str(refresh),
         }
     )
+
+
+@extend_schema(
+    tags=["Emergency"],
+    request=EmergencyCreateSerializer(many=True),
+    responses=ObservationRetrieveSerializer(many=True),
+)
+class SendEmergencyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = EmergencyCreateSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        data_list = serializer.validated_data
+
+        observations = []
+        for data in data_list:
+            data["person_id"] = request.user.person.person_id
+            data["observation_concept_id"] = 2000001
+            data["value_as_concept_id"] = None
+            data["observation_date"] = timezone.now()
+            data["observation_type_concept_id"] = None
+
+            obs = Observation.objects.create(**data)
+            observations.append(obs)
+
+        response_serializer = ObservationRetrieveSerializer(observations, many=True)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+    
+
+@extend_schema(
+    tags=["Emergency"],
+    responses=ObservationRetrieveSerializer(many=True),
+)
+class ReceivedEmergenciesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        provider = get_object_or_404(Provider, user=request.user)
+        emergencies = Observation.objects.filter(
+            provider_id=provider.provider_id,
+            observation_concept_id=2000001  # Emergência
+        ).order_by("-observation_date")
+        serializer = ObservationRetrieveSerializer(emergencies, many=True)
+        return Response(serializer.data)
