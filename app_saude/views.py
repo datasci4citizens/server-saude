@@ -559,3 +559,236 @@ def dev_login_as_person(request):
             "refresh": str(refresh),
         }
     )
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    tags=["Link-Person-Provider"],
+    responses={"200": {"type": "array", "items": {"type": "object", "properties": {
+        "person_id": {"type": "integer"},
+        "name": {"type": "string"},
+        "age": {"type": "integer", "nullable": True},
+        "last_visit_date": {"type": "string", "format": "date-time", "nullable": True},
+        "last_visit_notes": {"type": "string", "nullable": True},
+        "last_emergency_date": {"type": "string", "format": "date-time", "nullable": True}
+    }}}}
+)
+def provider_persons(request):
+    """
+    Função para obter todos os pacientes vinculados ao médico (provider) autenticado
+    
+    Returns:
+        lista de dicionários com os dados de cada paciente:
+            - person_id: ID do paciente
+            - name: Nome do paciente (social_name ou nome do usuário)
+            - age: Idade calculada com base na data de nascimento ou ano de nascimento
+            - last_visit_date: Data da última consulta com este provider
+            - last_visit_notes: Notas da última consulta com este provider
+            - last_emergency_date: Data da última emergência registrada
+    """
+    # Verifica se o usuário é um provider e obtém seu ID
+    provider = get_object_or_404(Provider, user=request.user)
+    provider_id = provider.provider_id
+    
+    # Encontra os IDs de pessoas vinculadas ao provider através do FactRelationship
+    linked_persons_ids = FactRelationship.objects.filter(
+        fact_id_2=provider_id,
+        domain_concept_1_id=9202,  # Person
+        domain_concept_2_id=9201,  # Provider
+        relationship_concept_id=9200001  # Person linked to Provider
+    ).values_list('fact_id_1', flat=True)
+    
+    # Busca as pessoas com esses IDs
+    persons = Person.objects.filter(person_id__in=linked_persons_ids)
+    
+    # Prepara os dados da resposta com informações adicionais
+    result = []
+    for person in persons:
+        today = timezone.now()
+        age = None
+        
+        # Calcula a idade
+        if person.birth_datetime:
+            age = today.year - person.birth_datetime.year
+            # Ajusta se ainda não fez aniversário este ano
+            if today.month < person.birth_datetime.month or (
+                today.month == person.birth_datetime.month and
+                today.day < person.birth_datetime.day
+            ):
+                age -= 1
+        elif person.year_of_birth:
+            age = today.year - person.year_of_birth
+            
+        # Busca a última visita (consulta) com este provider
+        last_visit = None
+        visit = VisitOccurrence.objects.filter(
+            person=person,
+            provider_id=provider_id,
+            visit_start_date__isnull=False
+        ).order_by('-visit_start_date').first()
+        
+        if visit:
+            last_visit = visit.visit_start_date
+            
+        # Busca a última emergência registrada
+        last_emergency = None
+        emergency = Observation.objects.filter(
+            person=person,
+            observation_concept_id=2000001,  # Emergency concept
+            observation_date__isnull=False
+        ).order_by('-observation_date').first()
+        
+        if emergency:
+            last_emergency = emergency.observation_date
+            
+        # Nome pode estar em social_name ou no user associado
+        name = person.social_name
+        if not name and person.user:
+            name = f"{person.user.first_name} {person.user.last_name}".strip()
+            if not name:
+                name = person.user.username
+        
+        result.append({
+            "person_id": person.person_id,
+            "name": name,
+            "age": age,
+            "last_visit_date": last_visit,
+            "last_emergency_date": last_emergency
+        })
+        
+    return Response(result)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    tags=["Linked_Persons"],
+    responses={"200": {"type": "object", "properties": {
+        "emergency_count": {"type": "integer"},
+    }}}
+)
+def get_emergency(request):
+    """
+    Função para obter o número de emergências ativas para os pacientes vinculados ao provider autenticado
+    
+    Returns:
+        objeto com a contagem de emergências ativas:
+            - emergency_count: número de emergências ativas
+    """
+    # Verifica se o usuário é um provider e obtém seu ID
+    provider = get_object_or_404(Provider, user=request.user)
+    provider_id = provider.provider_id
+    
+    # Encontra os IDs de pessoas vinculadas ao provider através do FactRelationship
+    linked_persons_ids = FactRelationship.objects.filter(
+        fact_id_2=provider_id,
+        domain_concept_1_id=9202,  # Person
+        domain_concept_2_id=9201,  # Provider
+        relationship_concept_id=9200001  # Person linked to Provider
+    ).values_list('fact_id_1', flat=True)
+    
+    # Conta as emergências ativas para essas pessoas
+    emergency_count = Observation.objects.filter(
+        person_id__in=linked_persons_ids,
+        observation_concept_id=9200020,  # Emergency concept
+        value_as_concept_id=9200021  # Active status concept
+    ).count()
+    
+    return Response({"emergency_count": emergency_count})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    tags=["Linked_Persons"],
+    responses={"200": {"type": "object", "properties": {
+        "next_visit": {"type": "object", "properties": {
+            "person_name": {"type": "string"},
+            "visit_date": {"type": "string", "format": "date-time"}
+        }, "nullable": True}
+    }}}
+)
+def get_next_scheduled_visit(request):
+    """
+    Função para obter a próxima visita agendada para o provider autenticado
+    
+    Returns:
+        objeto com informações sobre a próxima visita:
+            - person_name: Nome do paciente
+            - visit_date: Data e horário da consulta
+    """
+    # Verifica se o usuário é um provider e obtém seu ID
+    provider = get_object_or_404(Provider, user=request.user)
+    provider_id = provider.provider_id
+    
+    # Busca a próxima visita agendada para este provider
+    # Consideramos apenas visitas futuras (a partir da data atual)
+    today = timezone.now()
+    next_visit = VisitOccurrence.objects.filter(
+        provider_id=provider_id,
+        visit_start_date__gt=today
+    ).order_by('visit_start_date').first()
+    
+    if not next_visit:
+        return Response({"next_visit": None})
+    
+    # Obtém o nome do paciente
+    person = next_visit.person
+    person_name = person.social_name
+    if not person_name and person.user:
+        person_name = f"{person.user.first_name} {person.user.last_name}".strip()
+        if not person_name:
+            person_name = person.user.username
+    
+    # Prepara a resposta simplificada
+    response_data = {
+        "next_visit": {
+            "person_name": person_name,
+            "visit_date": next_visit.visit_start_date
+        }
+    }
+    
+    return Response(response_data)
+
+
+@extend_schema(
+    tags=["Emergency"],
+    request=EmergencyCreateSerializer(many=True),
+    responses=ObservationRetrieveSerializer(many=True),
+)
+class SendEmergencyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = EmergencyCreateSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        data_list = serializer.validated_data
+
+        observations = []
+        for data in data_list:
+            data["person_id"] = request.user.person.person_id
+            data["observation_concept_id"] = 2000001
+            data["value_as_concept_id"] = None
+            data["observation_date"] = timezone.now()
+            data["observation_type_concept_id"] = None
+
+            obs = Observation.objects.create(**data)
+            observations.append(obs)
+
+        response_serializer = ObservationRetrieveSerializer(observations, many=True)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+    
+
+@extend_schema(
+    tags=["Emergency"],
+    responses=ObservationRetrieveSerializer(many=True),
+)
+class ReceivedEmergenciesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        provider = get_object_or_404(Provider, user=request.user)
+        emergencies = Observation.objects.filter(
+            provider_id=provider.provider_id,
+            observation_concept_id=2000001  # Emergência
+        ).order_by("-observation_date")
+        serializer = ObservationRetrieveSerializer(emergencies, many=True)
+        return Response(serializer.data)

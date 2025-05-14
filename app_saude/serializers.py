@@ -526,3 +526,22 @@ class PersonLinkProviderRequestSerializer(serializers.Serializer):
 class PersonLinkProviderResponseSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["linked"], help_text="Resultado do vínculo")
     already_existed = serializers.BooleanField(help_text="Indica se o relacionamento já existia antes")
+
+class EmergencyCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Observation
+        fields = [
+            "provider",         
+            "value_as_string",
+            "shared_with_provider",
+        ]
+
+class EmergencyRetrieveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Observation
+        fields = [
+            "person",
+            "value_as_string",
+            "observation_date",
+        ]
+
