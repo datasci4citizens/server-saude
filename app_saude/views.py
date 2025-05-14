@@ -568,6 +568,8 @@ def dev_login_as_person(request):
         "person_id": {"type": "integer"},
         "name": {"type": "string"},
         "age": {"type": "integer", "nullable": True},
+        "last_visit_date": {"type": "string", "format": "date-time", "nullable": True},
+        "last_visit_notes": {"type": "string", "nullable": True},
         "last_emergency_date": {"type": "string", "format": "date-time", "nullable": True}
     }}}}
 )
@@ -580,13 +582,14 @@ def provider_persons(request):
             - person_id: ID do paciente
             - name: Nome do paciente (social_name ou nome do usuário)
             - age: Idade calculada com base na data de nascimento ou ano de nascimento
+            - last_visit_date: Data da última consulta com este provider
+            - last_visit_notes: Notas da última consulta com este provider
             - last_emergency_date: Data da última emergência registrada
     """
     # Verifica se o usuário é um provider e obtém seu ID
     provider = get_object_or_404(Provider, user=request.user)
     provider_id = provider.provider_id
     
-    # O restante do código permanece o mesmo
     # Encontra os IDs de pessoas vinculadas ao provider através do FactRelationship
     linked_persons_ids = FactRelationship.objects.filter(
         fact_id_2=provider_id,
@@ -616,16 +619,27 @@ def provider_persons(request):
         elif person.year_of_birth:
             age = today.year - person.year_of_birth
             
-        # Busca a última emergência
-        last_emergency = None
-        emergency_observation = Observation.objects.filter(
+        # Busca a última visita (consulta) com este provider
+        last_visit = None
+        visit = VisitOccurrence.objects.filter(
             person=person,
-            observation_concept_id=9200020,  # Código para emergência
+            provider_id=provider_id,
+            visit_start_date__isnull=False
+        ).order_by('-visit_start_date').first()
+        
+        if visit:
+            last_visit = visit.visit_start_date
+            
+        # Busca a última emergência registrada
+        last_emergency = None
+        emergency = Observation.objects.filter(
+            person=person,
+            observation_concept_id=9200020,  # Emergency concept
             observation_date__isnull=False
         ).order_by('-observation_date').first()
         
-        if emergency_observation:
-            last_emergency = emergency_observation.observation_date
+        if emergency:
+            last_emergency = emergency.observation_date
             
         # Nome pode estar em social_name ou no user associado
         name = person.social_name
@@ -638,6 +652,7 @@ def provider_persons(request):
             "person_id": person.person_id,
             "name": name,
             "age": age,
+            "last_visit_date": last_visit,
             "last_emergency_date": last_emergency
         })
         
