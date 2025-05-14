@@ -694,3 +694,56 @@ def get_emergency(request):
     ).count()
     
     return Response({"emergency_count": emergency_count})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    tags=["Linked_Persons"],
+    responses={"200": {"type": "object", "properties": {
+        "next_visit": {"type": "object", "properties": {
+            "person_name": {"type": "string"},
+            "visit_date": {"type": "string", "format": "date-time"}
+        }, "nullable": True}
+    }}}
+)
+def get_next_scheduled_visit(request):
+    """
+    Função para obter a próxima visita agendada para o provider autenticado
+    
+    Returns:
+        objeto com informações sobre a próxima visita:
+            - person_name: Nome do paciente
+            - visit_date: Data e horário da consulta
+    """
+    # Verifica se o usuário é um provider e obtém seu ID
+    provider = get_object_or_404(Provider, user=request.user)
+    provider_id = provider.provider_id
+    
+    # Busca a próxima visita agendada para este provider
+    # Consideramos apenas visitas futuras (a partir da data atual)
+    today = timezone.now()
+    next_visit = VisitOccurrence.objects.filter(
+        provider_id=provider_id,
+        visit_start_date__gt=today
+    ).order_by('visit_start_date').first()
+    
+    if not next_visit:
+        return Response({"next_visit": None})
+    
+    # Obtém o nome do paciente
+    person = next_visit.person
+    person_name = person.social_name
+    if not person_name and person.user:
+        person_name = f"{person.user.first_name} {person.user.last_name}".strip()
+        if not person_name:
+            person_name = person.user.username
+    
+    # Prepara a resposta simplificada
+    response_data = {
+        "next_visit": {
+            "person_name": person_name,
+            "visit_date": next_visit.visit_start_date
+        }
+    }
+    
+    return Response(response_data)
