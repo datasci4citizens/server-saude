@@ -1,4 +1,4 @@
-version: '3.9'
+version: 'lastest'
 
 services:
   db:
@@ -13,11 +13,17 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saude_user -d saude_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   web:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile
+    container_name: saude_web
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
@@ -26,7 +32,11 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://saude_user:saude_pass@db:5432/saude_db
+      - POSTGRES_HOST=db
 
 volumes:
   pgdata:
