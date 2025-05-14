@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.db import connection
 
 from app_saude.models import *
 
@@ -60,7 +59,7 @@ class Command(BaseCommand):
             user, _ = get_user_model().objects.get_or_create(
                 username=name, password="dummy_password", first_name=name, last_name="User", email=f"{name}@email.com"
             )
-            person = Person.objects.create(
+            person, _ = Person.objects.get_or_create(
                 user_id=user.id,
                 year_of_birth=year_of_birth,
                 gender_concept=Concept.objects.get(concept_id=gender_concept),
@@ -71,9 +70,6 @@ class Command(BaseCommand):
             )
             return person
 
-        with connection.cursor() as cursor:
-            cursor.execute("TRUNCATE TABLE concept CASCADE;")
-            cursor.execute("TRUNCATE TABLE auth_user CASCADE;")
         # Idioma pt
         concept_class("Language", "Language", 11118)
         domain("Language", "Language", 4180186)
