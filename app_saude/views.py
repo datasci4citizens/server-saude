@@ -642,3 +642,40 @@ def provider_persons(request):
         })
         
     return Response(result)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    tags=["Linked_Persons"],
+    responses={"200": {"type": "object", "properties": {
+        "emergency_count": {"type": "integer"},
+    }}}
+)
+def get_emergency(request):
+    """
+    Função para obter o número de emergências ativas para os pacientes vinculados ao provider autenticado
+    
+    Returns:
+        objeto com a contagem de emergências ativas:
+            - emergency_count: número de emergências ativas
+    """
+    # Verifica se o usuário é um provider e obtém seu ID
+    provider = get_object_or_404(Provider, user=request.user)
+    provider_id = provider.provider_id
+    
+    # Encontra os IDs de pessoas vinculadas ao provider através do FactRelationship
+    linked_persons_ids = FactRelationship.objects.filter(
+        fact_id_2=provider_id,
+        domain_concept_1_id=9202,  # Person
+        domain_concept_2_id=9201,  # Provider
+        relationship_concept_id=9200001  # Person linked to Provider
+    ).values_list('fact_id_1', flat=True)
+    
+    # Conta as emergências ativas para essas pessoas
+    emergency_count = Observation.objects.filter(
+        person_id__in=linked_persons_ids,
+        observation_concept_id=9200020,  # Emergency concept
+        value_as_concept_id=9200021  # Active status concept
+    ).count()
+    
+    return Response({"emergency_count": emergency_count})

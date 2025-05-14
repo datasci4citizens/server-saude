@@ -61,6 +61,7 @@ urlpatterns = [
     path("provider/persons/", provider_persons, name="provider-persons"),
     path("provider/<int:provider_id>/persons/", provider_persons, name="provider-persons-detail"),
     path("provider/by-link-code/", ProviderByLinkCodeView.as_view(), name="provider-by-link-code"),
+    path("provider/emergency-count/", get_emergency, name="get-emergency"),
 
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
