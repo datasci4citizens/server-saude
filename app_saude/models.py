@@ -12,7 +12,7 @@ class TimestampedModel(models.Model):
 
 
 class MyAbstractUser(TimestampedModel):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=False, null=False)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=False, null=False)
     social_name = models.CharField(max_length=255, blank=True, null=True)
     birth_datetime = models.DateTimeField(blank=True, null=True, db_comment="Date and time of birth")
 
