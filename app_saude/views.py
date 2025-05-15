@@ -683,7 +683,7 @@ def get_emergency(request):
         fact_id_2=provider_id,
         domain_concept_1_id=9202,  # Person
         domain_concept_2_id=9201,  # Provider
-        relationship_concept_id=9200001  # Person linked to Provider
+        relationship_concept_id=2000001  # Person linked to Provider
     ).values_list('fact_id_1', flat=True)
     
     # Conta as emergências ativas para essas pessoas
