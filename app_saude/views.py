@@ -689,7 +689,7 @@ def get_emergency(request):
     # Conta as emergências ativas para essas pessoas
     emergency_count = Observation.objects.filter(
         person_id__in=linked_persons_ids,
-        observation_concept_id=9200020,  # Emergency concept
+        observation_concept_id=2000001,  # Emergency concept
         value_as_concept_id=9200021  # Active status concept
     ).count()
     
