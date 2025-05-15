@@ -146,7 +146,7 @@ class VisitOccurrenceCreateSerializer(BaseCreateSerializer):
         recurrence_rule = None
         if recurrence_data:
             recurrence_rule, _ = RecurrenceRule.objects.get_or_create(
-                frequency_concept_id=recurrence_data["frequency_concept_id"],
+                frequency_concept_id=recurrence_data["frequency_concept"].concept_id,
                 interval=recurrence_data.get("interval"),
                 weekday_binary=recurrence_data.get("weekday_binary", None),
             )

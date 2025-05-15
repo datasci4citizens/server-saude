@@ -397,14 +397,22 @@ class GenerateProviderLinkCodeView(APIView):
 
         code = uuid.uuid4().hex[:6].upper()  # Ex: 'A1B2C3'
 
-        Observation.objects.create(
-            person=None,  # ainda sem pessoa vinculada
+        obs, created = Observation.objects.get_or_create(
+            person=None,
             observation_concept_id=9200010,  # PROVIDER_LINK_CODE
             observation_type_concept_id=9200011,  # CLINICIAN_GENERATED
-            value_as_string=code,
-            observation_date=timezone.now(),
             provider_id=provider.provider_id,
+            defaults={
+                "value_as_string": code,
+                "observation_date": timezone.now(),
+            }
         )
+
+        if not created:
+            # Atualiza o código e a data se já existe
+            obs.value_as_string = code
+            obs.observation_date = timezone.now()
+            obs.save(update_fields=["value_as_string", "observation_date"])
 
         return Response({"code": code})
 
@@ -449,7 +457,75 @@ class PersonLinkProviderView(APIView):
         obs.save(update_fields=["person_id"])
 
         return Response({"status": "linked"})
+@extend_schema(
+    tags=["Link-Person-Provider"],
+    request=PersonLinkProviderRequestSerializer,
+    responses=ProviderRetrieveSerializer,
+)
+class ProviderByLinkCodeView(APIView):
+    permission_classes = [AllowAny]
 
+    def post(self, request):
+        code = request.data.get("code")
+        if not code:
+            return Response({"error": "Code is required."}, status=400)
+
+        obs = (
+            Observation.objects.filter(
+                value_as_string=code,
+                observation_concept_id=9200010,
+                observation_date__gte=timezone.now() - timedelta(minutes=10),
+            )
+            .order_by("-observation_date")
+            .first()
+        )
+
+        if not obs or not obs.provider_id:
+            return Response({"error": "Código inválido ou expirado."}, status=400)
+
+        provider = get_object_or_404(Provider, provider_id=obs.provider_id)
+        serializer = ProviderRetrieveSerializer(provider)
+        return Response(serializer.data)
+    
+@extend_schema(
+    tags=["Link-Person-Provider"],
+    responses=ProviderRetrieveSerializer(many=True),
+)
+class PersonProvidersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        person = get_object_or_404(Person, user=request.user)
+        relationships = FactRelationship.objects.filter(
+            fact_id_1=person.person_id,
+            domain_concept_1_id=9202,  # Person
+            domain_concept_2_id=9201,  # Provider
+            relationship_concept_id=9200001,
+        )
+        provider_ids = relationships.values_list("fact_id_2", flat=True)
+        providers = Provider.objects.filter(provider_id__in=provider_ids)
+        serializer = ProviderRetrieveSerializer(providers, many=True)
+        return Response(serializer.data)
+    
+@extend_schema(
+    tags=["Link-Person-Provider"],
+    responses=PersonRetrieveSerializer(many=True),
+)
+class ProviderPersonsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        provider = get_object_or_404(Provider, user=request.user)
+        relationships = FactRelationship.objects.filter(
+            fact_id_2=provider.provider_id,
+            domain_concept_1_id=9202,  # Person
+            domain_concept_2_id=9201,  # Provider
+            relationship_concept_id=9200001,
+        )
+        person_ids = relationships.values_list("fact_id_1", flat=True)
+        persons = Person.objects.filter(person_id__in=person_ids)
+        serializer = PersonRetrieveSerializer(persons, many=True)
+        return Response(serializer.data)
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
