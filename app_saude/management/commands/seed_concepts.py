@@ -50,7 +50,7 @@ class Command(BaseCommand):
             )
             if pt_name:
                 ConceptSynonym.objects.update_or_create(
-                    concept=concept, concept_synonym_name=pt_name, language_concept_id=4180186  # pt
+                    concept=concept, concept_synonym_name=pt_name, language_concept_id=4181536  # pt
                 )
 
         def dummy_person(
@@ -745,18 +745,24 @@ class Command(BaseCommand):
         # vocabulary("Relationship", "OMOP Relationship", 2000009)
         # vocabulary("Domain", "OMOP Domain", 2000010)
 
-        # Idioma pt PORQUE ESTAMOS CRIANDO UM DOMÍNIO BR É UM CONCEITO Portuguese Language que existe no OMOP 
-        concept_class("Language", "Language", 11118)
-        domain("Language", "Language", 4180186)
+        # Língua Portuguesa
+        # add_concept(4181536, "Portuguese language", "Qualifier Value", "297504001", "Language", "SNOMED", "Língua Portuguesa")
         Concept.objects.update_or_create(
-            concept_id=4180186,
+            concept_id=4181536,
             defaults={
-                "concept_name": "Portuguese",
-                "concept_class_id": "Language",
-                "concept_code": "pt",
+                "concept_name": "Portuguese language",
+                "concept_class_id": "Qualifier Value",
+                "concept_code": "297504001",
+                "vocabulary_id": "SNOMED",
                 "domain": Domain.objects.get(domain_id="Language"),
             },
         )
+        ConceptSynonym.objects.update_or_create(
+            concept=4181536, concept_synonym_name="Língua Portuguesa", language_concept_id=4181536  # pt
+        )
+
+
+        ##############################################################
 
         # Vocabularies concepts
         add_concept(
