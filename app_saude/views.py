@@ -291,17 +291,8 @@ class ConceptViewSet(FlexibleViewSet):
         results = []
 
         for concept in queryset:
-            base = {
-                "concept_id": concept.concept_id,
-                "concept_code": concept.concept_code,
-                "concept_name": concept.concept_name,
-                "concept_class_id": concept.concept_class.concept_class_id if concept.concept_class else None,
-                "domain": concept.domain.domain_id if concept.domain else None,
-                "vocabulary_id": concept.vocabulary_id,
-                "translated_name": (
-                    concept.translated_synonyms[0].concept_synonym_name if concept.translated_synonyms else None
-                ),
-            }
+            # Serializa o conceito principal
+            base = ConceptRetrieveSerializer(concept).data
 
             if relationship_id:
                 rel = (
@@ -313,27 +304,13 @@ class ConceptViewSet(FlexibleViewSet):
                             to_attr="translated_synonyms",
                         )
                     )
-                    .filter(relationship_id=relationship_id)
+                    .filter(relationship_id=relationship_id, concept_1=concept)
                     .first()
                 )
 
                 if rel:
-                    translated_name = None
-                    if hasattr(rel.concept_2, "translated_synonyms"):
-                        for syn in rel.concept_2.translated_synonyms:
-                            translated_name = syn.concept_synonym_name
-                            break
-
-                    base["related_concept"] = {
-                        "concept_id": rel.concept_2.concept_id,
-                        "concept_code": rel.concept_2.concept_code,
-                        "concept_name": rel.concept_2.concept_name,
-                        "concept_class_id": (
-                            rel.concept_2.concept_class.concept_class_id if rel.concept_2.concept_class else None
-                        ),
-                        "vocabulary_id": rel.concept_2.vocabulary_id,
-                        "translated_name": translated_name,
-                    }
+                    # Serializa o conceito relacionado com o mesmo serializer
+                    base["related_concept"] = ConceptRetrieveSerializer(rel.concept_2).data
 
             results.append(base)
 

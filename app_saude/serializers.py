@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -303,11 +304,30 @@ class ConceptRetrieveSerializer(BaseRetrieveSerializer):
             return obj.translated_synonyms[0].concept_synonym_name
         return obj.concept_name
 
-    @extend_schema_field(ConceptRelatedSerializer(many=False))
+    @extend_schema_field(ConceptRelatedSerializer)
     def get_related_concept(self, obj):
-        related_concept = obj.related_concept.all()
-        if related_concept:
-            return ConceptRelatedSerializer(related_concept, many=False).data
+        relationship_id = self.context.get("relationship_id")
+        lang = self.context.get("lang")
+
+        if not relationship_id or not lang:
+            return None
+
+        rel = (
+            ConceptRelationship.objects.select_related("concept_2")
+            .prefetch_related(
+                Prefetch(
+                    "concept_2__concept_synonym_concept_set",
+                    queryset=ConceptSynonym.objects.filter(language_concept__concept_code=lang),
+                    to_attr="translated_synonyms",
+                )
+            )
+            .filter(relationship_id=relationship_id)
+            .first()
+        )
+
+        if rel:
+            return ConceptRetrieveSerializer(rel.concept_2, context=self.context).data
+
         return None
 
 
@@ -585,21 +605,23 @@ class EmergencyRetrieveSerializer(serializers.ModelSerializer):
 def build_observations_from_list(obs_list, now, person, shared_flag):
     obs_instances = []
     for obs in obs_list:
-        concept = get_concept_by_code(obs["concept_id"])
+        concept_id = obs["concept_id"]
         value = obs.get("value")
 
         observation = Observation(
             person=person,
-            observation_concept=concept,
+            observation_concept_id=concept_id,
             shared_with_provider=shared_flag,
             observation_date=now,
             observation_type_concept=get_concept_by_code("diary_entry_type"),
         )
 
+        print(f"Processing observation: {obs}")
+
         if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
             observation.value_as_string = str(value)
         else:
-            observation.value_as_concept = Concept.objects.get(pk=value)
+            observation.value_as_concept = get_concept_by_code(value)
 
         obs_instances.append(observation)
 
