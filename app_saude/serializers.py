@@ -1,6 +1,9 @@
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import *
+from .utils.concept import get_concept_by_code
 
 
 ######## AUTH SERIALIZERS ########
@@ -257,8 +260,30 @@ class ConceptUpdateSerializer(BaseUpdateSerializer):
         exclude = ["created_at", "updated_at"]
 
 
+class ConceptRelatedSerializer(BaseRetrieveSerializer):
+    translated_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Concept
+        fields = [
+            "concept_id",
+            "concept_name",
+            "concept_class",
+            "vocabulary",
+            "domain",
+            "concept_code",
+            "translated_name",
+        ]
+
+    def get_translated_name(self, obj):
+        if hasattr(obj, "translated_synonyms") and obj.translated_synonyms:
+            return obj.translated_synonyms[0].concept_synonym_name
+        return obj.concept_name
+
+
 class ConceptRetrieveSerializer(BaseRetrieveSerializer):
     translated_name = serializers.SerializerMethodField()
+    related_concept = serializers.SerializerMethodField()
 
     class Meta:
         model = Concept
@@ -270,12 +295,20 @@ class ConceptRetrieveSerializer(BaseRetrieveSerializer):
             "vocabulary",
             "domain",
             "concept_code",
+            "related_concept",
         ]
 
     def get_translated_name(self, obj):
         if hasattr(obj, "translated_synonyms") and obj.translated_synonyms:
             return obj.translated_synonyms[0].concept_synonym_name
         return obj.concept_name
+
+    @extend_schema_field(ConceptRelatedSerializer(many=False))
+    def get_related_concept(self, obj):
+        related_concept = obj.related_concept.all()
+        if related_concept:
+            return ConceptRelatedSerializer(related_concept, many=False).data
+        return None
 
 
 # ConceptSynonym
@@ -527,14 +560,16 @@ class PersonLinkProviderResponseSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["linked"], help_text="Resultado do vínculo")
     already_existed = serializers.BooleanField(help_text="Indica se o relacionamento já existia antes")
 
+
 class EmergencyCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Observation
         fields = [
-            "provider",         
+            "provider",
             "value_as_string",
             "shared_with_provider",
         ]
+
 
 class EmergencyRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
@@ -545,3 +580,86 @@ class EmergencyRetrieveSerializer(serializers.ModelSerializer):
             "observation_date",
         ]
 
+
+# Observações específicas (paranoia etc)
+def build_observations_from_list(obs_list, now, person, shared_flag):
+    obs_instances = []
+    for obs in obs_list:
+        concept = get_concept_by_code(obs["concept_id"])
+        value = obs.get("value")
+
+        observation = Observation(
+            person=person,
+            observation_concept=concept,
+            shared_with_provider=shared_flag,
+            observation_date=now,
+            observation_type_concept=get_concept_by_code("diary_entry_type"),
+        )
+
+        if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
+            observation.value_as_string = str(value)
+        else:
+            observation.value_as_concept = Concept.objects.get(pk=value)
+
+        obs_instances.append(observation)
+
+    return obs_instances
+
+
+class DiaryCreateSerializer(serializers.Serializer):
+    date_range_type = serializers.ChoiceField(choices=["today", "since_last"])
+    text = serializers.CharField(allow_blank=True)
+    text_shared = serializers.BooleanField()
+    habits_shared = serializers.BooleanField()
+    wellness_shared = serializers.BooleanField()
+    habits = serializers.ListField(
+        child=serializers.DictField(), default=list  # cada item: {"concept_id": X, "value": Y}
+    )
+    wellness = serializers.ListField(
+        child=serializers.DictField(), default=list  # cada item: {"concept_id": X, "value": Y}
+    )
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        person = Person.objects.get(user=user)
+        now = timezone.now()
+
+        # 1. Observation "mãe"
+        diary_entry = Observation.objects.create(
+            person=person,
+            observation_concept=get_concept_by_code("diary_entry"),
+            value_as_string=validated_data["date_range_type"],
+            observation_date=now,
+            shared_with_provider=False,
+            observation_type_concept=get_concept_by_code("diary_entry_type"),
+        )
+
+        # 2. Observações do diário
+        observations = []
+
+        # Texto livre
+        if validated_data["text"]:
+            observations.append(
+                Observation(
+                    person=person,
+                    observation_concept=get_concept_by_code("diary_text"),
+                    value_as_string=validated_data["text"],
+                    shared_with_provider=validated_data["text_shared"],
+                    observation_date=now,
+                    observation_type_concept=get_concept_by_code("diary_entry_type"),
+                )
+            )
+
+        habits = validated_data.get("habits", [])
+        habits_shared = validated_data.get("habits_shared", False)
+        wellness = validated_data.get("wellness", [])
+        wellness_shared = validated_data.get("wellness_shared", False)
+
+        # Habits
+        observations.extend(build_observations_from_list(habits, now, person, habits_shared))
+        # Wellness
+        observations.extend(build_observations_from_list(wellness, now, person, wellness_shared))
+
+        Observation.objects.bulk_create(observations)
+
+        return {"diary_id": diary_entry.observation_id, "created": True}
