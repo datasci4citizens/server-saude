@@ -12,7 +12,7 @@ class TimestampedModel(models.Model):
 
 
 class MyAbstractUser(TimestampedModel):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=False, null=False)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=False, null=False)
     social_name = models.CharField(max_length=255, blank=True, null=True)
     birth_datetime = models.DateTimeField(blank=True, null=True, db_comment="Date and time of birth")
 
@@ -92,6 +92,12 @@ class Concept(TimestampedModel):
     class Meta:
         db_table = "concept"
         db_table_comment = "OMOP-compliant table for standardized concepts."
+
+
+class ConceptRelationship(TimestampedModel):
+    concept_1 = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name="source_concept_rels")
+    concept_2 = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name="target_concept_rels")
+    relationship_id = models.CharField(max_length=100)  # ex: "has_value_type"
 
 
 class ConceptSynonym(TimestampedModel):
