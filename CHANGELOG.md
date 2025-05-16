@@ -1,9 +1,44 @@
 # CHANGELOG
 
 
+## v0.6.0 (2025-05-16)
+
+### Bug Fixes
+
+- Change provider link code to get or create
+  ([`da9c90b`](https://github.com/datasci4citizens/server-saude/commit/da9c90b4374b9b04066efa50240b2aec89929e55))
+
+- **SAU-28**: Fix diary and concepts
+  ([`c068790`](https://github.com/datasci4citizens/server-saude/commit/c068790fcacb92414649de52b22020848780afba))
+
+### Features
+
+- Get provider by code route
+  ([`9c49985`](https://github.com/datasci4citizens/server-saude/commit/9c4998598425ee66ac144589564fee3ff9c24fd8))
+
+- **SAU-27**: Diary implementations
+  ([#18](https://github.com/datasci4citizens/server-saude/pull/18),
+  [`ad5515e`](https://github.com/datasci4citizens/server-saude/commit/ad5515e662ac92054a6e43f55fe32aeb45ffb710))
+
+- **sau-28**: Diary implementations
+  ([`cd6753e`](https://github.com/datasci4citizens/server-saude/commit/cd6753e7626a3ddce0b35ca0f1474d181b170724))
+
+- **sau-28**: Diary implementations
+  ([`411aac8`](https://github.com/datasci4citizens/server-saude/commit/411aac8abb9edd6f5ce609509382404ef2217f54))
+
+- **SAU-28**: Emergency ([#14](https://github.com/datasci4citizens/server-saude/pull/14),
+  [`f1d23b7`](https://github.com/datasci4citizens/server-saude/commit/f1d23b7845772d8c16e99c35c42671bb48d27d2e))
+
+
 ## v0.5.0 (2025-05-08)
 
 ### Bug Fixes
+
+- Correct frequency_concept_id
+  ([`76289a6`](https://github.com/datasci4citizens/server-saude/commit/76289a61f1c7a7ba43298c8d275ee6108e823fac))
+
+- **NOJIRA**: Remove truncate tables and force 1 to 1 relation
+  ([`577d41b`](https://github.com/datasci4citizens/server-saude/commit/577d41bca5339520a9c06ecb410fb1c2dda69b85))
 
 - **SAU-XX**: Link Table User to Provider
   ([`1a847fd`](https://github.com/datasci4citizens/server-saude/commit/1a847fd795772fbacb4f0603811933499d616edc))
