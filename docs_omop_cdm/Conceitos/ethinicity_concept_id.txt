@@ -1,0 +1,2 @@
+add_concept(38003563, "Hispanic or Latino", "Ethnicity", "Hispanic", "Ethnicity", "Ethnicity", )
+add_concept(38003564, "Not Hispanic or Latino", "Ethnicity", "Not Hispanic", "Ethnicity", "Ethnicity", )

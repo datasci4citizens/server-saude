@@ -122,23 +122,6 @@ class Command(BaseCommand):
         domain("Language", "Language", 33068)
         domain("Cost", "Cost", 581456)
 
-        # # Domains
-        # domain("Domain", "Domain", 1)
-        # domain("Gender", "Gender", 2)
-        # domain("Race", "Race", 3)
-        # domain("Ethnicity", "Ethnicity", 4)
-        # domain("Metadata", "Metadata", 7)
-        # domain("Provider", "Provider", 33)
-        # domain("Geography", "Geography", 32558)
-        # domain("Measurement", "Measurement", 2000013)
-        # domain("Observation", "Observation", 2000014)
-        # domain("Condition", "Condition", 2000015)
-        # domain("Drug", "Drug", 2000016)
-        # domain("Substance", "Substance", 2000017)
-        # domain("Type", "Type", 2000018)
-        # domain("Relationship", "Relationship", 2000019)
-        # domain("Domain", "Domain", 2000020)
-
         # concept_class (IMPORTED FROM ATHENA 14/05/2025)
         concept_class("Quant Branded Box", "Quantified Branded Drug Box", 200)
         concept_class("Quant Clinical Box", "Quantified Clinical Drug Box", 201)
@@ -574,28 +557,6 @@ class Command(BaseCommand):
         concept_class("Cosmetic", "Non-human drug class Cosmetic", 46274139)
         concept_class("Animal Drug", "Non-human drug class Animal Drug", 46277305)
 
-        # # Concept Classes
-        # concept_class("Vocabulary", "Vocabulary", 11111)
-        # concept_class("Domain", "Domain", 11112)
-        # concept_class("Gender", "Gender", 11113)
-        # concept_class("Race", "Race", 11114)
-        # concept_class("Ethnicity", "Ethnicity", 11115)
-        # concept_class("Provider", "Provider", 11116)
-        # concept_class("Physician Specialty", "Physician Specialty", 11117)
-        # concept_class("Brazil States", "Brazil States", 2000042)
-        # concept_class("Measurement", "Measurement", 2000043)
-        # concept_class("Observation", "Observation", 2000044)
-        # concept_class("Quality", "Quality", 2000045)
-        # concept_class("Frequency", "Frequency", 2000046)
-        # concept_class("Comorbidity", "Comorbidity", 2000047)
-        # concept_class("Medication", "Medication", 2000048)
-        # concept_class("Substance", "Substance", 2000049)
-        # concept_class("Type", "Type", 2000041)
-        # concept_class("Recurrence", "Recurrence", 2000050)
-        # concept_class("Relationship", "Relationship", 2000051)
-        # concept_class("Observation Type", "Observation Type", 2000052)
-        # concept_class("Metadata", "Metadata", 2000053)
-
         # vocabulary (IMPORTED FROM ATHENA 14/05/2025)
         vocabulary("DPD", "Drug Product Database (Health Canada)", 231)
         vocabulary("dm+d", "Dictionary of Medicines and Devices (NHS)", 232)
@@ -726,26 +687,7 @@ class Command(BaseCommand):
         vocabulary("ABMS", "Provider Specialty (American Board of Medical Specialties)", 45756746)
         vocabulary("CIEL", "Columbia International eHealth Laboratory (Columbia University)", 45905710)
 
-        # # Vocabularies
-        # vocabulary("OSM", "OpenStreetMap (OSM)", 32541)
-        # vocabulary("Provider", "OMOP Provider", 32573)
-        # vocabulary("Metadata", "OMOP Metadata", 32675)
-        # vocabulary("None", "OMOP Standardized Vocabularies", 44819096)
-        # vocabulary("Gender", "OMOP Gender", 44819108)
-        # vocabulary("Race", "Race and Ethnicity Code Set (USBC)", 44819109)
-        # vocabulary("Ethnicity", "OMOP Ethnicity", 44819134)
-        # vocabulary("Vocabulary", "OMOP Vocabulary", 44819232)
-        # vocabulary("BR_STATES", "Brazil States", 2000001)
-        # vocabulary("Measurement", "OMOP Measurement", 2000003)
-        # vocabulary("Observation", "OMOP Observation", 2000004)
-        # vocabulary("Condition", "OMOP Condition", 2000005)
-        # vocabulary("Drug", "OMOP Drug", 2000006)
-        # vocabulary("Substance", "OMOP Substance", 2000007)
-        # vocabulary("Observation Type", "OMOP Observation Type", 2000008)
-        # vocabulary("Relationship", "OMOP Relationship", 2000009)
-        # vocabulary("Domain", "OMOP Domain", 2000010)
-
-        # Língua Portuguesa
+        # Main language (IMPORTED FROM ATHENA 07/05/2025)
         # add_concept(4181536, "Portuguese language", "Qualifier Value", "297504001", "Language", "SNOMED", "Língua Portuguesa")
         Concept.objects.update_or_create(
             concept_id=4181536,
@@ -761,80 +703,32 @@ class Command(BaseCommand):
             concept=4181536, concept_synonym_name="Língua Portuguesa", language_concept_id=4181536  # pt
         )
 
+        # None concept (IMPORTED FROM ATHENA 03/05/2025)
+        add_concept(0, None, None, None, "Metadata", None, "Sem conceito correspondente")
 
-        ##############################################################
-
-        # Vocabularies concepts
-        add_concept(
-            32541,
-            "OpenStreetMap (OSMF)",
-            "Vocabulary",
-            "OMOP generated",
-            "Metadata",
-            "Vocabulary",
-            "OpenStreetMap (OSMF)",
-        )
-        add_concept(32573, "OMOP Provider", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Provedor OMOP")
-        add_concept(32675, "OMOP Metadata", "Vocabulary", "OMOP geassim como nos Checkpoints, a ordem de apresentação será aleatória.nerated", "Metadata", "Vocabulary", "Metadata OMOP")
-        add_concept(
-            44819096,
-            "OMOP Standardized Vocabularies",
-            "Vocabulary",
-            "OMOP generated",
-            "Metadata",
-            "Vocabulary",
-            "Vocabulários Padronizados OMOP",
-        )
-        add_concept(44819108, "OMOP Gender", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Gênero OMOP")
-        add_concept(
-            44819109,
-            "Race and Ethnicity Code Set (USBC)",
-            "Vocabulary",
-            "OMOP generated",
-            "Metadata",
-            "Vocabulary",
-            "Conjunto de Códigos de Raça e Etnia (USBC)",
-        )
-        add_concept(44819134, "OMOP Ethnicity", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Etnia OMOP")
-        add_concept(
-            44819232, "OMOP Vocabulary", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Vocabulário OMOP"
-        )
-
-        # Domains concepts
-        add_concept(1, "Domain", "Domain", "OMOP generated", "Domain", "Metadata", "Domínio")
-        add_concept(2, "Gender", "Domain", "OMOP generated", "Domain", "Metadata", "Gênero")
-        add_concept(3, "Race", "Domain", "OMOP generated", "Domain", "Metadata", "Raça")
-        add_concept(4, "Ethnicity", "Domain", "OMOP generated", "Domain", "Metadata", "Etnia")
-        add_concept(7, "Metadata", "Domain", "OMOP generated", "Domain", "Metadata", "Metadados")
-        add_concept(33, "Provider", "Domain", "OMOP generated", "Domain", "Metadata", "Provedor")
-        add_concept(32558, "Geographical object", "Domain", "OMOP generated", "Domain", "Metadata", "Objeto Geográfico")
-
-        # Gender
+        # Gender (IMPORTED FROM ATHENA 02/05/2025)
         add_concept(8507, "MALE", "Gender", "M", "Gender", "Gender", "Masculino")
         add_concept(8532, "FEMALE", "Gender", "F", "Gender", "Gender", "Feminino")
 
-        # Race
-        add_concept(8527, "WHITE", "Race", "W", "Race", "Race", "Branco")
-        add_concept(8516, "BLACK OR AFRICAN AMERICAN", "Race", "B", "Race", "Race", "Preto")
-        add_concept(8657, "ASIAN", "Race", "A", "Race", "Race", "Asiático")
+        # Race (IMPORTED FROM ATHENA 02/05/2025)
+        add_concept(8515, "Asian", "Race", "2", "Race", "Race", "Asiático")
+        add_concept(8527, "White", "Race", "5", "Race", "Race", "Branco")
+        add_concept(38003572, "American Indian", "Race", "1.01", "Race", "Race", "Indígena Americano")
+        add_concept(38003598, "Black", "Race", "3.01", "Race", "Race", "Preto")
 
-        # Specialities
-        add_concept(32577, "Physician", "Physician Specialty", "OMOP4822444", "Provider", "Provider", "Médico")
-        add_concept(32578, "Counselor", "Provider", "OMOP4822447", "Provider", "Provider", "Conselheiro")
+        # Ethinicity (IMPORTED FROM ATHENA 03/05/2025)
+        add_concept(38003563, "Hispanic or Latino", "Ethnicity", "Hispanic", "Ethnicity", "Ethnicity", "Hispânico ou latino")
+        add_concept(38003564, "Not Hispanic or Latino", "Ethnicity", "Not Hispanic", "Ethnicity", "Ethnicity", "Não hispânico ou latino")
+
+        # Speciality (IMPORTED FROM ATHENA 03/05/2025)
+        add_concept(32577, "Physician", "Physician Specialty", "OMOP4822444", "Provider", "Provider", "Médica(o)")
+        add_concept(32578, "Counselor", "Provider", "OMOP4822447", "Provider", "Provider", "Terapeuta")
         add_concept(32580, "Allied Health Professional", "Provider", "OMOP4822445", "Provider", "Provider", "ACS")
-        add_concept(32581, "Nurse", "Provider", "OMOP4822446", "Provider", "Provider", "Enfermeiro")
-        add_concept(
-            33003, "Service Provider", "Provider", "OMOP5117445", "Provider", "Provider", "Prestador de Serviço"
-        )
-        add_concept(
-            33005,
-            "Psychiatry or Neurology",
-            "Physician Specialty",
-            "OMOP5117448",
-            "Provider",
-            "Provider",
-            "Psiquiatria ou Neurologia",
-        )
+        add_concept(32581, "Nurse", "Provider", "OMOP4822446", "Provider", "Provider", "Enfermeira(o)")
+        add_concept(33003, "Service Provider", "Provider", "OMOP5117445", "Provider", "Provider", "Provedor de Serviço")
+        add_concept(33005, "Psychiatry or Neurology", "Physician Specialty", "OMOP5117448", "Provider", "Provider", "Psiquiatra ou Neurologista")
+
+        #########################################################################################
 
         # States
         add_concept(2000053, "SP", "Brazil States", "BR", "Geography", "BR_STATES", "SP")
@@ -942,3 +836,106 @@ class Command(BaseCommand):
 
         Provider.objects.get_or_create(user=user)
         self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
+
+        # # Concept Classes
+        # concept_class("Vocabulary", "Vocabulary", 11111)
+        # concept_class("Domain", "Domain", 11112)
+        # concept_class("Gender", "Gender", 11113)
+        # concept_class("Race", "Race", 11114)
+        # concept_class("Ethnicity", "Ethnicity", 11115)
+        # concept_class("Provider", "Provider", 11116)
+        # concept_class("Physician Specialty", "Physician Specialty", 11117)
+        # concept_class("Brazil States", "Brazil States", 2000042)
+        # concept_class("Measurement", "Measurement", 2000043)
+        # concept_class("Observation", "Observation", 2000044)
+        # concept_class("Quality", "Quality", 2000045)
+        # concept_class("Frequency", "Frequency", 2000046)
+        # concept_class("Comorbidity", "Comorbidity", 2000047)
+        # concept_class("Medication", "Medication", 2000048)
+        # concept_class("Substance", "Substance", 2000049)
+        # concept_class("Type", "Type", 2000041)
+        # concept_class("Recurrence", "Recurrence", 2000050)
+        # concept_class("Relationship", "Relationship", 2000051)
+        # concept_class("Observation Type", "Observation Type", 2000052)
+        # concept_class("Metadata", "Metadata", 2000053)
+
+        # # Domains
+        # domain("Domain", "Domain", 1)
+        # domain("Gender", "Gender", 2)
+        # domain("Race", "Race", 3)
+        # domain("Ethnicity", "Ethnicity", 4)
+        # domain("Metadata", "Metadata", 7)
+        # domain("Provider", "Provider", 33)
+        # domain("Geography", "Geography", 32558)
+        # domain("Measurement", "Measurement", 2000013)
+        # domain("Observation", "Observation", 2000014)
+        # domain("Condition", "Condition", 2000015)
+        # domain("Drug", "Drug", 2000016)
+        # domain("Substance", "Substance", 2000017)
+        # domain("Type", "Type", 2000018)
+        # domain("Relationship", "Relationship", 2000019)
+        # domain("Domain", "Domain", 2000020)
+
+        # # Vocabularies
+        # vocabulary("OSM", "OpenStreetMap (OSM)", 32541)
+        # vocabulary("Provider", "OMOP Provider", 32573)
+        # vocabulary("Metadata", "OMOP Metadata", 32675)
+        # vocabulary("None", "OMOP Standardized Vocabularies", 44819096)
+        # vocabulary("Gender", "OMOP Gender", 44819108)
+        # vocabulary("Race", "Race and Ethnicity Code Set (USBC)", 44819109)
+        # vocabulary("Ethnicity", "OMOP Ethnicity", 44819134)
+        # vocabulary("Vocabulary", "OMOP Vocabulary", 44819232)
+        # vocabulary("BR_STATES", "Brazil States", 2000001)
+        # vocabulary("Measurement", "OMOP Measurement", 2000003)
+        # vocabulary("Observation", "OMOP Observation", 2000004)
+        # vocabulary("Condition", "OMOP Condition", 2000005)
+        # vocabulary("Drug", "OMOP Drug", 2000006)
+        # vocabulary("Substance", "OMOP Substance", 2000007)
+        # vocabulary("Observation Type", "OMOP Observation Type", 2000008)
+        # vocabulary("Relationship", "OMOP Relationship", 2000009)
+        # vocabulary("Domain", "OMOP Domain", 2000010)
+
+        # # Vocabularies concepts NÃO SÃO IMPORTANTES POR ENQUANTO
+        # add_concept(
+        #     32541,
+        #     "OpenStreetMap (OSMF)",
+        #     "Vocabulary",
+        #     "OMOP generated",
+        #     "Metadata",
+        #     "Vocabulary",
+        #     "OpenStreetMap (OSMF)",
+        # )
+        # add_concept(32573, "OMOP Provider", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Provedor OMOP")
+        # add_concept(32675, "OMOP Metadata", "Vocabulary", "OMOP geassim como nos Checkpoints, a ordem de apresentação será aleatória.nerated", "Metadata", "Vocabulary", "Metadata OMOP")
+        # add_concept(
+        #     44819096,
+        #     "OMOP Standardized Vocabularies",
+        #     "Vocabulary",
+        #     "OMOP generated",
+        #     "Metadata",
+        #     "Vocabulary",
+        #     "Vocabulários Padronizados OMOP",
+        # )
+        # add_concept(44819108, "OMOP Gender", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Gênero OMOP")
+        # add_concept(
+        #     44819109,
+        #     "Race and Ethnicity Code Set (USBC)",
+        #     "Vocabulary",
+        #     "OMOP generated",
+        #     "Metadata",
+        #     "Vocabulary",
+        #     "Conjunto de Códigos de Raça e Etnia (USBC)",
+        # )
+        # add_concept(44819134, "OMOP Ethnicity", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Etnia OMOP")
+        # add_concept(
+        #     44819232, "OMOP Vocabulary", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Vocabulário OMOP"
+        # )
+
+        # # Domains concepts
+        # add_concept(1, "Domain", "Domain", "OMOP generated", "Domain", "Metadata", "Domínio")
+        # add_concept(2, "Gender", "Domain", "OMOP generated", "Domain", "Metadata", "Gênero")
+        # add_concept(3, "Race", "Domain", "OMOP generated", "Domain", "Metadata", "Raça")
+        # add_concept(4, "Ethnicity", "Domain", "OMOP generated", "Domain", "Metadata", "Etnia")
+        # add_concept(7, "Metadata", "Domain", "OMOP generated", "Domain", "Metadata", "Metadados")
+        # add_concept(33, "Provider", "Domain", "OMOP generated", "Domain", "Metadata", "Provedor")
+        # add_concept(32558, "Geographical object", "Domain", "OMOP generated", "Domain", "Metadata", "Objeto Geográfico")
