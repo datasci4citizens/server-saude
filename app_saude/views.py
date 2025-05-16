@@ -280,12 +280,14 @@ class ConceptViewSet(FlexibleViewSet):
         )
 
         self._enrich_relationship_id = relationship_id  # armazenar para uso posterior
+        self._lang = lang
         return queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
 
         relationship_id = getattr(self, "_enrich_relationship_id", None)
+        lang = getattr(self, "_lang", None)
         results = []
 
         for concept in queryset:
@@ -303,12 +305,25 @@ class ConceptViewSet(FlexibleViewSet):
 
             if relationship_id:
                 rel = (
-                    ConceptRelationship.objects.filter(concept_1=concept, relationship_id=relationship_id)
-                    .select_related("concept_2")
+                    ConceptRelationship.objects.select_related("concept_2")
+                    .prefetch_related(
+                        Prefetch(
+                            "concept_2__concept_synonym_concept_set",
+                            queryset=ConceptSynonym.objects.filter(language_concept__concept_code=lang),
+                            to_attr="translated_synonyms",
+                        )
+                    )
+                    .filter(relationship_id=relationship_id)
                     .first()
                 )
 
                 if rel:
+                    translated_name = None
+                    if hasattr(rel.concept_2, "translated_synonyms"):
+                        for syn in rel.concept_2.translated_synonyms:
+                            translated_name = syn.concept_synonym_name
+                            break
+
                     base["related_concept"] = {
                         "concept_id": rel.concept_2.concept_id,
                         "concept_code": rel.concept_2.concept_code,
@@ -317,6 +332,7 @@ class ConceptViewSet(FlexibleViewSet):
                             rel.concept_2.concept_class.concept_class_id if rel.concept_2.concept_class else None
                         ),
                         "vocabulary_id": rel.concept_2.vocabulary_id,
+                        "translated_name": translated_name,
                     }
 
             results.append(base)
