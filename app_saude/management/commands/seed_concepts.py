@@ -312,6 +312,19 @@ class Command(BaseCommand):
         )
         add_concept(9202, "Person", "Metadata", "PERSON", "Domain", "Domain", "Indivíduo (domínio pessoa)")
 
+        # Tipos principais
+        vocabulary("Value", "Value", 999900)
+        domain("Diary", "Diary", 999901)
+        domain("Value", "Value", 999902)
+        concept_class("Diary", "Diary", 999903)
+
+        add_concept(999001, "Diary Entry", "Diary", "diary_entry", "Observation", "Observation", "Entrada de diário")
+        add_concept(999002, "Diary Text", "Diary", "diary_text", "Observation", "Observation", "Texto livre do diário")
+        add_concept(999003, "Diary Scope", "Diary", "diary_scope", "Observation", "Observation", "Alcance do diário")
+        add_concept(
+            999004, "Diary Entry Type", "Diary", "diary_entry_type", "Observation", "Observation", "Tipo de entrada"
+        )
+
         User = get_user_model()
         user, _ = User.objects.get_or_create(
             email="mock-provider@email.com",
@@ -320,3 +333,65 @@ class Command(BaseCommand):
 
         Provider.objects.get_or_create(user=user)
         self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
+
+        # Sintomas predefinidos
+        concept_class("Wellness", "Wellness", 999100)
+
+        # Tipos de valores
+        concept_class("Value Type", "Value Type", 999200)
+
+        add_concept(999201, "Yes/No", "Value Type", "yes_no", "Value", "Value", "Sim/Não")
+        add_concept(999202, "Free Text", "Value Type", "free_text", "Value", "Value", "Texto livre")
+        add_concept(999203, "Scale", "Value Type", "scale", "Value", "Value", "Escala")
+        add_concept(999204, "Hours", "Value Type", "hours", "Value", "Value", "Horas")
+        add_concept(999205, "Times", "Value Type", "times", "Value", "Value", "Vezes")
+
+        concept_class("Yes/No", "Yes/No", 999201)
+        concept_class("Free Text", "Free Text", 999202)
+        concept_class("Scale", "Scale", 999203)
+        concept_class("Hours", "Hours", 999204)
+        concept_class("Times", "Times", 999205)
+
+        # Valores possíveis
+        add_concept(999501, "Yes", "Yes/No", "value_yes", "Value", "Value", "Sim")
+        add_concept(999502, "No", "Yes/No", "value_no", "Value", "Value", "Não")
+
+        WELLBEING = [
+            ("sleep", "Qualidade do sono", "scale"),
+            ("medicine", "Tomar medicamentos", "yesno"),
+            ("medication_effects", "Efeitos da medicação", "scale"),
+            ("side_effects", "Efeitos colaterais da medicação", "yesno"),
+            ("physical_symptoms", "Sintomas físicos", "yesno"),
+            ("thoughts", "Pensamentos", "scale"),
+            ("triggers", "Exposição a gatilhos", "times"),
+            ("work", "Trabalho", "scale"),
+            ("chores", "Tarefas domésticas", "scale"),
+            ("food", "Alimentação", "scale"),
+            ("hobbies", "Hobbies", "scale"),
+            ("exercise", "Exercício físico", "hours"),
+            ("water", "Consumo de água", "scale"),
+            ("social", "Socialização", "scale"),
+            ("self_harm", "Auto mutilação", "times"),
+            ("intrusive_thoughts", "Pensamentos intrusivos", "scale"),
+            ("suicidal_ideation", "Ideação suicida", "yesno"),
+            ("dissociation", "Disassociação", "scale"),
+            ("paranoia", "Paranóia", "scale"),
+        ]
+
+        VALUE_TYPE_CODE_TO_ID = {
+            "scale": 999203,
+            "yesno": 999201,
+            "freetext": 999202,
+            "times": 999205,
+            "hours": 999204,
+        }
+
+        for i, (code, pt_name, value_type_code) in enumerate(WELLBEING):
+            concept_id = 999300 + i
+            add_concept(concept_id, pt_name, "Wellness", code, "Observation", "Observation", pt_name)
+
+            # Cria a relação has_value_type
+            value_type_concept_id = VALUE_TYPE_CODE_TO_ID[value_type_code]
+            ConceptRelationship.objects.update_or_create(
+                concept_1_id=concept_id, concept_2_id=value_type_concept_id, relationship_id="has_value_type"
+            )

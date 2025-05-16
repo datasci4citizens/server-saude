@@ -94,6 +94,12 @@ class Concept(TimestampedModel):
         db_table_comment = "OMOP-compliant table for standardized concepts."
 
 
+class ConceptRelationship(TimestampedModel):
+    concept_1 = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name="source_concept_rels")
+    concept_2 = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name="target_concept_rels")
+    relationship_id = models.CharField(max_length=100)  # ex: "has_value_type"
+
+
 class ConceptSynonym(TimestampedModel):
     concept = models.ForeignKey(
         Concept,

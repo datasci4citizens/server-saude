@@ -57,6 +57,21 @@ urlpatterns = [
     path("api/user-entity/", UserRoleView.as_view(), name="user-entity"),
     path("provider/link-code/", GenerateProviderLinkCodeView.as_view(), name="generate-link-code"),
     path("person/link-code/", PersonLinkProviderView.as_view(), name="person-link-code"),
+    path("person/providers/", PersonProvidersView.as_view(), name="person-providers"),
+    path("provider/persons/", provider_persons, name="provider-persons"),
+    path("provider/<int:provider_id>/persons/", provider_persons, name="provider-persons-detail"),
+    path("provider/by-link-code/", ProviderByLinkCodeView.as_view(), name="provider-by-link-code"),
+    path("emergency/send/", SendEmergencyView.as_view(), name="send-emergency"),
+    path("provider/emergency-count/", get_emergency, name="get-emergency"),
+    path("provider/next-visit/", get_next_scheduled_visit, name="next-scheduled-visit"),
+    path("diaries/", DiaryView.as_view(), name="diary"),
+    path("diaries/<str:diary_id>/", DiaryDetailView.as_view(), name="diary-detail"),
+    path("provider/patients/<int:patient_id>/diaries/", ProviderPersonDiariesView.as_view(), name="acs-diaries"),
+    path(
+        "provider/patients/<int:patient_id>/diaries/<str:diary_id>/",
+        ProviderPersonDiaryDetailView.as_view(),
+        name="acs-diary-detail",
+    ),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
