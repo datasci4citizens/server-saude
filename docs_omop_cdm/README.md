@@ -52,7 +52,7 @@ As outras tabelas estão relacionadas aos mecanismos de funcionamento do aplicat
 
 -**sites**
 
-![Ideias geradas Guilherme](https://github.com/datasci4citizens/server-saude/tree/main/docs_omop_cdm/images/SAUDE-DB.png)
+![Banco de dados OMOP CDM](https://github.com/datasci4citizens/server-saude/blob/develop/docs_omop_cdm/images/SAUDE-DB.png)
 
 ### 4.2 Explicação das tabelas e vocabulários escolhidos
 
