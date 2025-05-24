@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(dotenv_path=BASE_DIR / ".env", override=True)
 
-print("🧪 SAUDE_APP_URL (from .env):", os.environ.get("SAUDE_APP_URL"))
+print("🧪 SAUDE_WEB_URL (from .env):", os.environ.get("SAUDE_WEB_URL"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -182,16 +182,24 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-SAUDE_APP_URL = os.environ.get("SAUDE_APP_URL", "http://localhost:5173")
-
-print("SAUDE_APP_URL:", SAUDE_APP_URL)
+SAUDE_WEB_URL = os.environ.get("SAUDE_WEB_URL", "http://localhost:5173")
+SAUDE_MOBILE_URL = os.environ.get("SAUDE_MOBILE_URL", "capacitor://localhost")  # padrão Capacitor
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [SAUDE_APP_URL]
-CSRF_TRUSTED_ORIGINS = [SAUDE_APP_URL]
+CORS_ALLOWED_ORIGINS = [
+    SAUDE_WEB_URL,
+    SAUDE_MOBILE_URL,
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    SAUDE_WEB_URL.replace("http://", "http://*.").replace("https://", "https://*."),
+    SAUDE_MOBILE_URL,
+]
+
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "Content-Type",
 ]
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
