@@ -34,7 +34,7 @@ O SAÚDE! é um sistema em constante evolução que:
 
 | Recurso | Link |
 |--------|------|
-| 📐 Diagrama do Banco de Dados (OMOP) | [dbdocs.io/saude_mental_database](https://dbdocs.io/Andr%C3%A9%20Amadeu%20Satorres/saude_mental_database) |
+| 📐 Diagrama do Banco de Dados (OMOP) | [dbdocs.io/saude_mental_database]([https://dbdocs.io/Andr%C3%A9%20Amadeu%20Satorres/saude_mental_database](https://dbdocs.io/André%20Amadeu%20Satorres/SAUDE-DB?view=relationships) |
 | 🎨 Protótipos Figma | [Figma do frontend](https://www.figma.com/design/GNpltZCrw4r6nZ74BG1a0D/SAUDE-TELAS?node-id=50-209&p=f&t=2mutAsoFPhOtujGn-0) |
 | 📋 Quadro de tarefas (Trello) | [Trello do projeto SAÚDE!](https://trello.com/b/zcAUxXKt/saude) |
 
