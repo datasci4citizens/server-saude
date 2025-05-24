@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
-import requests
 from django.conf import settings
+from google.auth.transport import requests
 from google.oauth2 import id_token
 from rest_framework.exceptions import APIException
 
