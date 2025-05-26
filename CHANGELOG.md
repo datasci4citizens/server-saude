@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.7.0 (2025-05-26)
+
+### Features
+
+- **SAU-XX**: Deploy
+  ([`64b8d2c`](https://github.com/datasci4citizens/server-saude/commit/64b8d2cc84ef389765a2a8d87802cbbcb75e5776))
+
+- **SAU-XX**: Deploy ([#20](https://github.com/datasci4citizens/server-saude/pull/20),
+  [`d281266`](https://github.com/datasci4citizens/server-saude/commit/d281266f96b2efcf8b9ca0dc9b1ecafcb823c01e))
+
+
 ## v0.6.0 (2025-05-16)
 
 ### Bug Fixes
