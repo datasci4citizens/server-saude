@@ -30,6 +30,30 @@
 
 ### 4.1 Diagrama do modelo
 
+As tabelas estão divididas em grupos distintos:
+
+-**app_saude** são as tabelas aderidas ao OMOP CDM e utilizadas para armazenar dados dentro do prontuário (menos RecurrenceRule)
+
+As outras tabelas estão relacionadas aos mecanismos de funcionamento do aplicativo e não no "prontuário" aderido ao OMOP CDM.
+
+-**auth** dados relacionados a autenticação
+
+-**authtoken**
+
+-**account**
+
+-**socialaccount**
+
+-**contenttypes**
+
+-**admin**
+
+-**sessions**
+
+-**sites**
+
+![Banco de dados OMOP CDM](https://github.com/datasci4citizens/server-saude/blob/develop/docs_omop_cdm/images/SAUDE-DB.png)
+
 ### 4.2 Explicação das tabelas e vocabulários escolhidos
 
 ## 5 Ferramentas importantes
