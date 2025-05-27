@@ -402,7 +402,7 @@ class PersonCreateSerializer(BaseCreateSerializer):
             raise serializers.ValidationError("User not found in the request context.")
 
         if Person.objects.filter(user=user).exists():
-            print(f"Error: Provider with user {user} already exists.")
+            print(f"Error: Person with user {user} already exists.")
             raise serializers.ValidationError("A provider with this user already exists.")
 
         validated_data["user"] = user
@@ -504,29 +504,29 @@ class FullPersonCreateSerializer(serializers.Serializer):
         observations_data = validated_data.pop("observations", [])
         drug_exposures_data = validated_data.pop("drug_exposures", [])
 
-        # Cria Location
+        # Create Location
         location = Location.objects.create(**location_data)
 
-        # Converte os conceitos em int para o Serializer
+        # Convert concept objects to their IDs for the serializer
         person_data["gender_concept"] = person_data.get("gender_concept").concept_id
         person_data["ethnicity_concept"] = person_data.get("ethnicity_concept").concept_id
         person_data["race_concept"] = person_data.get("race_concept").concept_id
 
-        # Adiciona a instância de Location ao person_data
+        # Add the Location instance to person_data
         person_data["location"] = location
 
-        # Valida e cria o Person
+        # Validate and create the Person
         person_serializer = PersonCreateSerializer(data=person_data, context=self.context)
         person_serializer.is_valid(raise_exception=True)
         person = person_serializer.save()
 
-        # Cria Observations e DrugExposures
+        # Create Observations and DrugExposures
         for obs in observations_data:
-            obs.pop("person", None)  # remove se existir
+            obs.pop("person", None)  # remove if exists
             Observation.objects.create(person=person, **obs)
 
         for drug_data in drug_exposures_data:
-            drug_data.pop("person", None)  # remove se existir
+            drug_data.pop("person", None)  # remove if exists
             DrugExposure.objects.create(person=person, **drug_data)
 
         return {
@@ -543,19 +543,18 @@ class FullPersonRetrieveSerializer(serializers.Serializer):
     observations = ObservationRetrieveSerializer(many=True)
     drug_exposures = DrugExposureRetrieveSerializer(many=True)
 
-
 class FullProviderCreateSerializer(serializers.Serializer):
     provider = ProviderCreateSerializer()
 
     def create(self, validated_data):
         provider_data = validated_data.pop("provider")
 
-        # Verifica se specialty_concept é um objeto e extrai o ID
+        # Check if specialty_concept is an object and extract the ID
         specialty_concept = provider_data.get("specialty_concept")
-        if isinstance(specialty_concept, Concept):  # Verifica se é uma instância do modelo Concept
+        if isinstance(specialty_concept, Concept):  # Check if it's a Concept model instance
             provider_data["specialty_concept"] = specialty_concept.concept_id
 
-        # Valida e cria o provider usando o ProviderCreateSerializer
+        # Validate and create the provider using ProviderCreateSerializer
         provider_serializer = ProviderCreateSerializer(data=provider_data, context=self.context)
         provider_serializer.is_valid(raise_exception=True)
         provider = provider_serializer.save()
@@ -686,3 +685,24 @@ class DiaryCreateSerializer(serializers.Serializer):
         Observation.objects.bulk_create(observations)
 
         return {"diary_id": diary_entry.observation_id, "created": True}
+
+
+class ProviderPersonSummarySerializer(serializers.Serializer):
+    person_id = serializers.IntegerField()
+    name = serializers.CharField()
+    age = serializers.IntegerField(allow_null=True)
+    last_visit_date = serializers.DateTimeField(allow_null=True)
+    last_visit_notes = serializers.CharField(allow_null=True, required=False)
+    last_emergency_date = serializers.DateTimeField(allow_null=True)
+
+
+class EmergencyCountSerializer(serializers.Serializer):
+    emergency_count = serializers.IntegerField()
+
+
+class VisitDetailsSerializer(serializers.Serializer):
+    person_name = serializers.CharField()
+    visit_date = serializers.DateTimeField()
+
+class NextVisitSerializer(serializers.Serializer):
+    next_visit = VisitDetailsSerializer(allow_null=True)

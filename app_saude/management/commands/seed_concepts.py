@@ -38,20 +38,24 @@ class Command(BaseCommand):
             )
 
         def add_concept(cid, name, class_id, code, domain_id, vocabulary_id, pt_name=None):
+            defaults = {
+                "concept_name": name,
+                "concept_code": code,
+            }
+            
+            if class_id is not None:
+                defaults["concept_class"] = ConceptClass.objects.get(concept_class_id=class_id)
+            
+            if domain_id is not None:
+                defaults["domain"] = Domain.objects.get(domain_id=domain_id)
+            
+            if vocabulary_id is not None:
+                defaults["vocabulary_id"] = vocabulary_id
+                
             concept, _ = Concept.objects.update_or_create(
                 concept_id=cid,
-                defaults={
-                    "concept_name": name,
-                    "concept_class": ConceptClass.objects.get(concept_class_id=class_id),
-                    "concept_code": code,
-                    "domain": Domain.objects.get(domain_id=domain_id),
-                    "vocabulary_id": vocabulary_id,
-                },
+                defaults=defaults,
             )
-            if pt_name:
-                ConceptSynonym.objects.update_or_create(
-                    concept=concept, concept_synonym_name=pt_name, language_concept_id=4180186  # pt
-                )
 
         def dummy_person(
             name, year_of_birth=None, gender_concept=None, ethnicity_concept=None, race_concept=None, location=None
@@ -324,6 +328,10 @@ class Command(BaseCommand):
         add_concept(
             999004, "Diary Entry Type", "Diary", "diary_entry_type", "Observation", "Observation", "Tipo de entrada"
         )
+
+        #Emergency
+        add_concept(2000100, "Emergency", None , "EMERGENCY", None, None, "Emergência")
+        add_concept(2000101, "Active", None , "ACTIVE", None, None, "Ativo")
 
         User = get_user_model()
         user, _ = User.objects.get_or_create(
