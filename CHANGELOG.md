@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.8.0 (2025-05-26)
+
+### Features
+
+- **nojira**: Deploy fix
+  ([`8bf0319`](https://github.com/datasci4citizens/server-saude/commit/8bf03194b3fb7de07956e2b7f6268079cb9fbae4))
+
+- **nojira**: Deploy fix
+  ([`835e379`](https://github.com/datasci4citizens/server-saude/commit/835e379f57ef3a2488c2f69e3dd754dd6ff3b1bb))
+
+
 ## v0.7.0 (2025-05-26)
 
 ### Features
