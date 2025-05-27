@@ -55,7 +55,6 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
-
     # API
     path("api/", include(router.urls)),
     path("api/user-entity/", UserRoleView.as_view(), name="user-entity"),
@@ -75,7 +74,7 @@ urlpatterns = [
         ProviderPersonDiaryDetailView.as_view(),
         name="acs-diary-detail",
     ),
-
+    path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
