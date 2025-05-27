@@ -149,6 +149,7 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 SOCIALACCOUNT_ADAPTER = "allauth.socialaccount.adapter.DefaultSocialAccountAdapter"
 
 GOOGLE_OAUTH2_CLIENT_ID = os.environ.get("VITE_GOOGLE_CLIENT_ID", "")
+GOOGLE_OAUTH2_CLIENT_ID_MOBILE = os.environ.get("VITE_GOOGLE_CLIENT_ID_MOBILE", "")
 GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get("VITE_GOOGLE_CLIENT_SECRET", "")
 
 SOCIALACCOUNT_PROVIDERS = {

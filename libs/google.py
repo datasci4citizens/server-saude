@@ -27,7 +27,9 @@ def google_get_user_data_web(code):
 def google_get_user_data_mobile(token):
     try:
         idinfo = id_token.verify_oauth2_token(
-            token, requests.Request(), audience=[settings.VITE_GOOGLE_CLIENT_ID, settings.VITE_GOOGLE_CLIENT_ID_MOBILE]
+            token,
+            requests.Request(),
+            audience=[settings.GOOGLE_OAUTH2_CLIENT_ID, settings.GOOGLE_OAUTH2_CLIENT_ID_MOBILE],
         )
 
         return {
