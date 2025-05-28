@@ -29,7 +29,7 @@ def google_get_user_data_mobile(token):
         idinfo = id_token.verify_oauth2_token(
             token,
             requests.Request(),
-            audience=[settings.GOOGLE_OAUTH2_CLIENT_ID_MOBILE],
+            audience=[settings.GOOGLE_OAUTH2_CLIENT_ID_MOBILE, settings.GOOGLE_OAUTH2_CLIENT_ID],
         )
 
         return {
