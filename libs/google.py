@@ -1,7 +1,8 @@
 from typing import Any, Dict
 
+import requests
 from django.conf import settings
-from google.auth.transport import requests
+from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from rest_framework.exceptions import APIException
 
@@ -28,7 +29,7 @@ def google_get_user_data_mobile(token):
     try:
         idinfo = id_token.verify_oauth2_token(
             token,
-            requests.Request(),
+            google_requests.Request(),
             audience=[settings.GOOGLE_OAUTH2_CLIENT_ID],
         )
 
