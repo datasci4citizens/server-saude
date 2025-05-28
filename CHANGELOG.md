@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.9.1 (2025-05-28)
+
+### Bug Fixes
+
+- **sau-45**: Fix web login
+  ([`35c0295`](https://github.com/datasci4citizens/server-saude/commit/35c02951426c1de3e4bd7902fcb0fb4ea836ab16))
+
+- **sau-45**: Fix web login ([#26](https://github.com/datasci4citizens/server-saude/pull/26),
+  [`8f774d0`](https://github.com/datasci4citizens/server-saude/commit/8f774d0a204a2485ee352ac66f5f99772bf3dffb))
+
+
 ## v0.9.0 (2025-05-28)
 
 ### Documentation
