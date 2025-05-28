@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v0.9.0 (2025-05-28)
+
+### Documentation
+
+- Links seção int
+  ([`ead0b23`](https://github.com/datasci4citizens/server-saude/commit/ead0b23cb7018d3907daca1a82f39675c41f7c1d))
+
+### Features
+
+- **sau-45**: Accept both client ids in oauth
+  ([`dd856e8`](https://github.com/datasci4citizens/server-saude/commit/dd856e83970bd51efd19d4686ae898a9f6804674))
+
+- **sau-45**: Accept both client ids in oauth
+  ([#22](https://github.com/datasci4citizens/server-saude/pull/22),
+  [`bfe9049`](https://github.com/datasci4citizens/server-saude/commit/bfe9049cad1518a450c163056f86931f58690f6f))
+
+- **sau-45**: Accept both ids
+  ([`ceb2d72`](https://github.com/datasci4citizens/server-saude/commit/ceb2d72b033c4358937283aa682c1e46408e2d45))
+
+- **sau-45**: Capacitor config
+  ([`3618c9b`](https://github.com/datasci4citizens/server-saude/commit/3618c9bbdaef12eaa96319e5d62e88029bf93a93))
+
+- **sau-45**: Configure double google client id
+  ([`29c460f`](https://github.com/datasci4citizens/server-saude/commit/29c460feb44f01fc6b98f02e9d3e1e930d058f59))
+
+- **sau-45**: Configure double google client id
+  ([`0e9333a`](https://github.com/datasci4citizens/server-saude/commit/0e9333aff876014b6cb4ca8e4a6b9075b0bbe0fd))
+
+- **sau-45**: Fix for 2 client ids ([#23](https://github.com/datasci4citizens/server-saude/pull/23),
+  [`c0909e9`](https://github.com/datasci4citizens/server-saude/commit/c0909e9b06e6e605f123bc57479dcbe9e4bf19a2))
+
+- **sau-45**: Remove unused google id
+  ([`d8ef9d4`](https://github.com/datasci4citizens/server-saude/commit/d8ef9d463c0c7b0996abdacdeee89637a414e16f))
+
+- **sau-45**: Remove unused google id
+  ([#25](https://github.com/datasci4citizens/server-saude/pull/25),
+  [`aa673e9`](https://github.com/datasci4citizens/server-saude/commit/aa673e97907b6b4970daf32bc8088eb827083437))
+
+
 ## v0.8.0 (2025-05-26)
 
 ### Features
