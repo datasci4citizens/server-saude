@@ -74,6 +74,11 @@ urlpatterns = [
         ProviderPersonDiaryDetailView.as_view(),
         name="acs-diary-detail",
     ),
+    path(
+        "person/interest-areas/<int:interest_area_id>/",
+        PersonInterestAreaDetailView.as_view(),
+        name="person-interest-area-detail",
+    ),
     path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

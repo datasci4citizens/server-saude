@@ -945,10 +945,9 @@ class PersonInterestAreaView(APIView):
 
             trigger_ids = relationships.values_list("fact_id_2", flat=True)
 
-            # Buscar objetos Observation dos triggers com informações relacionadas
+            # Searching for triggers related to the interest area
             triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
 
-            # Serializar triggers e adicionar ao resultado
             interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
             results.append(interest_data)
 
@@ -956,12 +955,71 @@ class PersonInterestAreaView(APIView):
 
     @extend_schema(request=InterestAreaSerializer, responses={201: InterestAreaSerializer})
     def post(self, request):
-        """
-        Cria uma nova área de interesse para o usuário autenticado
-        """
+
         serializer = InterestAreaSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         interest_area = serializer.save()
 
-        # Retornar a área de interesse criada
         return Response(InterestAreaSerializer(interest_area).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Interest_Areas"])
+class PersonInterestAreaDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: InterestAreaSerializer})
+    def get(self, request, interest_area_id):
+        person = get_object_or_404(Person, user=request.user)
+
+        interest_area = get_object_or_404(
+            Observation,
+            observation_id=interest_area_id,
+            person=person,
+            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+        )
+
+        interest_data = InterestAreaSerializer(interest_area).data
+
+        relationships = FactRelationship.objects.filter(
+            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+            fact_id_1=interest_area.observation_id,
+            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+        )
+
+        trigger_ids = relationships.values_list("fact_id_2", flat=True)
+        triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
+
+        interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+
+        return Response(interest_data)
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, interest_area_id):
+        person = get_object_or_404(Person, user=request.user)
+
+        interest_area = get_object_or_404(
+            Observation,
+            observation_id=interest_area_id,
+            person=person,
+            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+        )
+
+        relationships = FactRelationship.objects.filter(
+            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+            fact_id_1=interest_area.observation_id,
+            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+        )
+
+        trigger_ids = list(relationships.values_list("fact_id_2", flat=True))
+
+        relationships.delete()
+
+        for trigger_id in trigger_ids:
+            if not FactRelationship.objects.filter(
+                domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id, fact_id_2=trigger_id
+            ).exists():
+                Observation.objects.filter(observation_id=trigger_id).delete()
+
+        interest_area.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

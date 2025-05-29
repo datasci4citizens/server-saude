@@ -79,6 +79,12 @@ class Command(BaseCommand):
             )
             return person
 
+        def relate_concepts(interest_id, trigger_ids, relationship_id):
+            for trigger_id in trigger_ids:
+                ConceptRelationship.objects.update_or_create(
+                    concept_1_id=interest_id, concept_2_id=trigger_id, relationship_id=relationship_id
+                )
+
         # Idioma pt
         concept_class("Language", "Language", 11118)
         domain("Language", "Language", 4180186)
@@ -352,8 +358,17 @@ class Command(BaseCommand):
         add_concept(2000304, "Sleep", "Trigger", "SLEEP", None, None, "Sono")
         add_concept(2000305, "Stress", "Trigger", "STRESS", None, None, "Estresse")
         add_concept(2000306, "Weight", "Trigger", "WEIGHT", None, None, "Peso")
+        add_concept(2000307, "Medication", "Trigger", "MEDICATION", None, None, "Medicação")
+        add_concept(2000308, "Environment", "Trigger", "ENVIRONMENT", None, None, "Ambiente")
 
+        # Fact Relationships
         add_concept(2000400, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
+
+        # Link AOI to Trigger
+
+        relate_concepts(2000202, [2000302, 2000303, 2000304], "AOI_Trigger")  # Hypertension  # Diet, PA, Sleep
+        relate_concepts(2000203, [2000302, 2000306, 2000307], "AOI_Trigger")  # Diabetes  # Diet, Weight, Medication
+        relate_concepts(2000204, [2000305, 2000308, 2000307], "AOI_Trigger")  # Sleep  # Stress, Environment, Medication
 
         User = get_user_model()
         user, _ = User.objects.get_or_create(
