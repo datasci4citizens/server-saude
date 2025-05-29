@@ -8,6 +8,13 @@ Neste arquivo será apresentada uma brevíssima introdução ao OMOP CDM, bem co
 
 ### 1.2 Versões utilizadas
 
+O projeto foi desenvolvido considerando para alinhamento do banco de dados a versão 5.4 do modelo OMOP CDM. A escolha foi considerando que era a versão estável na época de início do projeto:
+
+"As of April 2025, the most recent CDM is at version 6.0, while version 5.4 is the stable version used by most tools in the OMOP ecosystem."  
+— [Wikipedia](https://en.wikipedia.org/wiki/Observational_Health_Data_Sciences_and_Informatics)
+
+Em relação aos conceitos (ou *concepts*), uma das partes centrais do modelo, foram baixadas na data 
+
 ### 1.3 Links importantes
 
 A seguir serão apresentados fontes importantes de informação criadas pela comunidade que desenvolve o OMOP CDM. Tais arquivos podem ser utilizados para sanar dúvidas que o presente arquivo não consiga resolver.
