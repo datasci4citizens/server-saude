@@ -1,11 +1,14 @@
+from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from django.shortcuts import get_object_or_404
 
 from .models import *
 from .utils.concept import get_concept_by_code
+
+User = get_user_model()
 
 
 ######## AUTH SERIALIZERS ########
@@ -417,6 +420,9 @@ class PersonUpdateSerializer(BaseUpdateSerializer):
 
 
 class PersonRetrieveSerializer(BaseRetrieveSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
     class Meta:
         model = Person
         fields = "__all__"
@@ -449,6 +455,9 @@ class ProviderUpdateSerializer(BaseUpdateSerializer):
 
 
 class ProviderRetrieveSerializer(BaseRetrieveSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
     class Meta:
         model = Provider
         fields = "__all__"
@@ -570,20 +579,28 @@ class FullProviderRetrieveSerializer(serializers.Serializer):
 
 class ProviderLinkCodeResponseSerializer(serializers.Serializer):
     code = serializers.CharField(
-        max_length=6, help_text="Código gerado para vincular uma pessoa a este provider (ex: 'A1B2C3')"
+        max_length=6, help_text="Code generated to link a person to this provider (ex: 'A1B2C3')"
     )
 
 
 class PersonLinkProviderRequestSerializer(serializers.Serializer):
-    code = serializers.CharField(max_length=16, help_text="Código de vínculo fornecido pelo provider")
+    code = serializers.CharField(max_length=16, help_text="Link code provided by the provider")
 
 
 class PersonLinkProviderResponseSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=["linked"], help_text="Resultado do vínculo")
-    already_existed = serializers.BooleanField(help_text="Indica se o relacionamento já existia antes")
+    status = serializers.ChoiceField(choices=["linked"], help_text="Linking result")
+    already_existed = serializers.BooleanField(help_text="Indicates if the relationship already existed")
 
 
-class EmergencyCreateSerializer(serializers.ModelSerializer):
+class PersonProviderUnlinkRequestSerializer(serializers.Serializer):
+    pass
+
+
+class PersonProviderUnlinkResponseSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["unlinked"], help_text="Unlinking result")
+
+
+class HelpCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Observation
         fields = [
@@ -593,7 +610,7 @@ class EmergencyCreateSerializer(serializers.ModelSerializer):
         ]
 
 
-class EmergencyRetrieveSerializer(serializers.ModelSerializer):
+class HelpRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Observation
         fields = [
@@ -637,10 +654,10 @@ class DiaryCreateSerializer(serializers.Serializer):
     habits_shared = serializers.BooleanField()
     wellness_shared = serializers.BooleanField()
     habits = serializers.ListField(
-        child=serializers.DictField(), default=list  # cada item: {"concept_id": X, "value": Y}
+        child=serializers.DictField(), default=list  # each item: {"concept_id": X, "value": Y}
     )
     wellness = serializers.ListField(
-        child=serializers.DictField(), default=list  # cada item: {"concept_id": X, "value": Y}
+        child=serializers.DictField(), default=list  # each item: {"concept_id": X, "value": Y}
     )
 
     def create(self, validated_data):
@@ -648,7 +665,7 @@ class DiaryCreateSerializer(serializers.Serializer):
         person = Person.objects.get(user=user)
         now = timezone.now()
 
-        # 1. Observation "mãe"
+        # 1. Observation "mother"
         diary_entry = Observation.objects.create(
             person=person,
             observation_concept=get_concept_by_code("diary_entry"),
@@ -658,10 +675,10 @@ class DiaryCreateSerializer(serializers.Serializer):
             observation_type_concept=get_concept_by_code("diary_entry_type"),
         )
 
-        # 2. Observações do diário
+        # 2. Observations of the diary
         observations = []
 
-        # Texto livre
+        # Free text
         if validated_data["text"]:
             observations.append(
                 Observation(
@@ -695,11 +712,11 @@ class ProviderPersonSummarySerializer(serializers.Serializer):
     age = serializers.IntegerField(allow_null=True)
     last_visit_date = serializers.DateTimeField(allow_null=True)
     last_visit_notes = serializers.CharField(allow_null=True, required=False)
-    last_emergency_date = serializers.DateTimeField(allow_null=True)
+    last_help_date = serializers.DateTimeField(allow_null=True)
 
 
-class EmergencyCountSerializer(serializers.Serializer):
-    emergency_count = serializers.IntegerField()
+class HelpCountSerializer(serializers.Serializer):
+    help_count = serializers.IntegerField()
 
 
 class VisitDetailsSerializer(serializers.Serializer):
@@ -719,7 +736,7 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("custom_trigger_name"):
-            raise serializers.ValidationError("Você deve fornecer observation_concept_id ou custom_trigger_name")
+            raise serializers.ValidationError("You must provide observation_concept_id or custom_trigger_name")
         return data
 
     def to_representation(self, instance):
@@ -756,7 +773,7 @@ class InterestAreaSerializer(serializers.Serializer):
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("custom_interest_name"):
-            raise serializers.ValidationError("Você deve fornecer concept_id ou custom_interest_name")
+            raise serializers.ValidationError("You must provide observation_concept_id or custom_interest_name")
         return data
 
     def create(self, validated_data):
@@ -783,9 +800,6 @@ class InterestAreaSerializer(serializers.Serializer):
         interest_area, created = Observation.objects.update_or_create(person=person, **filters, defaults=defaults)
 
         if created:
-            print(f"Created new interest area: {interest_area.observation_id}")
-            print(interest_area.value_as_concept)
-            print(get_concept_by_code("value_no"))
             interest_area.value_as_concept = get_concept_by_code("value_no")
             interest_area.save()
 
@@ -794,7 +808,7 @@ class InterestAreaSerializer(serializers.Serializer):
             validated_data["triggers"] = []
 
         if created and validated_data.get("observation_concept_id") != CUSTOM_INTEREST_ID:
-            # Buscar relacionamentos para este conceito
+            # Search for relationships for this concept
             related_triggers = ConceptRelationship.objects.filter(
                 concept_1_id=validated_data["observation_concept_id"], relationship_id="AOI_Trigger"
             )
@@ -930,3 +944,43 @@ class InterestAreaSerializer(serializers.Serializer):
             representation["concept_name"] = None
 
         return representation
+
+
+class UserRetrieveSerializer(BaseRetrieveSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "first_name", "last_name", "is_active", "is_staff", "date_joined"]
+        read_only_fields = fields
+
+
+class UserDeleteSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(help_text="ID of the user to be deleted")
+
+    def validate_user_id(self, value):
+        if not User.objects.filter(id=value).exists():
+            raise serializers.ValidationError("User not found.")
+        return value
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(help_text="Refresh token for logout")
+
+    def validate_refresh(self, value):
+        if not value:
+            raise serializers.ValidationError("The refresh token is required.")
+        return value
+
+
+class MarkAttentionPointSerializer(serializers.Serializer):
+    observation_id = serializers.IntegerField(help_text="ID of the observation to be marked as an attention point")
+    is_attention_point = serializers.BooleanField(
+        help_text="Indicates whether the observation should be marked as an attention point"
+    )
+
+
+class AccountRetrieveSerializer(serializers.Serializer):
+    pass
+
+
+class AccountDeleteSerializer(serializers.Serializer):
+    pass
