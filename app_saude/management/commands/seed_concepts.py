@@ -339,8 +339,8 @@ class Command(BaseCommand):
             999004, "Diary Entry Type", "Diary", "diary_entry_type", "Observation", "Observation", "Tipo de entrada"
         )
 
-        # Emergency
-        add_concept(2000100, "Emergency", None, "EMERGENCY", None, None, "Emergência")
+        # Help
+        add_concept(2000100, "Help", None, "HELP", None, None, "Ajuda")
         add_concept(2000101, "Active", None, "ACTIVE", None, None, "Ativo")
 
         # Area of Interest
@@ -376,7 +376,7 @@ class Command(BaseCommand):
             defaults={"username": "mockprovider", "first_name": "Dr. Mock", "last_name": "Provider"},
         )
 
-        Provider.objects.get_or_create(user=user)
+        # Provider.objects.get_or_create(user=user)
         self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
 
         # Sintomas predefinidos
