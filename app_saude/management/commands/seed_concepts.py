@@ -376,7 +376,7 @@ class Command(BaseCommand):
             defaults={"username": "mockprovider", "first_name": "Dr. Mock", "last_name": "Provider"},
         )
 
-        Provider.objects.get_or_create(user=user)
+        # Provider.objects.get_or_create(user=user)
         self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
 
         # Sintomas predefinidos
