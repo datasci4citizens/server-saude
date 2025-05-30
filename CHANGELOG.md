@@ -1,6 +1,72 @@
 # CHANGELOG
 
 
+## v0.10.0 (2025-05-30)
+
+### Bug Fixes
+
+- Create concept accepts null values
+  ([`6639f71`](https://github.com/datasci4citizens/server-saude/commit/6639f715bbf82318e1fccdbea000ed401beb7fd6))
+
+- Small fixes
+  ([`6dd0382`](https://github.com/datasci4citizens/server-saude/commit/6dd03825ce5306244c0f72e9f71886bb1c304cbf))
+
+- **core**: Small fixes
+  ([`9e411bb`](https://github.com/datasci4citizens/server-saude/commit/9e411bb130c4e93e2bd968e412f6d21618772413))
+
+- **nojira**: Merge develop
+  ([`4b7feaa`](https://github.com/datasci4citizens/server-saude/commit/4b7feaad015750a12785a091c1f7128f15e4c64f))
+
+- **nojira**: Merge develop
+  ([`6e0c405`](https://github.com/datasci4citizens/server-saude/commit/6e0c405d1f32321605d897ef4acfb9dba07ee809))
+
+### Documentation
+
+- Intro OMOP CDM
+  ([`99a7d4f`](https://github.com/datasci4citizens/server-saude/commit/99a7d4f7187c0b5ba3e144939f17c0afb2c7cf62))
+
+- Intro OMOP CDM
+  ([`7036a25`](https://github.com/datasci4citizens/server-saude/commit/7036a253c01decc8e9defc2b42224905b43ced6a))
+
+### Features
+
+- Area of interest
+  ([`f7f31d9`](https://github.com/datasci4citizens/server-saude/commit/f7f31d9bad522913f4abefa50dfcd3a10dfaf645))
+
+- Create provider related serializers
+  ([`b6a95ef`](https://github.com/datasci4citizens/server-saude/commit/b6a95ef4e5e488fb7e0d50ff2993fd1cb47339ef))
+
+- Initialize interest concept value as no
+  ([`166096a`](https://github.com/datasci4citizens/server-saude/commit/166096ab9ab01ea0b229895bf858803c54023f18))
+
+- Initialize interest concept value as no
+  ([`e8fa3a9`](https://github.com/datasci4citizens/server-saude/commit/e8fa3a9506b9d243858e85f0e4c018db9a2d4733))
+
+- **SAU-30**: Area of interest initial
+  ([`5bbf1fd`](https://github.com/datasci4citizens/server-saude/commit/5bbf1fdceb9c7f2f129503887f6008b17d4d1d63))
+
+- **sau-30**: Fix
+  ([`1e3d885`](https://github.com/datasci4citizens/server-saude/commit/1e3d885445741919f936f979d567fd43629d95ee))
+
+- **sau-38**: Logout delete account desvinculo and attention
+  ([#27](https://github.com/datasci4citizens/server-saude/pull/27),
+  [`0aa0c5e`](https://github.com/datasci4citizens/server-saude/commit/0aa0c5e0ebb21e36cb1490ba65a9fd87a8328309))
+
+- **sau-38**: Logout, delete account, desvinculo and attention
+  ([`73c8005`](https://github.com/datasci4citizens/server-saude/commit/73c80058b915638cc2e8d770654b1f13e3ff6fd8))
+
+- **sau-38**: Small
+  ([`0c285db`](https://github.com/datasci4citizens/server-saude/commit/0c285db6d3e54a5c58cd2be4b84f0a8986edc5b1))
+
+### Refactoring
+
+- Urls
+  ([`8f72b6c`](https://github.com/datasci4citizens/server-saude/commit/8f72b6cce5ef0c2f2a387774a303377c22e1b2e3))
+
+- Views
+  ([`8c577c6`](https://github.com/datasci4citizens/server-saude/commit/8c577c689f4238ffa3600bf1d2a9d6ccb39b2dfd))
+
+
 ## v0.9.1 (2025-05-28)
 
 ### Bug Fixes
