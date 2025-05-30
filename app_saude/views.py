@@ -749,7 +749,7 @@ class HelpCountView(APIView):
 
     def get(self, request):
         """
-        Get the number of active helps for patients linked to the authenticated provider
+        This endpoint counts the number of active helps (observations) for all patients linked to the provider.
 
         Returns:
             Object with the count of active helps:
