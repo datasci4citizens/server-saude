@@ -1,11 +1,14 @@
+from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from django.shortcuts import get_object_or_404
 
 from .models import *
 from .utils.concept import get_concept_by_code
+
+User = get_user_model()
 
 
 ######## AUTH SERIALIZERS ########
@@ -417,6 +420,9 @@ class PersonUpdateSerializer(BaseUpdateSerializer):
 
 
 class PersonRetrieveSerializer(BaseRetrieveSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
     class Meta:
         model = Person
         fields = "__all__"
@@ -449,6 +455,9 @@ class ProviderUpdateSerializer(BaseUpdateSerializer):
 
 
 class ProviderRetrieveSerializer(BaseRetrieveSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
     class Meta:
         model = Provider
         fields = "__all__"
@@ -583,7 +592,15 @@ class PersonLinkProviderResponseSerializer(serializers.Serializer):
     already_existed = serializers.BooleanField(help_text="Indica se o relacionamento já existia antes")
 
 
-class EmergencyCreateSerializer(serializers.ModelSerializer):
+class PersonProviderUnlinkRequestSerializer(serializers.Serializer):
+    pass
+
+
+class PersonProviderUnlinkResponseSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["unlinked"], help_text="Resultado do desvinculo")
+
+
+class HelpCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Observation
         fields = [
@@ -593,7 +610,7 @@ class EmergencyCreateSerializer(serializers.ModelSerializer):
         ]
 
 
-class EmergencyRetrieveSerializer(serializers.ModelSerializer):
+class HelpRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Observation
         fields = [
@@ -695,11 +712,11 @@ class ProviderPersonSummarySerializer(serializers.Serializer):
     age = serializers.IntegerField(allow_null=True)
     last_visit_date = serializers.DateTimeField(allow_null=True)
     last_visit_notes = serializers.CharField(allow_null=True, required=False)
-    last_emergency_date = serializers.DateTimeField(allow_null=True)
+    last_help_date = serializers.DateTimeField(allow_null=True)
 
 
-class EmergencyCountSerializer(serializers.Serializer):
-    emergency_count = serializers.IntegerField()
+class HelpCountSerializer(serializers.Serializer):
+    help_count = serializers.IntegerField()
 
 
 class VisitDetailsSerializer(serializers.Serializer):
@@ -940,3 +957,43 @@ class InterestAreaSerializer(serializers.Serializer):
             representation["concept_name"] = None
 
         return representation
+
+
+class UserRetrieveSerializer(BaseRetrieveSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "first_name", "last_name", "is_active", "is_staff", "date_joined"]
+        read_only_fields = fields
+
+
+class UserDeleteSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(help_text="ID do usuário a ser deletado")
+
+    def validate_user_id(self, value):
+        if not User.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Usuário não encontrado.")
+        return value
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(help_text="Token de refresh para logout")
+
+    def validate_refresh(self, value):
+        if not value:
+            raise serializers.ValidationError("O token de refresh é obrigatório.")
+        return value
+
+
+class MarkAttentionPointSerializer(serializers.Serializer):
+    observation_id = serializers.IntegerField(help_text="ID da observação a ser marcada como ponto de atenção")
+    is_attention_point = serializers.BooleanField(
+        help_text="Indica se a observação deve ser marcada como ponto de atenção"
+    )
+
+
+class AccountRetrieveSerializer(serializers.Serializer):
+    pass
+
+
+class AccountDeleteSerializer(serializers.Serializer):
+    pass
