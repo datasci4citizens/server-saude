@@ -1,10 +1,14 @@
+from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import *
 from .utils.concept import get_concept_by_code
+
+User = get_user_model()
 
 
 ######## AUTH SERIALIZERS ########
@@ -402,7 +406,7 @@ class PersonCreateSerializer(BaseCreateSerializer):
             raise serializers.ValidationError("User not found in the request context.")
 
         if Person.objects.filter(user=user).exists():
-            print(f"Error: Provider with user {user} already exists.")
+            print(f"Error: Person with user {user} already exists.")
             raise serializers.ValidationError("A provider with this user already exists.")
 
         validated_data["user"] = user
@@ -416,6 +420,9 @@ class PersonUpdateSerializer(BaseUpdateSerializer):
 
 
 class PersonRetrieveSerializer(BaseRetrieveSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
     class Meta:
         model = Person
         fields = "__all__"
@@ -448,6 +455,9 @@ class ProviderUpdateSerializer(BaseUpdateSerializer):
 
 
 class ProviderRetrieveSerializer(BaseRetrieveSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
     class Meta:
         model = Provider
         fields = "__all__"
@@ -504,29 +514,29 @@ class FullPersonCreateSerializer(serializers.Serializer):
         observations_data = validated_data.pop("observations", [])
         drug_exposures_data = validated_data.pop("drug_exposures", [])
 
-        # Cria Location
+        # Create Location
         location = Location.objects.create(**location_data)
 
-        # Converte os conceitos em int para o Serializer
+        # Convert concept objects to their IDs for the serializer
         person_data["gender_concept"] = person_data.get("gender_concept").concept_id
         person_data["ethnicity_concept"] = person_data.get("ethnicity_concept").concept_id
         person_data["race_concept"] = person_data.get("race_concept").concept_id
 
-        # Adiciona a instância de Location ao person_data
+        # Add the Location instance to person_data
         person_data["location"] = location
 
-        # Valida e cria o Person
+        # Validate and create the Person
         person_serializer = PersonCreateSerializer(data=person_data, context=self.context)
         person_serializer.is_valid(raise_exception=True)
         person = person_serializer.save()
 
-        # Cria Observations e DrugExposures
+        # Create Observations and DrugExposures
         for obs in observations_data:
-            obs.pop("person", None)  # remove se existir
+            obs.pop("person", None)  # remove if exists
             Observation.objects.create(person=person, **obs)
 
         for drug_data in drug_exposures_data:
-            drug_data.pop("person", None)  # remove se existir
+            drug_data.pop("person", None)  # remove if exists
             DrugExposure.objects.create(person=person, **drug_data)
 
         return {
@@ -550,12 +560,12 @@ class FullProviderCreateSerializer(serializers.Serializer):
     def create(self, validated_data):
         provider_data = validated_data.pop("provider")
 
-        # Verifica se specialty_concept é um objeto e extrai o ID
+        # Check if specialty_concept is an object and extract the ID
         specialty_concept = provider_data.get("specialty_concept")
-        if isinstance(specialty_concept, Concept):  # Verifica se é uma instância do modelo Concept
+        if isinstance(specialty_concept, Concept):  # Check if it's a Concept model instance
             provider_data["specialty_concept"] = specialty_concept.concept_id
 
-        # Valida e cria o provider usando o ProviderCreateSerializer
+        # Validate and create the provider using ProviderCreateSerializer
         provider_serializer = ProviderCreateSerializer(data=provider_data, context=self.context)
         provider_serializer.is_valid(raise_exception=True)
         provider = provider_serializer.save()
@@ -569,20 +579,28 @@ class FullProviderRetrieveSerializer(serializers.Serializer):
 
 class ProviderLinkCodeResponseSerializer(serializers.Serializer):
     code = serializers.CharField(
-        max_length=6, help_text="Código gerado para vincular uma pessoa a este provider (ex: 'A1B2C3')"
+        max_length=6, help_text="Code generated to link a person to this provider (ex: 'A1B2C3')"
     )
 
 
 class PersonLinkProviderRequestSerializer(serializers.Serializer):
-    code = serializers.CharField(max_length=16, help_text="Código de vínculo fornecido pelo provider")
+    code = serializers.CharField(max_length=16, help_text="Link code provided by the provider")
 
 
 class PersonLinkProviderResponseSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=["linked"], help_text="Resultado do vínculo")
-    already_existed = serializers.BooleanField(help_text="Indica se o relacionamento já existia antes")
+    status = serializers.ChoiceField(choices=["linked"], help_text="Linking result")
+    already_existed = serializers.BooleanField(help_text="Indicates if the relationship already existed")
 
 
-class EmergencyCreateSerializer(serializers.ModelSerializer):
+class PersonProviderUnlinkRequestSerializer(serializers.Serializer):
+    pass
+
+
+class PersonProviderUnlinkResponseSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["unlinked"], help_text="Unlinking result")
+
+
+class HelpCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Observation
         fields = [
@@ -592,7 +610,7 @@ class EmergencyCreateSerializer(serializers.ModelSerializer):
         ]
 
 
-class EmergencyRetrieveSerializer(serializers.ModelSerializer):
+class HelpRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Observation
         fields = [
@@ -636,10 +654,10 @@ class DiaryCreateSerializer(serializers.Serializer):
     habits_shared = serializers.BooleanField()
     wellness_shared = serializers.BooleanField()
     habits = serializers.ListField(
-        child=serializers.DictField(), default=list  # cada item: {"concept_id": X, "value": Y}
+        child=serializers.DictField(), default=list  # each item: {"concept_id": X, "value": Y}
     )
     wellness = serializers.ListField(
-        child=serializers.DictField(), default=list  # cada item: {"concept_id": X, "value": Y}
+        child=serializers.DictField(), default=list  # each item: {"concept_id": X, "value": Y}
     )
 
     def create(self, validated_data):
@@ -647,7 +665,7 @@ class DiaryCreateSerializer(serializers.Serializer):
         person = Person.objects.get(user=user)
         now = timezone.now()
 
-        # 1. Observation "mãe"
+        # 1. Observation "mother"
         diary_entry = Observation.objects.create(
             person=person,
             observation_concept=get_concept_by_code("diary_entry"),
@@ -657,10 +675,10 @@ class DiaryCreateSerializer(serializers.Serializer):
             observation_type_concept=get_concept_by_code("diary_entry_type"),
         )
 
-        # 2. Observações do diário
+        # 2. Observations of the diary
         observations = []
 
-        # Texto livre
+        # Free text
         if validated_data["text"]:
             observations.append(
                 Observation(
@@ -686,3 +704,283 @@ class DiaryCreateSerializer(serializers.Serializer):
         Observation.objects.bulk_create(observations)
 
         return {"diary_id": diary_entry.observation_id, "created": True}
+
+
+class ProviderPersonSummarySerializer(serializers.Serializer):
+    person_id = serializers.IntegerField()
+    name = serializers.CharField()
+    age = serializers.IntegerField(allow_null=True)
+    last_visit_date = serializers.DateTimeField(allow_null=True)
+    last_visit_notes = serializers.CharField(allow_null=True, required=False)
+    last_help_date = serializers.DateTimeField(allow_null=True)
+
+
+class HelpCountSerializer(serializers.Serializer):
+    help_count = serializers.IntegerField()
+
+
+class VisitDetailsSerializer(serializers.Serializer):
+    person_name = serializers.CharField()
+    visit_date = serializers.DateTimeField()
+
+
+class NextVisitSerializer(serializers.Serializer):
+    next_visit = VisitDetailsSerializer(allow_null=True)
+
+
+class InterestAreaTriggerSerializer(serializers.Serializer):
+    observation_concept_id = serializers.IntegerField(required=False, allow_null=True)
+    custom_trigger_name = serializers.CharField(required=False, allow_null=True)
+    value_as_string = serializers.CharField(required=False, allow_null=True)
+    concept_name = serializers.CharField(required=False, allow_null=True)
+
+    def validate(self, data):
+        if not data.get("observation_concept_id") and not data.get("custom_trigger_name"):
+            raise serializers.ValidationError("You must provide observation_concept_id or custom_trigger_name")
+        return data
+
+    def to_representation(self, instance):
+        representation = {
+            "trigger_id": instance.observation_id,
+            "observation_concept_id": instance.observation_concept_id,
+            "custom_trigger_name": instance.observation_source_value,
+            "value_as_string": instance.value_as_string,
+        }
+
+        # Add concept name if available
+        if instance.observation_concept_id == get_concept_by_code("CUSTOM_TRIGGER").concept_id:
+            representation["concept_name"] = instance.observation_source_value
+        elif instance.observation_concept:
+            # Use concept synonym if available, otherwise fallback to concept_name
+            synonyms = instance.observation_concept.concept_synonym_concept_set.filter(
+                language_concept__concept_code=self.context.get("lang", "pt")
+            )
+            if synonyms.exists():
+                representation["concept_name"] = synonyms.first().concept_synonym_name
+            else:
+                representation["concept_name"] = instance.observation_concept.concept_name
+        else:
+            representation["concept_name"] = None
+
+        return representation
+
+
+class InterestAreaSerializer(serializers.Serializer):
+    observation_concept_id = serializers.IntegerField(required=False, allow_null=True)
+    custom_interest_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    value_as_string = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    triggers = InterestAreaTriggerSerializer(many=True, required=False)
+
+    def validate(self, data):
+        if not data.get("observation_concept_id") and not data.get("custom_interest_name"):
+            raise serializers.ValidationError("You must provide observation_concept_id or custom_interest_name")
+        return data
+
+    def create(self, validated_data):
+        user = self.context.get("request").user
+        person = get_object_or_404(Person, user=user)
+
+        CUSTOM_INTEREST_ID = get_concept_by_code("CUSTOM_INTEREST").concept_id
+        CUSTOM_TRIGGER_ID = get_concept_by_code("CUSTOM_TRIGGER").concept_id
+
+        # Interest Area
+        defaults = {
+            "observation_date": timezone.now(),
+            "observation_concept_id": validated_data.get("observation_concept_id"),
+            "observation_type_concept_id": get_concept_by_code("INTEREST_AREA").concept_id,
+            "value_as_string": validated_data.get("value_as_string", ""),
+        }
+
+        filters = {}
+        if validated_data.get("observation_concept_id") == CUSTOM_INTEREST_ID:
+            filters["observation_source_value"] = validated_data["custom_interest_name"]
+        else:
+            filters["observation_concept_id"] = validated_data.get("observation_concept_id")
+
+        interest_area, created = Observation.objects.update_or_create(person=person, **filters, defaults=defaults)
+
+        if created:
+            interest_area.value_as_concept = get_concept_by_code("value_no")
+            interest_area.save()
+
+        # Triggers
+        if "triggers" not in validated_data:
+            validated_data["triggers"] = []
+
+        if created and validated_data.get("observation_concept_id") != CUSTOM_INTEREST_ID:
+            # Search for relationships for this concept
+            related_triggers = ConceptRelationship.objects.filter(
+                concept_1_id=validated_data["observation_concept_id"], relationship_id="AOI_Trigger"
+            )
+
+            # For each related trigger, create a new trigger observation
+            for relationship in related_triggers:
+                trigger_concept_id = relationship.concept_2_id
+
+                validated_data["triggers"].append(
+                    {"observation_concept_id": trigger_concept_id, "custom_trigger_name": None, "value_as_string": None}
+                )
+
+        # Get all current triggers for this interest area
+        current_relationships = FactRelationship.objects.filter(
+            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+            fact_id_1=interest_area.observation_id,
+            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+        )
+
+        # Get all trigger observation IDs
+        trigger_ids = current_relationships.values_list("fact_id_2", flat=True)
+
+        # Fetch all trigger observations
+        trigger_observations = Observation.objects.filter(observation_id__in=trigger_ids)
+
+        # Create a mapping of existing triggers
+        existing_triggers = {}
+        for trigger in trigger_observations:
+            key = (trigger.observation_concept_id, trigger.observation_source_value)
+            existing_triggers[key] = trigger
+
+        # Process new triggers
+
+        for trigger_data in validated_data.get("triggers"):
+
+            key = (
+                trigger_data.get("observation_concept_id"),
+                trigger_data.get("custom_trigger_name"),
+            )
+
+            # Check if we already have this trigger for this interest area
+            if key in existing_triggers:
+                # Update existing trigger
+                trigger = existing_triggers[key]
+                trigger.value_as_string = trigger_data.get("value_as_string", "")
+                trigger.observation_date = timezone.now()
+                trigger.save()
+                # Remove from dict so we know it's been processed
+                del existing_triggers[key]
+            else:
+                # Create new trigger
+                trigger_kwargs = {
+                    "person": person,
+                    "observation_date": timezone.now(),
+                    "value_as_string": trigger_data.get("value_as_string", ""),
+                    "observation_type_concept_id": get_concept_by_code("TRIGGER").concept_id,
+                    "observation_concept_id": trigger_data.get("observation_concept_id"),
+                }
+
+                specific_kwargs = {}
+                if trigger_data.get("observation_concept_id") == CUSTOM_TRIGGER_ID:
+                    specific_kwargs = {
+                        "observation_source_value": trigger_data["custom_trigger_name"],
+                    }
+
+                trigger = Observation.objects.create(**trigger_kwargs, **specific_kwargs)
+
+                # Create relationship
+                FactRelationship.objects.create(
+                    domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                    fact_id_1=interest_area.observation_id,
+                    domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id,
+                    fact_id_2=trigger.observation_id,
+                    relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+                )
+
+        # Delete any remaining triggers that weren't in the new data
+        # No crowd sourcing
+        for trigger in existing_triggers.values():
+            FactRelationship.objects.filter(
+                domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id,
+                fact_id_2=trigger.observation_id,
+                fact_id_1=interest_area.observation_id,
+            ).delete()
+            trigger.delete()
+
+        return interest_area
+
+    def delete(self, instance):
+        """
+        Deleta uma área de interesse e suas relações com triggers
+        """
+        relationships = FactRelationship.objects.filter(
+            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+            fact_id_1=instance.observation_id,
+            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+        )
+
+        trigger_ids = relationships.values_list("fact_id_2", flat=True)
+
+        relationships.delete()
+
+        for trigger_id in trigger_ids:
+            if not FactRelationship.objects.filter(
+                domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id, fact_id_2=trigger_id
+            ).exists():
+                Observation.objects.filter(observation_id=trigger_id).delete()
+
+        instance.delete()
+
+        return True
+
+    def to_representation(self, instance):
+        """Enhance the interest area representation with concept names"""
+        representation = {
+            "interest_area_id": instance.observation_id,
+            "observation_concept_id": instance.observation_concept_id,
+            "custom_interest_name": instance.observation_source_value,
+            "value_as_string": instance.value_as_string,
+        }
+
+        if instance.observation_concept_id == get_concept_by_code("CUSTOM_INTEREST").concept_id:
+            representation["concept_name"] = instance.observation_source_value
+        elif instance.observation_concept:
+            synonyms = instance.observation_concept.concept_synonym_concept_set.filter(
+                language_concept__concept_code=self.context.get("lang", "pt")
+            )
+            if synonyms.exists():
+                representation["concept_name"] = synonyms.first().concept_synonym_name
+            else:
+                representation["concept_name"] = instance.observation_concept.concept_name
+        else:
+            representation["concept_name"] = None
+
+        return representation
+
+
+class UserRetrieveSerializer(BaseRetrieveSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "first_name", "last_name", "is_active", "is_staff", "date_joined"]
+        read_only_fields = fields
+
+
+class UserDeleteSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(help_text="ID of the user to be deleted")
+
+    def validate_user_id(self, value):
+        if not User.objects.filter(id=value).exists():
+            raise serializers.ValidationError("User not found.")
+        return value
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(help_text="Refresh token for logout")
+
+    def validate_refresh(self, value):
+        if not value:
+            raise serializers.ValidationError("The refresh token is required.")
+        return value
+
+
+class MarkAttentionPointSerializer(serializers.Serializer):
+    observation_id = serializers.IntegerField(help_text="ID of the observation to be marked as an attention point")
+    is_attention_point = serializers.BooleanField(
+        help_text="Indicates whether the observation should be marked as an attention point"
+    )
+
+
+class AccountRetrieveSerializer(serializers.Serializer):
+    pass
+
+
+class AccountDeleteSerializer(serializers.Serializer):
+    pass
