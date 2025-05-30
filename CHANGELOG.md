@@ -1,6 +1,61 @@
 # CHANGELOG
 
 
+## v1.1.0 (2025-05-30)
+
+### Bug Fixes
+
+- **nojira**: Test semantic release
+  ([`9b35461`](https://github.com/datasci4citizens/server-saude/commit/9b35461211c694c2956b7653621e7adf1ed6ffef))
+
+### Documentation
+
+- Intro OMOP CDM
+  ([`cde9d84`](https://github.com/datasci4citizens/server-saude/commit/cde9d84a298b6a4a2abcc18bde9d2122fdd527ac))
+
+- **nojira**: Omop cdm readme
+  ([`5a10745`](https://github.com/datasci4citizens/server-saude/commit/5a10745c13693b1b327843609af7ed8ba6e4a7b2))
+
+- **nojira**: Omop cdm readme
+  ([`12c8e6f`](https://github.com/datasci4citizens/server-saude/commit/12c8e6f896db12f32c3dd39e7163b22e96f67cae))
+
+### Features
+
+- Força semantic release funcionar
+  ([`054c013`](https://github.com/datasci4citizens/server-saude/commit/054c013ca470cd5fc9622dc1a06933b1a01a8d67))
+
+- Força semantic release funcionar
+  ([`140ccf5`](https://github.com/datasci4citizens/server-saude/commit/140ccf5fc5c5bcb86733ceb736bc06f251e12df1))
+
+- **nojira**: Força semantic release funcionar
+  ([`2cf926f`](https://github.com/datasci4citizens/server-saude/commit/2cf926f0b86ae04db3aeb6a910026aacb694d0f8))
+
+- **nojira**: Força semantic release funcionar
+  ([`f9c7d7c`](https://github.com/datasci4citizens/server-saude/commit/f9c7d7c37b9b7aacebb82144d5a0a676c0a9116e))
+
+- **nojira**: Força semantic release funcionar
+  ([`fc2f5b9`](https://github.com/datasci4citizens/server-saude/commit/fc2f5b9f6c0cb5872be14f50cbe76d16dee0640c))
+
+
+## v1.0.1 (2025-05-30)
+
+### Bug Fixes
+
+- **nojira**: Try semantic release
+  ([`483359f`](https://github.com/datasci4citizens/server-saude/commit/483359fe86171c20d02ffb2f6d1250d28a77eb02))
+
+
+## v1.0.0 (2025-05-30)
+
+### Bug Fixes
+
+- **nojira**: Try semantic release
+  ([`eee14e6`](https://github.com/datasci4citizens/server-saude/commit/eee14e6de5dcc079f16ebd79433a4f47f490f7af))
+
+- **nojira**: Try semantic release
+  ([`30ff7a2`](https://github.com/datasci4citizens/server-saude/commit/30ff7a245fe5454b0a0df203ee51811571b1c519))
+
+
 ## v0.10.0 (2025-05-30)
 
 ### Bug Fixes
