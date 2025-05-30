@@ -114,8 +114,8 @@ class AdminLoginView(APIView):
 @extend_schema(tags=["Logout"], request=LogoutSerializer)
 class LogoutView(APIView):
     """
-    View para realizar logout do usuário.
-    Remove o token de refresh e retorna uma resposta de sucesso.
+    View to logout the user.
+    Removes the refresh token and returns a success response.
     """
 
     permission_classes = [IsAuthenticated]
@@ -158,8 +158,8 @@ class FlexibleViewSet(viewsets.ModelViewSet):
 @extend_schema(tags=["Account"])
 class AccountViewSet(FlexibleViewSet):
     """
-    ViewSet para gerenciar contas de usuários.
-    Permite criar, listar, atualizar e excluir contas.
+    ViewSet to manage user accounts.
+    Allowed HTTP methods: GET, DELETE.
     """
 
     http_method_names = ["get", "delete"]
@@ -257,16 +257,16 @@ class ConceptClassViewSet(FlexibleViewSet):
     parameters=[
         OpenApiParameter(
             name="class",
-            description="Lista de concept_class_id (ex: class=Gender,Ethnicity)",
+            description="concept_class_id list (ex: class=Gender,Ethnicity)",
             required=False,
             type=str,
             style="form",
             explode=False,
         ),
-        OpenApiParameter(name="lang", description="Idioma da tradução (ex: pt)", required=False, type=str),
+        OpenApiParameter(name="lang", description="Translation language (ex: pt)", required=False, type=str),
         OpenApiParameter(
             name="relationship",
-            description="relationship_id a buscar para cada concept (ex: has_value_type)",
+            description="relationship_id to search for each concept (ex: has_value_type)",
             required=False,
             type=str,
         ),
@@ -376,11 +376,11 @@ class ObservationViewSet(FlexibleViewSet):
         # Update the observation
         observation = get_object_or_404(Observation, id=data["observation_id"])
         if data["is_attention_point"]:
-            # If is_attention_point is True, set value_as_concept to 999501 (YES)
-            observation.value_as_concept = 999501
+            # If is_attention_point is True, set value_as_concept to YES
+            observation.value_as_concept = get_concept_by_code("value_yes")
         else:
-            # If is_attention_point is False, set value_as_concept to 999502 (NO)
-            observation.value_as_concept = 999500
+            # If is_attention_point is False, set value_as_concept to NO
+            observation.value_as_concept = get_concept_by_code("value_no")
 
         observation.save()
 
@@ -555,7 +555,7 @@ class ProviderByLinkCodeView(APIView):
     def post(self, request):
         code = request.data.get("code")
         if not code:
-            return Response({"error": "Código é obrigatório."}, status=400)
+            return Response({"error": "Code is required."}, status=400)
 
         obs = (
             Observation.objects.filter(
@@ -568,7 +568,7 @@ class ProviderByLinkCodeView(APIView):
         )
 
         if not obs or not obs.provider_id:
-            return Response({"error": "Código inválido ou expirado."}, status=400)
+            return Response({"error": "Invalid or expired code."}, status=400)
 
         provider = get_object_or_404(Provider, provider_id=obs.provider_id)
         serializer = ProviderRetrieveSerializer(provider)
@@ -877,7 +877,7 @@ class DiaryView(APIView):
     def get(self, request):
         person = Person.objects.get(user=request.user)
 
-        # Busca todas as entradas "mãe"
+        # Search for all "mother" entries
         diary_entries = Observation.objects.filter(
             person=person, observation_concept=get_concept_by_code("diary_entry")
         ).order_by("-observation_date")
@@ -900,12 +900,12 @@ class DiaryView(APIView):
         return Response(result)
 
     @extend_schema(
-        summary="Cria um novo diário para o usuário logado",
+        summary="Create a new diary for the logged-in user",
         request=DiaryCreateSerializer,
         responses={201: OpenApiTypes.OBJECT},
         examples=[
             OpenApiExample(
-                name="Exemplo de criação de diário",
+                name="Example of diary creation",
                 value={
                     "date_range_type": "today",
                     "text": "Hoje me senti mal",
@@ -936,7 +936,7 @@ class DiaryDetailView(APIView):
         try:
             diary = Observation.objects.get(pk=diary_id, person=person)
         except Observation.DoesNotExist:
-            return Response({"detail": "Diário não encontrado"}, status=404)
+            return Response({"detail": "Diary not found"}, status=404)
 
         siblings = Observation.objects.filter(person=person, observation_date=diary.observation_date).exclude(
             pk=diary.pk
@@ -994,7 +994,7 @@ class ProviderPersonDiaryDetailView(APIView):
                 shared_with_provider=True,
             )
         except Observation.DoesNotExist:
-            return Response({"detail": "Diário não encontrado ou não compartilhado"}, status=404)
+            return Response({"detail": "Diary not found or not shared"}, status=404)
 
         children = Observation.objects.filter(
             person=person, observation_date=diary.observation_date, shared_with_provider=True

@@ -579,17 +579,17 @@ class FullProviderRetrieveSerializer(serializers.Serializer):
 
 class ProviderLinkCodeResponseSerializer(serializers.Serializer):
     code = serializers.CharField(
-        max_length=6, help_text="Código gerado para vincular uma pessoa a este provider (ex: 'A1B2C3')"
+        max_length=6, help_text="Code generated to link a person to this provider (ex: 'A1B2C3')"
     )
 
 
 class PersonLinkProviderRequestSerializer(serializers.Serializer):
-    code = serializers.CharField(max_length=16, help_text="Código de vínculo fornecido pelo provider")
+    code = serializers.CharField(max_length=16, help_text="Link code provided by the provider")
 
 
 class PersonLinkProviderResponseSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=["linked"], help_text="Resultado do vínculo")
-    already_existed = serializers.BooleanField(help_text="Indica se o relacionamento já existia antes")
+    status = serializers.ChoiceField(choices=["linked"], help_text="Linking result")
+    already_existed = serializers.BooleanField(help_text="Indicates if the relationship already existed")
 
 
 class PersonProviderUnlinkRequestSerializer(serializers.Serializer):
@@ -597,7 +597,7 @@ class PersonProviderUnlinkRequestSerializer(serializers.Serializer):
 
 
 class PersonProviderUnlinkResponseSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=["unlinked"], help_text="Resultado do desvinculo")
+    status = serializers.ChoiceField(choices=["unlinked"], help_text="Unlinking result")
 
 
 class HelpCreateSerializer(serializers.ModelSerializer):
@@ -654,10 +654,10 @@ class DiaryCreateSerializer(serializers.Serializer):
     habits_shared = serializers.BooleanField()
     wellness_shared = serializers.BooleanField()
     habits = serializers.ListField(
-        child=serializers.DictField(), default=list  # cada item: {"concept_id": X, "value": Y}
+        child=serializers.DictField(), default=list  # each item: {"concept_id": X, "value": Y}
     )
     wellness = serializers.ListField(
-        child=serializers.DictField(), default=list  # cada item: {"concept_id": X, "value": Y}
+        child=serializers.DictField(), default=list  # each item: {"concept_id": X, "value": Y}
     )
 
     def create(self, validated_data):
@@ -665,7 +665,7 @@ class DiaryCreateSerializer(serializers.Serializer):
         person = Person.objects.get(user=user)
         now = timezone.now()
 
-        # 1. Observation "mãe"
+        # 1. Observation "mother"
         diary_entry = Observation.objects.create(
             person=person,
             observation_concept=get_concept_by_code("diary_entry"),
@@ -675,10 +675,10 @@ class DiaryCreateSerializer(serializers.Serializer):
             observation_type_concept=get_concept_by_code("diary_entry_type"),
         )
 
-        # 2. Observações do diário
+        # 2. Observations of the diary
         observations = []
 
-        # Texto livre
+        # Free text
         if validated_data["text"]:
             observations.append(
                 Observation(
@@ -736,7 +736,7 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("custom_trigger_name"):
-            raise serializers.ValidationError("Você deve fornecer observation_concept_id ou custom_trigger_name")
+            raise serializers.ValidationError("You must provide observation_concept_id or custom_trigger_name")
         return data
 
     def to_representation(self, instance):
@@ -773,7 +773,7 @@ class InterestAreaSerializer(serializers.Serializer):
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("custom_interest_name"):
-            raise serializers.ValidationError("Você deve fornecer concept_id ou custom_interest_name")
+            raise serializers.ValidationError("You must provide observation_concept_id or custom_interest_name")
         return data
 
     def create(self, validated_data):
@@ -807,7 +807,7 @@ class InterestAreaSerializer(serializers.Serializer):
             validated_data["triggers"] = []
 
         if created and validated_data.get("observation_concept_id") != CUSTOM_INTEREST_ID:
-            # Buscar relacionamentos para este conceito
+            # Search for relationships for this concept
             print("Creating triggers first time for interest area")
             related_triggers = ConceptRelationship.objects.filter(
                 concept_1_id=validated_data["observation_concept_id"], relationship_id="AOI_Trigger"
@@ -967,27 +967,27 @@ class UserRetrieveSerializer(BaseRetrieveSerializer):
 
 
 class UserDeleteSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField(help_text="ID do usuário a ser deletado")
+    user_id = serializers.IntegerField(help_text="ID of the user to be deleted")
 
     def validate_user_id(self, value):
         if not User.objects.filter(id=value).exists():
-            raise serializers.ValidationError("Usuário não encontrado.")
+            raise serializers.ValidationError("User not found.")
         return value
 
 
 class LogoutSerializer(serializers.Serializer):
-    refresh = serializers.CharField(help_text="Token de refresh para logout")
+    refresh = serializers.CharField(help_text="Refresh token for logout")
 
     def validate_refresh(self, value):
         if not value:
-            raise serializers.ValidationError("O token de refresh é obrigatório.")
+            raise serializers.ValidationError("The refresh token is required.")
         return value
 
 
 class MarkAttentionPointSerializer(serializers.Serializer):
-    observation_id = serializers.IntegerField(help_text="ID da observação a ser marcada como ponto de atenção")
+    observation_id = serializers.IntegerField(help_text="ID of the observation to be marked as an attention point")
     is_attention_point = serializers.BooleanField(
-        help_text="Indica se a observação deve ser marcada como ponto de atenção"
+        help_text="Indicates whether the observation should be marked as an attention point"
     )
 
 
