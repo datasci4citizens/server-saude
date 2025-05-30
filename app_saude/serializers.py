@@ -752,7 +752,7 @@ class InterestAreaSerializer(serializers.Serializer):
     observation_concept_id = serializers.IntegerField(required=False, allow_null=True)
     custom_interest_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     value_as_string = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    triggers = serializers.ListField(required=False, default=list)
+    triggers = InterestAreaTriggerSerializer(many=True, required=False)
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("custom_interest_name"):
@@ -782,16 +782,19 @@ class InterestAreaSerializer(serializers.Serializer):
 
         interest_area, created = Observation.objects.update_or_create(person=person, **filters, defaults=defaults)
 
-        print("this is validated_data")
-        print(validated_data)
+        if created:
+            print(f"Created new interest area: {interest_area.observation_id}")
+            print(interest_area.value_as_concept)
+            print(get_concept_by_code("value_no"))
+            interest_area.value_as_concept = get_concept_by_code("value_no")
+            interest_area.save()
+
         # Triggers
         if "triggers" not in validated_data:
-            print("No triggers found, initializing empty list")
             validated_data["triggers"] = []
 
         if created and validated_data.get("observation_concept_id") != CUSTOM_INTEREST_ID:
             # Buscar relacionamentos para este conceito
-            print("Creating triggers first time for interest area")
             related_triggers = ConceptRelationship.objects.filter(
                 concept_1_id=validated_data["observation_concept_id"], relationship_id="AOI_Trigger"
             )
@@ -811,17 +814,11 @@ class InterestAreaSerializer(serializers.Serializer):
             relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
         )
 
-        print("Current relationships for interest area:")
-        print(current_relationships)
-
         # Get all trigger observation IDs
         trigger_ids = current_relationships.values_list("fact_id_2", flat=True)
 
         # Fetch all trigger observations
         trigger_observations = Observation.objects.filter(observation_id__in=trigger_ids)
-
-        print("Trigger observations fetched:")
-        print(trigger_observations)
 
         # Create a mapping of existing triggers
         existing_triggers = {}
@@ -829,22 +826,15 @@ class InterestAreaSerializer(serializers.Serializer):
             key = (trigger.observation_concept_id, trigger.observation_source_value)
             existing_triggers[key] = trigger
 
-        print("Existing triggers mapped:")
-        print(existing_triggers)
-
         # Process new triggers
-        print("Processing new triggers from validated data:")
-        print(validated_data.get("triggers"))
+
         for trigger_data in validated_data.get("triggers"):
-            print("Processing trigger data:")
-            print(trigger_data)
+
             key = (
                 trigger_data.get("observation_concept_id"),
                 trigger_data.get("custom_trigger_name"),
             )
 
-            print("key for trigger data:")
-            print(key)
             # Check if we already have this trigger for this interest area
             if key in existing_triggers:
                 # Update existing trigger
