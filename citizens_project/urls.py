@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
@@ -14,22 +15,18 @@ router.register(r"account", AccountViewSet, basename="account")
 
 router.register(r"person", PersonViewSet)
 router.register(r"provider", ProviderViewSet)
-
 router.register(r"vocabulary", VocabularyViewSet)
 router.register(r"concept-class", ConceptClassViewSet)
 router.register(r"concept", ConceptViewSet)
 router.register(r"concept-synonym", ConceptSynonymViewSet)
 router.register(r"domain", DomainViewSet)
-
 router.register(r"location", LocationViewSet)
 router.register(r"care-site", CareSiteViewSet)
 router.register(r"drug-exposure", DrugExposureViewSet)
-
 router.register(r"observation", ObservationViewSet)
 router.register(r"visit-occurrence", VisitOccurrenceViewSet)
 router.register(r"measurement", MeasurementViewSet)
 router.register(r"fact-relationship", FactRelationshipViewSet)
-
 router.register(r"full-person", FullPersonViewSet, basename="full-person")
 router.register(r"full-provider", FullProviderViewSet, basename="full-provider")
 
@@ -54,7 +51,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    # Complete Api
+    # API
     path("api/", include(router.urls)),
     path("api/user-entity/", UserRoleView.as_view(), name="user-entity"),
     path("provider/link-code/", GenerateProviderLinkCodeView.as_view(), name="generate-link-code"),
@@ -65,12 +62,11 @@ urlpatterns = [
         name="person-provider-unlink",
     ),
     path("person/providers/", PersonProvidersView.as_view(), name="person-providers"),
-    path("provider/persons/", provider_persons, name="provider-persons"),
-    path("provider/<int:provider_id>/persons/", provider_persons, name="provider-persons-detail"),
+    path("provider/persons/", ProviderPersonsView.as_view(), name="provider-persons"),
     path("provider/by-link-code/", ProviderByLinkCodeView.as_view(), name="provider-by-link-code"),
     path("help/send/", SendHelpView.as_view(), name="send-help"),
-    path("provider/help-count/", get_help, name="get-help"),
-    path("provider/next-visit/", get_next_scheduled_visit, name="next-scheduled-visit"),
+    path("provider/help-count/", ReceivedHelpsView.as_view(), name="get-help"),
+    path("provider/next-visit/", NextScheduledVisitView.as_view(), name="next-scheduled-visit"),
     path("diaries/", DiaryView.as_view(), name="diary"),
     path("diaries/<str:diary_id>/", DiaryDetailView.as_view(), name="diary-detail"),
     path("provider/patients/<int:person_id>/diaries/", ProviderPersonDiariesView.as_view(), name="acs-diaries"),
@@ -79,16 +75,20 @@ urlpatterns = [
         ProviderPersonDiaryDetailView.as_view(),
         name="acs-diary-detail",
     ),
+    path(
+        "person/interest-areas/<int:interest_area_id>/",
+        PersonInterestAreaDetailView.as_view(),
+        name="person-interest-area-detail",
+    ),
+    path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path(
-        "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
-        name="swagger-ui",
-    ),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
 
 if settings.DEBUG:
-    urlpatterns += [path("dev-login-as-provider/", dev_login_as_provider)]
-    urlpatterns += [path("dev-login-as-person/", dev_login_as_person)]
+    urlpatterns += [
+        path("dev-login-as-provider/", dev_login_as_provider),
+        path("dev-login-as-person/", dev_login_as_person),
+    ]

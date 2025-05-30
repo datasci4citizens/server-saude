@@ -364,6 +364,12 @@ class Observation(TimestampedModel):
         related_name="observation_type_concept_set",
         db_comment="Observation Type Concept",
     )
+    observation_source_value = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        db_comment="Source value of the observation",
+    )
     shared_with_provider = models.BooleanField(blank=True, null=True, db_comment="Visibility to assigned provider")
 
     class Meta:

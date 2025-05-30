@@ -38,16 +38,25 @@ class Command(BaseCommand):
             )
 
         def add_concept(cid, name, class_id, code, domain_id, vocabulary_id, pt_name=None):
+            defaults = {
+                "concept_name": name,
+                "concept_code": code,
+            }
+
+            if class_id is not None:
+                defaults["concept_class"] = ConceptClass.objects.get(concept_class_id=class_id)
+
+            if domain_id is not None:
+                defaults["domain"] = Domain.objects.get(domain_id=domain_id)
+
+            if vocabulary_id is not None:
+                defaults["vocabulary_id"] = vocabulary_id
+
             concept, _ = Concept.objects.update_or_create(
                 concept_id=cid,
-                defaults={
-                    "concept_name": name,
-                    "concept_class": ConceptClass.objects.get(concept_class_id=class_id),
-                    "concept_code": code,
-                    "domain": Domain.objects.get(domain_id=domain_id),
-                    "vocabulary_id": vocabulary_id,
-                },
+                defaults=defaults,
             )
+
             if pt_name:
                 ConceptSynonym.objects.update_or_create(
                     concept=concept, concept_synonym_name=pt_name, language_concept_id=4180186  # pt
@@ -69,6 +78,12 @@ class Command(BaseCommand):
                 # ethnicity
             )
             return person
+
+        def relate_concepts(interest_id, trigger_ids, relationship_id):
+            for trigger_id in trigger_ids:
+                ConceptRelationship.objects.update_or_create(
+                    concept_1_id=interest_id, concept_2_id=trigger_id, relationship_id=relationship_id
+                )
 
         # Idioma pt
         concept_class("Language", "Language", 11118)
@@ -140,6 +155,8 @@ class Command(BaseCommand):
         concept_class("Relationship", "Relationship", 2000051)
         concept_class("Observation Type", "Observation Type", 2000052)
         concept_class("Metadata", "Metadata", 2000053)
+        concept_class("Interest", "Interest", 2000011)
+        concept_class("Trigger", "Trigger", 2000012)
 
         # Vocabularies concepts
         add_concept(
@@ -229,7 +246,6 @@ class Command(BaseCommand):
         dummy_person("Gummy", year_of_birth=1999, gender_concept=8532, race_concept=8657)
         dummy_person("Sunny", year_of_birth=1981, gender_concept=8551, race_concept=8516)
 
-        # Comentei por enquanto por que n tem vocabulários para esses ainda
         # Measurements
         add_concept(3025315, "Body Weight", "Measurement", "BW", "Measurement", "Measurement", "Peso corporal")
         add_concept(3023540, "Body Height", "Measurement", "BH", "Measurement", "Measurement", "Altura corporal")
@@ -256,8 +272,6 @@ class Command(BaseCommand):
         add_concept(9000013, "Never", "Frequency", "NEVER", "Observation", "Observation", "Nunca")
 
         # Comorbidities
-        add_concept(9000030, "Hypertension", "Comorbidity", "HTN", "Condition", "Condition", "Hipertensão")
-        add_concept(9000031, "Diabetes", "Comorbidity", "DM", "Condition", "Condition", "Diabetes")
 
         # Medications
         add_concept(9000040, "Fluoxetine", "Medication", "FLX", "Drug", "Drug", "Fluoxetina")
@@ -325,13 +339,44 @@ class Command(BaseCommand):
             999004, "Diary Entry Type", "Diary", "diary_entry_type", "Observation", "Observation", "Tipo de entrada"
         )
 
+        # Help
+        add_concept(2000100, "Help", None, "HELP", None, None, "Ajuda")
+        add_concept(2000101, "Active", None, "ACTIVE", None, None, "Ativo")
+
+        # Area of Interest
+        add_concept(2000200, "Interest Area", "Interest", "INTEREST_AREA", None, None, "Área de Interesse")
+        add_concept(2000201, "Custom Interest", "Interest", "CUSTOM_INTEREST", None, None, "Interesse Personalizado")
+        add_concept(2000202, "Hypertension", "Interest", "HTN", None, None, "Hipertensão")
+        add_concept(2000203, "Diabetes", "Interest", "DIABETES", None, None, "Diabetes")
+        add_concept(2000204, "Sleep", "Interest", "Sleep", None, None, "Sono")
+
+        # AOI Triggers
+        add_concept(2000300, "Trigger", "Trigger", "TRIGGER", None, None, "Gatilho")
+        add_concept(2000301, "Custom Trigger", "Trigger", "CUSTOM_TRIGGER", None, None, "Gatilho Personalizado")
+        add_concept(2000302, "Diet", "Trigger", "DIET", None, None, "Alimentação")
+        add_concept(2000303, "Physical Activity", "Trigger", "PHYSICAL_ACTIVITY", None, None, "Atividade Física")
+        add_concept(2000304, "Sleep", "Trigger", "SLEEP", None, None, "Sono")
+        add_concept(2000305, "Stress", "Trigger", "STRESS", None, None, "Estresse")
+        add_concept(2000306, "Weight", "Trigger", "WEIGHT", None, None, "Peso")
+        add_concept(2000307, "Medication", "Trigger", "MEDICATION", None, None, "Medicação")
+        add_concept(2000308, "Environment", "Trigger", "ENVIRONMENT", None, None, "Ambiente")
+
+        # Fact Relationships
+        add_concept(2000400, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
+
+        # Link AOI to Trigger
+
+        relate_concepts(2000202, [2000302, 2000303, 2000304], "AOI_Trigger")  # Hypertension  # Diet, PA, Sleep
+        relate_concepts(2000203, [2000302, 2000306, 2000307], "AOI_Trigger")  # Diabetes  # Diet, Weight, Medication
+        relate_concepts(2000204, [2000305, 2000308, 2000307], "AOI_Trigger")  # Sleep  # Stress, Environment, Medication
+
         User = get_user_model()
         user, _ = User.objects.get_or_create(
             email="mock-provider@email.com",
             defaults={"username": "mockprovider", "first_name": "Dr. Mock", "last_name": "Provider"},
         )
 
-        Provider.objects.get_or_create(user=user)
+        # Provider.objects.get_or_create(user=user)
         self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
 
         # Sintomas predefinidos
