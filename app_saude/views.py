@@ -155,6 +155,32 @@ class FlexibleViewSet(viewsets.ModelViewSet):
         return globals()[f"{prefix}RetrieveSerializer"]
 
 
+@extend_schema(tags=["Account"])
+class AccountViewSet(FlexibleViewSet):
+    """
+    ViewSet para gerenciar contas de usuários.
+    Permite criar, listar, atualizar e excluir contas.
+    """
+
+    http_method_names = ["get", "delete"]
+
+    queryset = User.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserRetrieveSerializer(user)
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        return Response({"detail": "This endpoint is not available."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 @extend_schema(tags=["Person"])
 class PersonViewSet(FlexibleViewSet):
     queryset = Person.objects.all()
@@ -1057,29 +1083,3 @@ class ProviderPersonDiaryDetailView(APIView):
                 "entries": ObservationRetrieveSerializer(children, many=True).data,
             }
         )
-
-
-@extend_schema(tags=["Account"])
-class AccountViewSet(FlexibleViewSet):
-    """
-    ViewSet para gerenciar contas de usuários.
-    Permite criar, listar, atualizar e excluir contas.
-    """
-
-    http_method_names = ["get", "delete"]
-
-    queryset = User.objects.all()
-    permission_classes = [IsAuthenticated]
-
-    def list(self, request, *args, **kwargs):
-        user = request.user
-        serializer = UserRetrieveSerializer(user)
-        return Response(serializer.data)
-
-    def retrieve(self, request, *args, **kwargs):
-        return Response({"detail": "This endpoint is not available."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def destroy(self, request, *args, **kwargs):
-        user = request.user
-        user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
