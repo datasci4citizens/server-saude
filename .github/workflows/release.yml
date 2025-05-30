@@ -29,9 +29,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Verifica commits recentes
+        run: git log --oneline -n 10
+
       - name: Run Semantic Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          semantic-release publish
-          semantic-release changelog
+          semantic-release publish -v DEBUG
+          semantic-release changelog -v DEBUG

@@ -4,6 +4,7 @@ branch = "main"
 upload_to_pypi = false
 commit_parser = "conventional"
 repository = "datasci4citizens/server-saude"
+version_variable = []
 
 [tool.semantic_release.changelog.default_templates]
 changelog_file = "CHANGELOG.md"
