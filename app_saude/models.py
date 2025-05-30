@@ -203,7 +203,7 @@ class Person(MyAbstractUser):
 class Provider(MyAbstractUser):
     provider_id = models.AutoField(primary_key=True, db_comment="Primary key of Provider")
     professional_registration = models.IntegerField(
-        blank=True, null=True, db_comment="Professional registration number"
+        blank=True, unique=True, db_comment="Professional registration number"
     )
     specialty_concept = models.ForeignKey(
         Concept,

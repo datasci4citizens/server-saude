@@ -29,23 +29,6 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-# Just a test endpoint to check if the user is logged in and return user info
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        return Response(
-            {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-            }
-        )
-
-
 class GoogleLoginView(APIView):
     serializer_class = AuthSerializer
     permission_classes = [AllowAny]
@@ -128,6 +111,30 @@ class AdminLoginView(APIView):
         )
 
 
+@extend_schema(tags=["Logout"], request=LogoutSerializer)
+class LogoutView(APIView):
+    """
+    View para realizar logout do usuário.
+    Remove o token de refresh e retorna uma resposta de sucesso.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
+        except AttributeError:
+            return Response({"detail": "Token blacklisting not enabled."}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        except Exception as e:
+            print(f"Logout error: {str(e)}")
+            return Response(
+                {"detail": "Invalid token or token already blacklisted."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
 class UserRole:
     def get_role(self, request):
         role = "none"
@@ -146,6 +153,32 @@ class FlexibleViewSet(viewsets.ModelViewSet):
         elif self.action in ["update", "partial_update"]:
             return globals()[f"{prefix}UpdateSerializer"]
         return globals()[f"{prefix}RetrieveSerializer"]
+
+
+@extend_schema(tags=["Account"])
+class AccountViewSet(FlexibleViewSet):
+    """
+    ViewSet para gerenciar contas de usuários.
+    Permite criar, listar, atualizar e excluir contas.
+    """
+
+    http_method_names = ["get", "delete"]
+
+    queryset = User.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserRetrieveSerializer(user)
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        return Response({"detail": "This endpoint is not available."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(tags=["Person"])
@@ -346,6 +379,29 @@ class DrugExposureViewSet(FlexibleViewSet):
 class ObservationViewSet(FlexibleViewSet):
     queryset = Observation.objects.all()
 
+    # Create the PATCH request, that receives only the value_as_concept field
+    @extend_schema(
+        request=MarkAttentionPointSerializer,
+        responses={204: OpenApiTypes.OBJECT},
+    )
+    def patch(self, request, *args, **kwargs):
+        serializer = MarkAttentionPointSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        # Update the observation
+        observation = get_object_or_404(Observation, id=data["observation_id"])
+        if data["is_attention_point"]:
+            # If is_attention_point is True, set value_as_concept to 999501 (YES)
+            observation.value_as_concept = 999501
+        else:
+            # If is_attention_point is False, set value_as_concept to 999502 (NO)
+            observation.value_as_concept = 999500
+
+        observation.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @extend_schema(tags=["VisitOccurrence"])
 class VisitOccurrenceViewSet(FlexibleViewSet):
@@ -536,6 +592,30 @@ class ProviderByLinkCodeView(APIView):
 
 @extend_schema(
     tags=["Link-Person-Provider"],
+    request=PersonProviderUnlinkRequestSerializer,
+    responses=PersonProviderUnlinkResponseSerializer,
+)
+class PersonProviderUnlinkView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, person_id, provider_id):
+        person = get_object_or_404(Person, person_id=person_id)
+        provider = get_object_or_404(Provider, provider_id=provider_id)
+
+        # Remove the relationship
+        FactRelationship.objects.filter(
+            fact_id_1=person.person_id,
+            domain_concept_1_id=9202,  # Person
+            fact_id_2=provider.provider_id,
+            domain_concept_2_id=9201,  # Provider
+            relationship_concept_id=9200001,
+        ).delete()
+
+        return Response({"status": "unlinked"})
+
+
+@extend_schema(
+    tags=["Link-Person-Provider"],
     responses=ProviderRetrieveSerializer(many=True),
 )
 class PersonProvidersView(APIView):
@@ -625,7 +705,7 @@ def dev_login_as_person(request):
                     "age": {"type": "integer", "nullable": True},
                     "last_visit_date": {"type": "string", "format": "date-time", "nullable": True},
                     "last_visit_notes": {"type": "string", "nullable": True},
-                    "last_emergency_date": {"type": "string", "format": "date-time", "nullable": True},
+                    "last_help_date": {"type": "string", "format": "date-time", "nullable": True},
                 },
             },
         }
@@ -642,7 +722,7 @@ def provider_persons(request):
             - age: Idade calculada com base na data de nascimento ou ano de nascimento
             - last_visit_date: Data da última consulta com este provider
             - last_visit_notes: Notas da última consulta com este provider
-            - last_emergency_date: Data da última emergência registrada
+            - last_help_date: Data da última ajuda registrada
     """
     # Verifica se o usuário é um provider e obtém seu ID
     provider = get_object_or_404(Provider, user=request.user)
@@ -687,18 +767,18 @@ def provider_persons(request):
         if visit:
             last_visit = visit.visit_start_date
 
-        # Busca a última emergência registrada
-        last_emergency = None
-        emergency = (
+        # Busca a última ajuda registrada
+        last_help = None
+        help = (
             Observation.objects.filter(
-                person=person, observation_concept_id=2000001, observation_date__isnull=False  # Emergency concept
+                person=person, observation_concept_id=2000001, observation_date__isnull=False  # Help concept
             )
             .order_by("-observation_date")
             .first()
         )
 
-        if emergency:
-            last_emergency = emergency.observation_date
+        if help:
+            last_help = help.observation_date
 
         # Nome pode estar em social_name ou no user associado
         name = person.social_name
@@ -713,7 +793,7 @@ def provider_persons(request):
                 "name": name,
                 "age": age,
                 "last_visit_date": last_visit,
-                "last_emergency_date": last_emergency,
+                "last_help_date": last_help,
             }
         )
 
@@ -728,18 +808,18 @@ def provider_persons(request):
         "200": {
             "type": "object",
             "properties": {
-                "emergency_count": {"type": "integer"},
+                "help_count": {"type": "integer"},
             },
         }
     },
 )
-def get_emergency(request):
+def get_help(request):
     """
-    Função para obter o número de emergências ativas para os pacientes vinculados ao provider autenticado
+    Função para obter o número de ajudas ativas para os pacientes vinculados ao provider autenticado
 
     Returns:
-        objeto com a contagem de emergências ativas:
-            - emergency_count: número de emergências ativas
+        objeto com a contagem de ajudas ativas:
+            - help_count: número de ajudas ativas
     """
     # Verifica se o usuário é um provider e obtém seu ID
     provider = get_object_or_404(Provider, user=request.user)
@@ -754,13 +834,13 @@ def get_emergency(request):
     ).values_list("fact_id_1", flat=True)
 
     # Conta as emergências ativas para essas pessoas
-    emergency_count = Observation.objects.filter(
+    help_count = Observation.objects.filter(
         person_id__in=linked_persons_ids,
-        observation_concept_id=2000001,  # Emergency concept
+        observation_concept_id=2000001,  # Help concept
         value_as_concept_id=9200021,  # Active status concept
     ).count()
 
-    return Response({"emergency_count": emergency_count})
+    return Response({"help_count": help_count})
 
 
 @api_view(["GET"])
@@ -823,15 +903,15 @@ def get_next_scheduled_visit(request):
 
 
 @extend_schema(
-    tags=["Emergency"],
-    request=EmergencyCreateSerializer(many=True),
+    tags=["Help"],
+    request=HelpCreateSerializer(many=True),
     responses=ObservationRetrieveSerializer(many=True),
 )
-class SendEmergencyView(APIView):
+class SendHelpView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = EmergencyCreateSerializer(data=request.data, many=True)
+        serializer = HelpCreateSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         data_list = serializer.validated_data
 
@@ -851,18 +931,18 @@ class SendEmergencyView(APIView):
 
 
 @extend_schema(
-    tags=["Emergency"],
+    tags=["Help"],
     responses=ObservationRetrieveSerializer(many=True),
 )
-class ReceivedEmergenciesView(APIView):
+class ReceivedHelpsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         provider = get_object_or_404(Provider, user=request.user)
-        emergencies = Observation.objects.filter(
-            provider_id=provider.provider_id, observation_concept_id=2000001  # Emergência
+        helps = Observation.objects.filter(
+            provider_id=provider.provider_id, observation_concept_id=2000001  # Ajuda
         ).order_by("-observation_date")
-        serializer = ObservationRetrieveSerializer(emergencies, many=True)
+        serializer = ObservationRetrieveSerializer(helps, many=True)
         return Response(serializer.data)
 
 

@@ -10,6 +10,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from app_saude.views import *
 
 router = DefaultRouter()
+router.register(r"account", AccountViewSet, basename="account")
+
 router.register(r"person", PersonViewSet)
 router.register(r"provider", ProviderViewSet)
 
@@ -48,27 +50,32 @@ urlpatterns = [
     # Auth
     path("auth/login/google/", GoogleLoginView.as_view(), name="google_login"),
     path("auth/login/admin/", AdminLoginView.as_view(), name="admin_login"),
+    path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
-    path("auth/me/", MeView.as_view(), name="me"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Complete Api
     path("api/", include(router.urls)),
     path("api/user-entity/", UserRoleView.as_view(), name="user-entity"),
     path("provider/link-code/", GenerateProviderLinkCodeView.as_view(), name="generate-link-code"),
     path("person/link-code/", PersonLinkProviderView.as_view(), name="person-link-code"),
+    path(
+        "person/<int:person_id>/provider/<int:provider_id>/unlink/",
+        PersonProviderUnlinkView.as_view(),
+        name="person-provider-unlink",
+    ),
     path("person/providers/", PersonProvidersView.as_view(), name="person-providers"),
     path("provider/persons/", provider_persons, name="provider-persons"),
     path("provider/<int:provider_id>/persons/", provider_persons, name="provider-persons-detail"),
     path("provider/by-link-code/", ProviderByLinkCodeView.as_view(), name="provider-by-link-code"),
-    path("emergency/send/", SendEmergencyView.as_view(), name="send-emergency"),
-    path("provider/emergency-count/", get_emergency, name="get-emergency"),
+    path("help/send/", SendHelpView.as_view(), name="send-help"),
+    path("provider/help-count/", get_help, name="get-help"),
     path("provider/next-visit/", get_next_scheduled_visit, name="next-scheduled-visit"),
     path("diaries/", DiaryView.as_view(), name="diary"),
     path("diaries/<str:diary_id>/", DiaryDetailView.as_view(), name="diary-detail"),
-    path("provider/patients/<int:patient_id>/diaries/", ProviderPersonDiariesView.as_view(), name="acs-diaries"),
+    path("provider/patients/<int:person_id>/diaries/", ProviderPersonDiariesView.as_view(), name="acs-diaries"),
     path(
-        "provider/patients/<int:patient_id>/diaries/<str:diary_id>/",
+        "provider/patients/<int:person_id>/diaries/<str:diary_id>/",
         ProviderPersonDiaryDetailView.as_view(),
         name="acs-diary-detail",
     ),
