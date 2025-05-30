@@ -899,7 +899,9 @@ class InterestAreaSerializer(serializers.Serializer):
 
     def delete(self, instance):
         """
-        Deleta uma área de interesse e suas relações com triggers
+        Delete an interest area and its relationships with triggers
+        :param instance: The interest area observation instance to delete
+        :return: True if deletion was successful, False otherwise
         """
         relationships = FactRelationship.objects.filter(
             domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
