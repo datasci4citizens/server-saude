@@ -2,8 +2,7 @@ name: Python Semantic Release
 
 on:
   push:
-    branches:
-      - main, develop
+    branches: [main]
 
 jobs:
   release:
