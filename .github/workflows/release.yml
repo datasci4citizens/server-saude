@@ -29,6 +29,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Verifica pyproject.toml
+        run: |
+          cat pyproject.toml
+
       - name: Verifica commits recentes
         run: git log --oneline -n 10
 
@@ -37,5 +41,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOG_LEVEL: DEBUG
         run: |
-          semantic-release publish
-          semantic-release changelog
+          python -m semantic_release publish
