@@ -12,7 +12,6 @@ from app_saude.views import *
 
 router = DefaultRouter()
 router.register(r"account", AccountViewSet, basename="account")
-
 router.register(r"person", PersonViewSet)
 router.register(r"provider", ProviderViewSet)
 router.register(r"vocabulary", VocabularyViewSet)
