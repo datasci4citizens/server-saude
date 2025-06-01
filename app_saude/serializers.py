@@ -728,7 +728,7 @@ class NextVisitSerializer(serializers.Serializer):
     next_visit = VisitDetailsSerializer(allow_null=True)
 
 
-class InterestAreaTriggerSerializer(serializers.Serializer):
+class InterestAreaTriggerCreateSerializer(serializers.Serializer):
     observation_concept_id = serializers.IntegerField(required=False, allow_null=True)
     custom_trigger_name = serializers.CharField(required=False, allow_null=True)
     value_as_string = serializers.CharField(required=False, allow_null=True)
@@ -745,31 +745,24 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
             "observation_concept_id": instance.observation_concept_id,
             "custom_trigger_name": instance.observation_source_value,
             "value_as_string": instance.value_as_string,
+            "concept_name": instance.observation_source_value,
         }
 
-        # Add concept name if available
-        if instance.observation_concept_id == get_concept_by_code("CUSTOM_TRIGGER").concept_id:
-            representation["concept_name"] = instance.observation_source_value
-        elif instance.observation_concept:
-            # Use concept synonym if available, otherwise fallback to concept_name
-            synonyms = instance.observation_concept.concept_synonym_concept_set.filter(
-                language_concept__concept_code=self.context.get("lang", "pt")
-            )
-            if synonyms.exists():
-                representation["concept_name"] = synonyms.first().concept_synonym_name
-            else:
-                representation["concept_name"] = instance.observation_concept.concept_name
-        else:
-            representation["concept_name"] = None
-
         return representation
+
+
+class InterestAreaTriggerUpdateSerializer(serializers.Serializer):
+    trigger_id = serializers.IntegerField(required=True, help_text="ID of the trigger observation to update")
+    value_as_string = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, help_text="New value for the trigger observation"
+    )
 
 
 class InterestAreaSerializer(serializers.Serializer):
     observation_concept_id = serializers.IntegerField(required=False, allow_null=True)
     custom_interest_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     value_as_string = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    triggers = InterestAreaTriggerSerializer(many=True, required=False)
+    triggers = InterestAreaTriggerCreateSerializer(many=True, required=False)
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("custom_interest_name"):
@@ -788,7 +781,6 @@ class InterestAreaSerializer(serializers.Serializer):
             "observation_date": timezone.now(),
             "observation_concept_id": validated_data.get("observation_concept_id"),
             "observation_type_concept_id": get_concept_by_code("INTEREST_AREA").concept_id,
-            "value_as_string": validated_data.get("value_as_string", ""),
         }
 
         filters = {}
@@ -796,6 +788,13 @@ class InterestAreaSerializer(serializers.Serializer):
             filters["observation_source_value"] = validated_data["custom_interest_name"]
         else:
             filters["observation_concept_id"] = validated_data.get("observation_concept_id")
+            defaults["observation_source_value"] = (
+                ConceptSynonym.objects.filter(
+                    concept_id=validated_data.get("observation_concept_id"),
+                )
+                .first()
+                .concept_synonym_name
+            )
 
         interest_area, created = Observation.objects.update_or_create(person=person, **filters, defaults=defaults)
 
@@ -841,7 +840,6 @@ class InterestAreaSerializer(serializers.Serializer):
             existing_triggers[key] = trigger
 
         # Process new triggers
-
         for trigger_data in validated_data.get("triggers"):
 
             key = (
@@ -853,7 +851,6 @@ class InterestAreaSerializer(serializers.Serializer):
             if key in existing_triggers:
                 # Update existing trigger
                 trigger = existing_triggers[key]
-                trigger.value_as_string = trigger_data.get("value_as_string", "")
                 trigger.observation_date = timezone.now()
                 trigger.save()
                 # Remove from dict so we know it's been processed
@@ -863,7 +860,6 @@ class InterestAreaSerializer(serializers.Serializer):
                 trigger_kwargs = {
                     "person": person,
                     "observation_date": timezone.now(),
-                    "value_as_string": trigger_data.get("value_as_string", ""),
                     "observation_type_concept_id": get_concept_by_code("TRIGGER").concept_id,
                     "observation_concept_id": trigger_data.get("observation_concept_id"),
                 }
@@ -872,6 +868,16 @@ class InterestAreaSerializer(serializers.Serializer):
                 if trigger_data.get("observation_concept_id") == CUSTOM_TRIGGER_ID:
                     specific_kwargs = {
                         "observation_source_value": trigger_data["custom_trigger_name"],
+                    }
+                else:
+                    specific_kwargs = {
+                        "observation_source_value": (
+                            ConceptSynonym.objects.filter(
+                                concept_id=trigger_data.get("observation_concept_id"),
+                            )
+                            .first()
+                            .concept_synonym_name
+                        ),
                     }
 
                 trigger = Observation.objects.create(**trigger_kwargs, **specific_kwargs)
@@ -897,15 +903,13 @@ class InterestAreaSerializer(serializers.Serializer):
 
         return interest_area
 
-    def delete(self, instance):
+    def delete(self, validated_data):
         """
-        Delete an interest area and its relationships with triggers
-        :param instance: The interest area observation instance to delete
-        :return: True if deletion was successful, False otherwise
+        Deletes an interest area and its relationships with triggers
         """
         relationships = FactRelationship.objects.filter(
             domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-            fact_id_1=instance.observation_id,
+            fact_id_1=validated_data.observation_id,
             relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
         )
 
@@ -919,9 +923,54 @@ class InterestAreaSerializer(serializers.Serializer):
             ).exists():
                 Observation.objects.filter(observation_id=trigger_id).delete()
 
-        instance.delete()
+        validated_data.delete()
 
         return True
+
+    def update_interest_values(self, validated_data):
+        user = self.context.get("request").user
+        person = get_object_or_404(Person, user=user)
+        print("validated_data:")
+        print(validated_data)
+        for data in validated_data:
+
+            interest_id = data.get("interest_area_id")
+            interest_value = data.get("value_as_string")
+
+            if interest_id and interest_value:
+                try:
+                    interest = Observation.objects.get(
+                        observation_id=interest_id,
+                        person=person,
+                    )
+                    interest.value_as_string = interest_value
+                    interest.observation_date = timezone.now()
+                    for field in interest._meta.fields:
+                        print(f"{field.name}: {getattr(interest, field.name)}")
+                    interest.save()
+                except Observation.DoesNotExist:
+                    continue
+
+            # Update triggers
+            for trigger in data.get("triggers", []):
+                trigger_id = trigger.get("trigger_id")
+                trigger_value = trigger.get("value_as_string")
+
+                if trigger_id and trigger_value:
+                    try:
+                        trigger = Observation.objects.get(
+                            observation_id=trigger_id,
+                            person=person,
+                        )
+                        trigger.value_as_string = trigger_value
+                        trigger.observation_date = timezone.now()
+                        for field in trigger._meta.fields:
+                            print(f"{field.name}: {getattr(trigger, field.name)}")
+                        trigger.save()
+                    except (FactRelationship.DoesNotExist, Observation.DoesNotExist):
+                        continue
+
+        return {"updated": True, "message": "Interest areas and triggers updated successfully"}
 
     def to_representation(self, instance):
         """Enhance the interest area representation with concept names"""
@@ -930,22 +979,44 @@ class InterestAreaSerializer(serializers.Serializer):
             "observation_concept_id": instance.observation_concept_id,
             "custom_interest_name": instance.observation_source_value,
             "value_as_string": instance.value_as_string,
+            "value_as_concept": instance.value_as_concept.concept_id,
+            "concept_name": instance.observation_source_value,
         }
 
-        if instance.observation_concept_id == get_concept_by_code("CUSTOM_INTEREST").concept_id:
-            representation["concept_name"] = instance.observation_source_value
-        elif instance.observation_concept:
-            synonyms = instance.observation_concept.concept_synonym_concept_set.filter(
-                language_concept__concept_code=self.context.get("lang", "pt")
-            )
-            if synonyms.exists():
-                representation["concept_name"] = synonyms.first().concept_synonym_name
-            else:
-                representation["concept_name"] = instance.observation_concept.concept_name
-        else:
-            representation["concept_name"] = None
-
         return representation
+
+
+class InterestAreaUpdateSerializer(serializers.Serializer):
+    interest_area_id = serializers.IntegerField(
+        required=True, help_text="ID of the interest area observation to update"
+    )
+    value_as_string = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, help_text="New value for the interest area observation"
+    )
+    triggers = InterestAreaTriggerUpdateSerializer(
+        many=True, required=False, help_text="List of triggers to update within this interest area"
+    )
+
+
+class InterestAreaBulkUpdateSerializer(serializers.Serializer):
+    interest_areas = InterestAreaUpdateSerializer(
+        many=True, required=True, help_text="List of interest areas to update"
+    )
+
+    def validate(self, data):
+        if not data.get("interest_areas"):
+            raise serializers.ValidationError("At least one interest area must be provided")
+        return data
+
+    def create(self, validated_data):
+        interest_area_serializer = InterestAreaSerializer(context=self.context)
+        result = interest_area_serializer.update_interest_values(validated_data["interest_areas"])
+        return result
+
+    def update(self, instance, validated_data):
+        interest_area_serializer = InterestAreaSerializer(context=self.context)
+        result = interest_area_serializer.update_interest_values(validated_data["interest_areas"])
+        return result
 
 
 class UserRetrieveSerializer(BaseRetrieveSerializer):

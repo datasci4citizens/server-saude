@@ -1037,12 +1037,11 @@ class PersonInterestAreaView(APIView):
             # Searching for triggers related to the interest area
             triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
 
-            interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+            interest_data["triggers"] = InterestAreaTriggerCreateSerializer(triggers, many=True).data
             results.append(interest_data)
 
         return Response(results)
 
-    @extend_schema(request=InterestAreaSerializer, responses={201: InterestAreaSerializer})
     def post(self, request):
 
         serializer = InterestAreaSerializer(data=request.data, context={"request": request})
@@ -1050,6 +1049,17 @@ class PersonInterestAreaView(APIView):
         interest_area = serializer.save()
 
         return Response(InterestAreaSerializer(interest_area).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=InterestAreaBulkUpdateSerializer,
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def patch(self, request):
+        serializer = InterestAreaBulkUpdateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        result = serializer.save()
+
+        return Response(result, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Interest_Areas"])
@@ -1078,7 +1088,7 @@ class PersonInterestAreaDetailView(APIView):
         trigger_ids = relationships.values_list("fact_id_2", flat=True)
         triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
 
-        interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+        interest_data["triggers"] = InterestAreaTriggerCreateSerializer(triggers, many=True).data
 
         return Response(interest_data)
 
