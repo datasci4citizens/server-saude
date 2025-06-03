@@ -874,57 +874,98 @@ class ReceivedHelpsView(APIView):
 class DiaryView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="limit", type=int, description="Limit the number of returned diaries", required=False)
+        ],
+    )
     def get(self, request):
-        person = Person.objects.get(user=request.user)
+        try:
+            person = get_object_or_404(Person, user=request.user)
 
-        # Search for all "mother" entries
-        diary_entries = Observation.objects.filter(
-            person=person, observation_concept=get_concept_by_code("diary_entry")
-        ).order_by("-observation_date")
+            # Get optional limit parameter
+            limit = request.query_params.get("limit")
 
-        result = []
-        for diary in diary_entries:
-            siblings = Observation.objects.filter(person=person, observation_date=diary.observation_date).exclude(
-                pk=diary.pk
-            )
+            # Search for all "mother" diary entries
+            diary_entries_query = Observation.objects.filter(
+                person=person, observation_concept_id=get_concept_by_code("diary_entry").concept_id
+            ).order_by("-observation_date")
 
-            result.append(
-                {
+            # Apply limit if provided
+            if limit and limit.isdigit():
+                diary_entries_query = diary_entries_query[: int(limit)]
+
+            diary_entries = diary_entries_query.select_related("observation_concept")
+
+            result = []
+            for diary in diary_entries:
+                # Get related observations more precisely using the same timestamp
+                related_observations = Observation.objects.filter(
+                    person=person,
+                    observation_date=diary.observation_date,
+                    observation_type_concept_id=get_concept_by_code("diary_entry_type").concept_id,
+                ).exclude(observation_id=diary.observation_id)
+
+                # Get interest areas linked to this diary
+                interest_areas = Observation.objects.filter(
+                    person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
+                ).select_related("observation_concept")
+
+                interest_areas_with_triggers = []
+                for interest_area in interest_areas:
+                    # Get triggers for this interest area
+                    trigger_relationships = FactRelationship.objects.filter(
+                        domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                        fact_id_1=interest_area.observation_id,
+                        relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+                    )
+                    trigger_ids = trigger_relationships.values_list("fact_id_2", flat=True)
+                    triggers = Observation.objects.filter(observation_id__in=trigger_ids)
+
+                    # Format interest area with its triggers
+                    interest_data = InterestAreaSerializer(interest_area).data
+                    interest_data["triggers"] = InterestAreaTriggerCreateSerializer(triggers, many=True).data
+                    interest_areas_with_triggers.append(interest_data)
+
+                entry_data = {
                     "diary_id": diary.observation_id,
                     "date": diary.observation_date,
                     "scope": diary.value_as_string,
-                    "entries": ObservationRetrieveSerializer(siblings, many=True).data,
+                    "entries": ObservationRetrieveSerializer(related_observations, many=True).data,
+                    "interest_areas": interest_areas_with_triggers,
                 }
-            )
+                result.append(entry_data)
 
-        return Response(result)
+            return Response(result)
+
+        except Exception as e:
+            # Log the error
+            logger.error(f"Error retrieving diaries: {str(e)}")
+            return Response({"error": "Failed to retrieve diaries"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
         summary="Create a new diary for the logged-in user",
         request=DiaryCreateSerializer,
         responses={201: OpenApiTypes.OBJECT},
-        examples=[
-            OpenApiExample(
-                name="Example of diary creation",
-                value={
-                    "date_range_type": "today",
-                    "text": "Hoje me senti mal",
-                    "text_shared": True,
-                    "observations_shared": True,
-                    "observations": [
-                        {"concept_id": 999101, "value": "999201"},
-                        {"concept_id": 999102, "value": "999202"},
-                    ],
-                },
-                request_only=True,
-            )
-        ],
     )
     def post(self, request):
         serializer = DiaryCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         result = serializer.save()
         return Response(result, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        responses={204: None},
+        parameters=[
+            OpenApiParameter(
+                name="diary_id", type=int, location=OpenApiParameter.PATH, description="ID of the diary to delete"
+            )
+        ],
+    )
+    def delete(self, request, diary_id):
+        serializer = DiaryCreateSerializer(context={"request": request})
+        result = serializer.delete(diary_id)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class DiaryDetailView(APIView):
@@ -993,6 +1034,7 @@ class ProviderPersonDiaryDetailView(APIView):
                 observation_concept=get_concept_by_code("diary_entry"),
                 shared_with_provider=True,
             )
+
         except Observation.DoesNotExist:
             return Response({"detail": "Diary not found or not shared"}, status=404)
 
@@ -1037,12 +1079,12 @@ class PersonInterestAreaView(APIView):
             # Searching for triggers related to the interest area
             triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
 
-            interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+            interest_data["triggers"] = InterestAreaTriggerCreateSerializer(triggers, many=True).data
             results.append(interest_data)
 
         return Response(results)
 
-    @extend_schema(request=InterestAreaSerializer, responses={201: InterestAreaSerializer})
+    @extend_schema(tags=["Interest_Areas"], request=InterestAreaSerializer, responses={201: InterestAreaSerializer})
     def post(self, request):
 
         serializer = InterestAreaSerializer(data=request.data, context={"request": request})
@@ -1050,6 +1092,17 @@ class PersonInterestAreaView(APIView):
         interest_area = serializer.save()
 
         return Response(InterestAreaSerializer(interest_area).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=InterestAreaBulkUpdateSerializer,
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def patch(self, request):
+        serializer = InterestAreaBulkUpdateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        result = serializer.save()
+
+        return Response(result, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Interest_Areas"])
@@ -1078,7 +1131,7 @@ class PersonInterestAreaDetailView(APIView):
         trigger_ids = relationships.values_list("fact_id_2", flat=True)
         triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
 
-        interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+        interest_data["triggers"] = InterestAreaTriggerCreateSerializer(triggers, many=True).data
 
         return Response(interest_data)
 
