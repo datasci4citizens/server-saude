@@ -338,6 +338,7 @@ class Command(BaseCommand):
         add_concept(
             999004, "Diary Entry Type", "Diary", "diary_entry_type", "Observation", "Observation", "Tipo de entrada"
         )
+        add_concept(999005, "Diary interest", "Diary", "diary_interest", None, None, "Alcance do diário")
 
         # Help
         add_concept(2000100, "Help", None, "HELP", None, None, "Ajuda")
