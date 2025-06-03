@@ -1034,6 +1034,7 @@ class ProviderPersonDiaryDetailView(APIView):
                 observation_concept=get_concept_by_code("diary_entry"),
                 shared_with_provider=True,
             )
+
         except Observation.DoesNotExist:
             return Response({"detail": "Diary not found or not shared"}, status=404)
 
