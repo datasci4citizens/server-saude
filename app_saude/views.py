@@ -743,7 +743,7 @@ def dev_login_as_person(request):
     )
 
 
-@extend_schema(tags=["Linked_Persons"], responses=HelpCountSerializer)
+@extend_schema(tags=["Help"], responses=HelpCountSerializer)
 class HelpCountView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -770,11 +770,10 @@ class HelpCountView(APIView):
         # Count active helps for these persons
         help_count = Observation.objects.filter(
             person_id__in=linked_persons_ids,
+            provider_id=provider_id,  # Only helps from this provider
             observation_concept_id=get_concept_by_code("HELP"),  # Help concept
             value_as_concept_id=get_concept_by_code("ACTIVE"),  # Active status concept
         )
-
-        print(f"Help count: {help_count.count()}")
 
         # Use serializer for response data validation and formatting
         serializer = HelpCountSerializer({"help_count": help_count.count()})
@@ -865,8 +864,9 @@ class ReceivedHelpsView(APIView):
     def get(self, request):
         provider = get_object_or_404(Provider, user=request.user)
         helps = Observation.objects.filter(
-            provider_id=provider.provider_id, observation_concept_id=2000001  # Ajuda
+            provider_id=provider.provider_id, observation_concept_id=get_concept_by_code("HELP")  # Ajuda
         ).order_by("-observation_date")
+        print(helps)
         serializer = ObservationRetrieveSerializer(helps, many=True)
         return Response(serializer.data)
 
