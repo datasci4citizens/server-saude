@@ -687,6 +687,7 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
         return data
 
     def to_representation(self, instance):
+        print(instance.value_as_string, instance.observation_id)
         representation = {
             "trigger_name": instance.observation_source_value,
             "trigger_id": instance.observation_id,
@@ -1058,6 +1059,8 @@ class DiaryCreateSerializer(serializers.Serializer):
                         observation_source_value=trigger_observation.observation_source_value,
                         observation_date=now,
                         observation_type_concept_id=get_concept_by_code("TRIGGER").concept_id,
+                        value_as_string=trigger_observation.value_as_string,
+                        value_as_concept=trigger_observation.value_as_concept,
                     )
 
                     FactRelationship.objects.create(
