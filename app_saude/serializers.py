@@ -1110,33 +1110,34 @@ class DiaryDeleteSerializer(serializers.Serializer):
             domain_concept_2_id=get_concept_by_code("diary_text").concept_id,
         )
 
-        diary_interests_relatioship = FactRelationship.objects.filter(
+        text_ids = diary_text_relationship.values_list("fact_id_2", flat=True)
+        texts = Observation.objects.filter(observation_id__in=text_ids)
+
+        diary_interests_relationship = FactRelationship.objects.filter(
             domain_concept_1_id=get_concept_by_code("diary_entry").concept_id,
             fact_id_1=diary.observation_id,
             domain_concept_2_id=get_concept_by_code("INTEREST_AREA").concept_id,
         )
 
-        interest_area_ids = diary_interests_relatioship.values_list("fact_id_2", flat=True)
+        interest_area_ids = diary_interests_relationship.values_list("fact_id_2", flat=True)
         interest_areas = Observation.objects.filter(observation_id__in=interest_area_ids)
 
-        trigger_relationships = []
-        triggers = []
-        for interest_area in interest_areas:
-            trigger_relationships = FactRelationship.objects.filter(
-                domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                fact_id_1=interest_area.observation_id,
-                relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-            )
+        trigger_relationships = FactRelationship.objects.filter(
+            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+            fact_id_1__in=interest_area_ids,
+            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+        )
 
-            trigger_ids = trigger_relationships.values_list("fact_id_2", flat=True)
-            triggers = Observation.objects.filter(observation_id__in=trigger_ids)
+        trigger_ids = trigger_relationships.values_list("fact_id_2", flat=True)
+        triggers = Observation.objects.filter(observation_id__in=trigger_ids)
 
         with transaction.atomic():
             diary_text_relationship.delete()
-            diary_interests_relatioship.delete()
+            texts.delete()
+            triggers.delete()
             interest_areas.delete()
             trigger_relationships.delete()
-            triggers.delete()
+            diary_interests_relationship.delete()
             diary.delete()
 
         return {"deleted": True, "diary_id": diary_id}
