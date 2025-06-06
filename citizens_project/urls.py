@@ -69,7 +69,7 @@ urlpatterns = [
     path("provider/next-visit/", NextScheduledVisitView.as_view(), name="next-scheduled-visit"),
     path("diaries/", DiaryView.as_view(), name="diary"),
     path("diaries/<str:diary_id>/", DiaryDetailView.as_view(), name="diary-detail"),
-    path("provider/patients/diaries/", ProviderPersonDiariesView.as_view(), name="acs-diaries"),
+    path("provider/patients/<int:person_id>/diaries/", ProviderPersonDiariesView.as_view(), name="acs-diaries"),
     path("person/diaries/", PersonDiariesView.as_view(), name="person-diaries"),
     path(
         "provider/patients/<int:person_id>/diaries/<str:diary_id>/",
@@ -82,6 +82,7 @@ urlpatterns = [
         name="person-interest-area-detail",
     ),
     path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
+    path("person/interest-areas/mark-attention-point/", MarkAttentionPointView.as_view()),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

@@ -8,6 +8,7 @@ from rest_framework import serializers
 
 from .models import *
 from .utils.concept import get_concept_by_code
+from .utils.provider import get_provider_full_name
 
 User = get_user_model()
 
@@ -686,6 +687,7 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
         return data
 
     def to_representation(self, instance):
+        print(instance.value_as_string, instance.observation_id)
         representation = {
             "trigger_name": instance.observation_source_value,
             "trigger_id": instance.observation_id,
@@ -708,6 +710,12 @@ class InterestAreaSerializer(serializers.Serializer):
     interest_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     value_as_string = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     triggers = InterestAreaTriggerSerializer(many=True, required=False)
+    is_attention_point = serializers.BooleanField(
+        required=False, default=False, help_text="Indicates if the interest area is marked for attention"
+    )
+    provider_name = serializers.CharField(
+        read_only=True, help_text="Name of the provider associated with the interest area"
+    )
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("interest_name"):
@@ -746,6 +754,7 @@ class InterestAreaSerializer(serializers.Serializer):
         if created:
             interest_area.value_as_concept = get_concept_by_code("value_no")
             interest_area.shared_with_provider = validated_data.get("shared_with_provider", False)
+            interest_area.is_attention_point = validated_data.get("is_attention_point", False)
             interest_area.save()
 
         # Triggers
@@ -919,8 +928,9 @@ class InterestAreaSerializer(serializers.Serializer):
             "interest_name": instance.observation_source_value,
             "interest_area_id": instance.observation_id,
             "observation_concept_id": instance.observation_concept_id,
+            "provider_name": get_provider_full_name(instance.provider_id),
             "value_as_string": instance.value_as_string,
-            "value_as_concept": instance.value_as_concept.concept_id,
+            "is_attention_point": instance.value_as_concept.concept_id == get_concept_by_code("value_yes").concept_id,
             "shared_with_provider": instance.shared_with_provider,
         }
 
@@ -1049,6 +1059,8 @@ class DiaryCreateSerializer(serializers.Serializer):
                         observation_source_value=trigger_observation.observation_source_value,
                         observation_date=now,
                         observation_type_concept_id=get_concept_by_code("TRIGGER").concept_id,
+                        value_as_string=trigger_observation.value_as_string,
+                        value_as_concept=trigger_observation.value_as_concept,
                     )
 
                     FactRelationship.objects.create(
@@ -1180,6 +1192,7 @@ class DiaryRetrieveSerializer(serializers.Serializer):
             triggers = Observation.objects.filter(observation_id__in=trigger_ids)
 
             interest_data = InterestAreaSerializer(interest_area).data
+            interest_data["provider_name"] = get_provider_full_name(interest_area.provider_id)
             interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
             interest_areas_with_triggers.append(interest_data)
 
@@ -1187,10 +1200,42 @@ class DiaryRetrieveSerializer(serializers.Serializer):
 
 
 class UserRetrieveSerializer(BaseRetrieveSerializer):
+    role = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "is_active", "is_staff", "date_joined"]
+        fields = [
+            "id",
+            "username",
+            "email",
+            "full_name",
+            "first_name",
+            "last_name",
+            "is_active",
+            "role",
+            "is_staff",
+            "date_joined",
+        ]
         read_only_fields = fields
+
+    def get_role(self, obj):
+        if obj.is_staff:
+            return "admin"
+        elif Person.objects.filter(user=obj).exists():
+            return "person"
+        elif Provider.objects.filter(user=obj).exists():
+            return "provider"
+        return "unknown"
+
+    def get_full_name(self, obj):
+        role = self.get_role(obj)
+        if role in ["person", "provider"]:
+            if hasattr(obj, "social_name") and obj.social_name:
+                return obj.social_name
+            else:
+                return f"{obj.first_name} {obj.last_name}".strip()
+        return None
 
 
 class UserDeleteSerializer(serializers.Serializer):
@@ -1212,9 +1257,9 @@ class LogoutSerializer(serializers.Serializer):
 
 
 class MarkAttentionPointSerializer(serializers.Serializer):
-    observation_id = serializers.IntegerField(help_text="ID of the observation to be marked as an attention point")
+    area_id = serializers.IntegerField(help_text="ID of the interest area to be marked as an attention point")
     is_attention_point = serializers.BooleanField(
-        help_text="Indicates whether the observation should be marked as an attention point"
+        help_text="Indicates whether the interest area should be marked as an attention point"
     )
 
 

@@ -172,6 +172,7 @@ class AccountViewSet(FlexibleViewSet):
         serializer = UserRetrieveSerializer(user)
         return Response(serializer.data)
 
+    @extend_schema(responses={200: UserRetrieveSerializer})
     def retrieve(self, request, *args, **kwargs):
         return Response({"detail": "This endpoint is not available."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -362,29 +363,6 @@ class DrugExposureViewSet(FlexibleViewSet):
 @extend_schema(tags=["Observation"])
 class ObservationViewSet(FlexibleViewSet):
     queryset = Observation.objects.all()
-
-    # Create the PATCH request, that receives only the value_as_concept field
-    @extend_schema(
-        request=MarkAttentionPointSerializer,
-        responses={204: OpenApiTypes.OBJECT},
-    )
-    def patch(self, request, *args, **kwargs):
-        serializer = MarkAttentionPointSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        # Update the observation
-        observation = get_object_or_404(Observation, id=data["observation_id"])
-        if data["is_attention_point"]:
-            # If is_attention_point is True, set value_as_concept to YES
-            observation.value_as_concept = get_concept_by_code("value_yes")
-        else:
-            # If is_attention_point is False, set value_as_concept to NO
-            observation.value_as_concept = get_concept_by_code("value_no")
-
-        observation.save()
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(tags=["VisitOccurrence"])
@@ -897,7 +875,7 @@ class DiaryView(APIView):
             return Response(serializer.data)
 
         except Exception as e:
-            logger.error(f"Error retrieving diaries: {str(e)}")
+            logger.error(f"Error retrieving diaries: {str(e)}", e)
             return Response({"error": "Failed to retrieve diaries"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
@@ -931,7 +909,7 @@ class DiaryDetailView(APIView):
             return Response(serializer.data)
 
         except Exception as e:
-            logger.error(f"Error retrieving diary {diary_id}: {str(e)}")
+            logger.error(f"Error retrieving diary {diary_id}: {str(e)}", e)
             return Response({"error": "Failed to retrieve diary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
@@ -967,25 +945,16 @@ class PersonDiariesView(APIView):
 
 
 @extend_schema(
-    tags=["Diary"],
+    tags=["Provider"],
     responses=DiaryRetrieveSerializer(many=True),
 )
 class ProviderPersonDiariesView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        provider = get_object_or_404(Provider, user=request.user)
-        linked_persons_ids = FactRelationship.objects.filter(
-            fact_id_2=provider.provider_id,
-            domain_concept_1_id=get_concept_by_code("PERSON"),
-            domain_concept_2_id=get_concept_by_code("PROVIDER"),
-            relationship_concept_id=get_concept_by_code("PERSON_PROVIDER"),
-        ).values_list("fact_id_1", flat=True)
-
-        persons = Person.objects.filter(person_id__in=linked_persons_ids)
-
+    def get(self, request, person_id):
+        provider, person = get_provider_and_linked_person_or_404(request.user, person_id)
         diaries = Observation.objects.filter(
-            person_id__in=persons.values_list("person_id", flat=True),
+            person=person,
             observation_concept_id=get_concept_by_code("diary_entry").concept_id,
             shared_with_provider=True,
         ).order_by("-observation_date")
@@ -995,6 +964,7 @@ class ProviderPersonDiariesView(APIView):
 
 
 # Fiquei com medo de mudar essa funcao, mas teoricamente absoleta
+@extend_schema(tags=["Provider"])
 class ProviderPersonDiaryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1035,6 +1005,7 @@ class ProviderPersonDiaryDetailView(APIView):
                 # Format interest area with its triggers
                 interest_data = InterestAreaSerializer(interest_area).data
                 interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+                print(interest_data)
                 interest_areas_with_triggers.append(interest_data)
 
             # Prepare full response
@@ -1049,7 +1020,7 @@ class ProviderPersonDiaryDetailView(APIView):
             return Response(diary_data)
 
         except Exception as e:
-            logger.error(f"Error retrieving diary details: {str(e)}")
+            logger.error(f"Error retrieving diary details: {str(e)}", e)
             return Response({"error": "Failed to retrieve diary details"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1104,6 +1075,40 @@ class PersonInterestAreaView(APIView):
         result = serializer.save()
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["Interest_Areas"],
+    operation_id="markObservationAsAttentionPoint",
+    description="Marcar área como ponto de atenção",
+    request=MarkAttentionPointSerializer,
+    responses={204: OpenApiTypes.OBJECT},
+)
+class MarkAttentionPointView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        serializer = MarkAttentionPointSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            provider = get_object_or_404(Provider, user=request.user)
+            data = serializer.validated_data
+
+            observation = get_object_or_404(Observation, observation_id=data["area_id"])
+            if data["is_attention_point"]:
+                observation.value_as_concept = get_concept_by_code("value_yes")
+                observation.provider = provider
+            else:
+                observation.value_as_concept = get_concept_by_code("value_no")
+                observation.provider = None
+
+            observation.save()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"Error marking attention point: {str(e)}", e)
+            return Response({"error": "Failed to mark attention point"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(tags=["Interest_Areas"])
