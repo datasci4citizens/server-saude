@@ -422,6 +422,8 @@ class PersonUpdateSerializer(BaseUpdateSerializer):
 class PersonRetrieveSerializer(BaseRetrieveSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
+    first_name = serializers.CharField(source="user.first_name", read_only=True)
+    last_name = serializers.CharField(source="user.last_name", read_only=True)
 
     class Meta:
         model = Person
@@ -457,6 +459,8 @@ class ProviderUpdateSerializer(BaseUpdateSerializer):
 class ProviderRetrieveSerializer(BaseRetrieveSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
+    first_name = serializers.CharField(source="user.first_name", read_only=True)
+    last_name = serializers.CharField(source="user.last_name", read_only=True)
 
     class Meta:
         model = Provider
@@ -962,6 +966,7 @@ class DiaryCreateSerializer(serializers.Serializer):
     date_range_type = serializers.ChoiceField(choices=["today", "since_last"])
     text = serializers.CharField(allow_blank=True)
     text_shared = serializers.BooleanField()
+    diary_shared = serializers.BooleanField()
     interest_areas = InterestAreaUpdateSerializer(many=True, required=False, allow_empty=True)
 
     def create(self, validated_data):
@@ -975,7 +980,7 @@ class DiaryCreateSerializer(serializers.Serializer):
             observation_concept=get_concept_by_code("diary_entry"),
             value_as_string=validated_data["date_range_type"],
             observation_date=now,
-            shared_with_provider=False,
+            shared_with_provider=validated_data["diary_shared"],
             observation_type_concept=get_concept_by_code("diary_entry_type"),
         )
 
@@ -995,57 +1000,92 @@ class DiaryCreateSerializer(serializers.Serializer):
                 )
             )
 
-        # 3. Process interest areas
-        interest_areas_updated = []
-        for interest_area_data in validated_data.get("interest_areas", []):
-            interest_id = interest_area_data.get("interest_area_id")
-            if interest_id:
-                try:
-                    # Find the interest area observation
-                    interest_area = Observation.objects.get(
-                        observation_id=interest_id,
-                        person=person,
-                    )
+        interest_areas = Observation.objects.filter(
+            person=person,
+            observation_type_concept=get_concept_by_code("INTEREST_AREA").concept_id,
+        )
 
-                    # Update values
-                    if "value_as_string" in interest_area_data:
-                        interest_area.value_as_string = interest_area_data["value_as_string"]
+        for interest_area in interest_areas:
+            interest_area_copy = Observation.objects.create(
+                person=person,
+                observation_concept_id=interest_area.observation_concept_id,
+                observation_source_value=interest_area.observation_source_value,
+                value_as_concept=interest_area.value_as_concept,
+                observation_date=now,
+                observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                value_as_string=interest_area.value_as_string,
+                shared_with_provider=interest_area.shared_with_provider,
+            )
 
-                    # Update sharing preference
-                    if "shared_with_provider" in interest_area_data:
-                        interest_area.shared_with_provider = interest_area_data["shared_with_provider"]
+            for interest_area_data in validated_data.get("interest_areas", []):
+                interest = Observation.objects.get(
+                    observation_id=interest_area_data.get("interest_area_id"),
+                )
 
-                    interest_area.observation_date = now
-                    interest_area.save()
+                if interest.observation_source_value == interest_area_copy.observation_source_value:
+                    interest_area_copy.value_as_string = interest_area_data.get("value_as_string", "")
+                    interest_area_copy.shared_with_provider = interest_area_data.get("shared_with_provider", False)
+                    interest_area_copy.save()
 
-                    # Add to updated list
-                    interest_areas_updated.append(interest_id)
+            print(diary_entry.observation_id)
+            print(interest_area_copy.observation_id)
+            FactRelationship.objects.create(
+                domain_concept_1_id=get_concept_by_code("diary_entry").concept_id,
+                fact_id_1=diary_entry.observation_id,
+                domain_concept_2_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                fact_id_2=interest_area_copy.observation_id,
+                relationship_concept_id=get_concept_by_code("AOI_DIARY").concept_id,
+            )
 
-                    # Process triggers if present
+            trigger_relationships = FactRelationship.objects.filter(
+                domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                fact_id_1=interest_area.observation_id,
+                relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+            )
+
+            for triggers in trigger_relationships:
+                trigger_observation = Observation.objects.get(
+                    observation_id=triggers.fact_id_2,
+                    person=person,
+                )
+
+                # Create a copy of the trigger observation
+                trigger_copy = Observation.objects.create(
+                    person=person,
+                    observation_concept_id=trigger_observation.observation_concept_id,
+                    observation_source_value=trigger_observation.observation_source_value,
+                    value_as_string=trigger_observation.value_as_string,
+                    observation_date=now,
+                    observation_type_concept_id=get_concept_by_code("TRIGGER").concept_id,
+                )
+
+                for interest_area_data in validated_data.get("interest_areas", []):
                     for trigger_data in interest_area_data.get("triggers", []):
-                        trigger_id = trigger_data.get("trigger_id")
-                        if trigger_id and "value_as_string" in trigger_data:
-                            try:
-                                trigger = Observation.objects.get(
-                                    observation_id=trigger_id,
-                                    person=person,
-                                )
-                                trigger.value_as_string = trigger_data["value_as_string"]
-                                trigger.observation_date = now
-                                trigger.save()
-                            except Observation.DoesNotExist:
-                                continue
+                        trigger = Observation.objects.get(
+                            observation_id=trigger_data.get("trigger_id"),
+                        )
 
-                except Observation.DoesNotExist:
-                    continue
+                        if trigger.observation_source_value == trigger_copy.observation_source_value:
+                            trigger_copy.value_as_string = trigger_data.get("value_as_string", "")
+                            trigger_copy.save()
 
-        # Create all the observations
-        Observation.objects.bulk_create(observations)
+                FactRelationship.objects.create(
+                    domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                    fact_id_1=interest_area_copy.observation_id,
+                    domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id,
+                    fact_id_2=trigger_copy.observation_id,
+                    relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+                )
+
+            trigger_observation.person = None
+            trigger_observation.save()
+
+            interest_area.person = None
+            interest_area.save()
 
         return {
             "diary_id": diary_entry.observation_id,
             "created": True,
-            "interest_areas_updated": interest_areas_updated,
         }
 
     def delete(self, diary_id):

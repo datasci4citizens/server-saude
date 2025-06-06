@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
@@ -733,7 +733,7 @@ def dev_login_as_person(request):
         return Response({"detail": "Not available in production"}, status=403)
 
     User = get_user_model()
-    user = User.objects.get(email="Dummy@email.com")
+    user = User.objects.get(email="mock-person@email.com")
     refresh = RefreshToken.for_user(user)
     return Response(
         {
@@ -743,7 +743,7 @@ def dev_login_as_person(request):
     )
 
 
-@extend_schema(tags=["Linked_Persons"], responses=HelpCountSerializer)
+@extend_schema(tags=["Help"], responses=HelpCountSerializer)
 class HelpCountView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -770,11 +770,10 @@ class HelpCountView(APIView):
         # Count active helps for these persons
         help_count = Observation.objects.filter(
             person_id__in=linked_persons_ids,
+            provider_id=provider_id,  # Only helps from this provider
             observation_concept_id=get_concept_by_code("HELP"),  # Help concept
             value_as_concept_id=get_concept_by_code("ACTIVE"),  # Active status concept
         )
-
-        print(f"Help count: {help_count.count()}")
 
         # Use serializer for response data validation and formatting
         serializer = HelpCountSerializer({"help_count": help_count.count()})
@@ -865,8 +864,9 @@ class ReceivedHelpsView(APIView):
     def get(self, request):
         provider = get_object_or_404(Provider, user=request.user)
         helps = Observation.objects.filter(
-            provider_id=provider.provider_id, observation_concept_id=2000001  # Ajuda
+            provider_id=provider.provider_id, observation_concept_id=get_concept_by_code("HELP")  # Ajuda
         ).order_by("-observation_date")
+        print(helps)
         serializer = ObservationRetrieveSerializer(helps, many=True)
         return Response(serializer.data)
 
@@ -899,7 +899,6 @@ class DiaryView(APIView):
 
             result = []
             for diary in diary_entries:
-                # Get related observations more precisely using the same timestamp
                 related_observations = Observation.objects.filter(
                     person=person,
                     observation_date=diary.observation_date,
@@ -972,25 +971,58 @@ class DiaryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, diary_id):
-        person = Person.objects.get(user=request.user)
-
         try:
-            diary = Observation.objects.get(pk=diary_id, person=person)
-        except Observation.DoesNotExist:
-            return Response({"detail": "Diary not found"}, status=404)
+            person = get_object_or_404(Person, user=request.user)
+            # Get the specific diary
+            diary = get_object_or_404(
+                Observation,
+                observation_id=diary_id,
+                person=person,
+                observation_concept_id=get_concept_by_code("diary_entry").concept_id,
+            )
 
-        siblings = Observation.objects.filter(person=person, observation_date=diary.observation_date).exclude(
-            pk=diary.pk
-        )
+            # Get related observations using the same timestamp
+            related_observations = Observation.objects.filter(
+                person=person,
+                observation_date=diary.observation_date,
+                observation_type_concept_id=get_concept_by_code("diary_entry_type").concept_id,
+            ).exclude(observation_id=diary.observation_id)
 
-        return Response(
-            {
+            interest_areas = Observation.objects.filter(
+                perszon=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
+            ).select_related("observation_concept")
+
+            # Get triggers for each interest area
+            interest_areas_with_triggers = []
+            for interest_area in interest_areas:
+                # Get triggers for this interest area
+                trigger_relationships = FactRelationship.objects.filter(
+                    domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                    fact_id_1=interest_area.observation_id,
+                    relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+                )
+                trigger_ids = trigger_relationships.values_list("fact_id_2", flat=True)
+                triggers = Observation.objects.filter(observation_id__in=trigger_ids)
+
+                # Format interest area with its triggers
+                interest_data = InterestAreaSerializer(interest_area).data
+                interest_data["triggers"] = InterestAreaTriggerCreateSerializer(triggers, many=True).data
+                interest_areas_with_triggers.append(interest_data)
+
+            # Prepare full response
+            diary_data = {
                 "diary_id": diary.observation_id,
                 "date": diary.observation_date,
                 "scope": diary.value_as_string,
-                "entries": ObservationRetrieveSerializer(siblings, many=True).data,
+                "entries": ObservationRetrieveSerializer(related_observations, many=True).data,
+                "interest_areas": interest_areas_with_triggers,
             }
-        )
+
+            return Response(diary_data)
+
+        except Exception as e:
+            logger.error(f"Error retrieving diary details: {str(e)}")
+            return Response({"error": "Failed to retrieve diary details"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ProviderPersonDiariesView(APIView):
@@ -1002,6 +1034,8 @@ class ProviderPersonDiariesView(APIView):
         diary_entries = Observation.objects.filter(
             person=person, observation_concept=get_concept_by_code("diary_entry"), shared_with_provider=True
         ).order_by("-observation_date")
+
+        print(f"Found {diary_entries.count()} diary entries for person {person_id}")
 
         result = []
         for diary in diary_entries:
@@ -1025,35 +1059,67 @@ class ProviderPersonDiaryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, person_id, diary_id):
-        _, person = get_provider_and_linked_person_or_404(request.user, person_id)
-
         try:
-            diary = Observation.objects.get(
-                pk=diary_id,
+            person = Person.objects.get(person_id=person_id)
+            # Get the specific diary
+            diary = get_object_or_404(
+                Observation,
+                observation_id=diary_id,
                 person=person,
-                observation_concept=get_concept_by_code("diary_entry"),
-                shared_with_provider=True,
+                observation_concept_id=get_concept_by_code("diary_entry").concept_id,
             )
 
-        except Observation.DoesNotExist:
-            return Response({"detail": "Diary not found or not shared"}, status=404)
+            # Get related observations using the same timestamp
+            related_observations = Observation.objects.filter(
+                person=person,
+                observation_date=diary.observation_date,
+                observation_type_concept_id=get_concept_by_code("diary_entry_type").concept_id,
+            ).exclude(observation_id=diary.observation_id)
 
-        children = Observation.objects.filter(
-            person=person, observation_date=diary.observation_date, shared_with_provider=True
-        ).exclude(pk=diary.pk)
+            interest_areas = Observation.objects.filter(
+                person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
+            ).select_related("observation_concept")
 
-        return Response(
-            {
+            # Get triggers for each interest area
+            interest_areas_with_triggers = []
+            for interest_area in interest_areas:
+                # Get triggers for this interest area
+                trigger_relationships = FactRelationship.objects.filter(
+                    domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                    fact_id_1=interest_area.observation_id,
+                    relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+                )
+                trigger_ids = trigger_relationships.values_list("fact_id_2", flat=True)
+                triggers = Observation.objects.filter(observation_id__in=trigger_ids)
+
+                # Format interest area with its triggers
+                interest_data = InterestAreaSerializer(interest_area).data
+                interest_data["triggers"] = InterestAreaTriggerCreateSerializer(triggers, many=True).data
+                interest_areas_with_triggers.append(interest_data)
+
+            # Prepare full response
+            diary_data = {
                 "diary_id": diary.observation_id,
                 "date": diary.observation_date,
                 "scope": diary.value_as_string,
-                "entries": ObservationRetrieveSerializer(children, many=True).data,
+                "entries": ObservationRetrieveSerializer(related_observations, many=True).data,
+                "interest_areas": interest_areas_with_triggers,
             }
-        )
+
+            return Response(diary_data)
+
+        except Exception as e:
+            logger.error(f"Error retrieving diary details: {str(e)}")
+            return Response({"error": "Failed to retrieve diary details"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(tags=["Interest_Areas"], responses={200: InterestAreaSerializer(many=True)})
 class PersonInterestAreaView(APIView):
+    """
+    View to manage interest areas for the authenticated user.
+    Allows listing, creating, and updating interest areas.
+    """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
