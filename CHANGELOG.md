@@ -1,6 +1,124 @@
 # CHANGELOG
 
 
+## v1.2.0 (2025-06-06)
+
+### Bug Fixes
+
+- Diary registry
+  ([`81b3094`](https://github.com/datasci4citizens/server-saude/commit/81b30949fe4e38e748234534956dbebd0c50e87f))
+
+- Duplicate problem
+  ([`6ddc22c`](https://github.com/datasci4citizens/server-saude/commit/6ddc22c035e310498d21b9bc27aeece115fa2ca8))
+
+- Missing url
+  ([`01d7358`](https://github.com/datasci4citizens/server-saude/commit/01d7358030fdad5577c94efa34667332283add0b))
+
+- **nojira**: Pt to en comment
+  ([`2314887`](https://github.com/datasci4citizens/server-saude/commit/231488756aa63323f7594c3f6c09a2027a87246c))
+
+- **nojira**: Pt to en comment ([#33](https://github.com/datasci4citizens/server-saude/pull/33),
+  [`36787fc`](https://github.com/datasci4citizens/server-saude/commit/36787fcf279de96bdd54fb9564351087f32e0fb8))
+
+- **SAU**: Corretly delete diaries
+  ([`fdb2b9d`](https://github.com/datasci4citizens/server-saude/commit/fdb2b9d22678d6ef9cbc7e284153bb69cdb6b117))
+
+- **SAU**: Corretly delete diaries ([#59](https://github.com/datasci4citizens/server-saude/pull/59),
+  [`2b53a89`](https://github.com/datasci4citizens/server-saude/commit/2b53a89e50842c01e03461f17e021491cbf3eb8b))
+
+- **SAU**: Move method
+  ([`4027121`](https://github.com/datasci4citizens/server-saude/commit/40271212eb61c19e1e4d3bde3ad4122d8e30ecb3))
+
+- **SAU**: Python format
+  ([`32cb43c`](https://github.com/datasci4citizens/server-saude/commit/32cb43cb1488cab61b32500f20763da3f2ef14ae))
+
+- **SAU**: Remove person id from get diary
+  ([`31197b7`](https://github.com/datasci4citizens/server-saude/commit/31197b7845e1ab29e7b2d92ea34e4925060c6ab4))
+
+- **SAU**: Small fix
+  ([`eb63125`](https://github.com/datasci4citizens/server-saude/commit/eb631255d10717a9da8c734d1949ff9ecb8de457))
+
+- **sau-43**: Fix listar ajuda
+  ([`971fd7b`](https://github.com/datasci4citizens/server-saude/commit/971fd7bc19aeedfe43f472f8c3f5714344d8b338))
+
+- **SAU-43**: Missing get help url ([#45](https://github.com/datasci4citizens/server-saude/pull/45),
+  [`f4daf3b`](https://github.com/datasci4citizens/server-saude/commit/f4daf3bc636b19833c902537d6f3e67dd7b6c89e))
+
+- **sau-48**: Put provider diaries retrieve back to work
+  ([`2823491`](https://github.com/datasci4citizens/server-saude/commit/28234914e27c1716c584618785111185e4e55ca4))
+
+- **sau-48**: Put provider diaries retrieve back to work
+  ([#49](https://github.com/datasci4citizens/server-saude/pull/49),
+  [`705846b`](https://github.com/datasci4citizens/server-saude/commit/705846b41e78ae59a1669e5b2dea6d3bf2345dfe))
+
+- **SAU-53**: Fixes
+  ([`ebf0fdd`](https://github.com/datasci4citizens/server-saude/commit/ebf0fddc7f85edce7fb22fd20c72b5769d6145cf))
+
+- **sau-57**: Fix ponto de atencao
+  ([`ac3e186`](https://github.com/datasci4citizens/server-saude/commit/ac3e18662d8b3379225afcf3d16b97cf4d4fa88b))
+
+- **sau-57**: Fix ponto de atencao ([#61](https://github.com/datasci4citizens/server-saude/pull/61),
+  [`b030e4f`](https://github.com/datasci4citizens/server-saude/commit/b030e4f5ed817c868d1e4c2c4f7f5db191501635))
+
+- **sau-62**: Inserir value dos triggers
+  ([`e59ce04`](https://github.com/datasci4citizens/server-saude/commit/e59ce04da7d1ad037eaae7c4e647f68f7da1417f))
+
+- **sau-62**: Inserir value dos triggers
+  ([#63](https://github.com/datasci4citizens/server-saude/pull/63),
+  [`ba4e143`](https://github.com/datasci4citizens/server-saude/commit/ba4e1431d48b302b5f00448f8dd51394199a6761))
+
+### Chores
+
+- **nojira**: Release
+  ([`8d1d0ed`](https://github.com/datasci4citizens/server-saude/commit/8d1d0edc2343155a9d96c08d2cfe68e212fbe1a2))
+
+- **SAU**: Merge
+  ([`eb7250e`](https://github.com/datasci4citizens/server-saude/commit/eb7250eb4558d7a3d5e75047a8d6ca8f25de086b))
+
+### Documentation
+
+- **NOJIRA**: Secao ferramentas (issue #38)
+  ([`3d4a1ab`](https://github.com/datasci4citizens/server-saude/commit/3d4a1abb09b9220affb4a297ab2ab19bf6911ded))
+
+- **NOJIRA**: Secao ferramentas (issue #38)
+  ([`76185a3`](https://github.com/datasci4citizens/server-saude/commit/76185a371a73671e761eaf8ddb1b9fb298f39818))
+
+- **NOJIRA**: Secao ferramentas (issue #38)
+  ([`5b521a6`](https://github.com/datasci4citizens/server-saude/commit/5b521a67fb4f5556fe5130b6ab44d1bc0dab220d))
+
+### Features
+
+- **nojira**: Força semantic release funcionar
+  ([`8f2687f`](https://github.com/datasci4citizens/server-saude/commit/8f2687f95dae1f6a17b130e0b79575b6adc4dd13))
+
+- **SAU-46**: Retornar nome dos usuarios
+  ([`0ab1f2b`](https://github.com/datasci4citizens/server-saude/commit/0ab1f2b863189617a11b69c83fc21e30fdef83a8))
+
+- **SAU-46**: Retornar nome dos usuarios
+  ([`2122ff7`](https://github.com/datasci4citizens/server-saude/commit/2122ff724f0ff093fd1c3e7962481cd50489e610))
+
+- **SAU-46**: Retornar nome dos usuarios
+  ([#47](https://github.com/datasci4citizens/server-saude/pull/47),
+  [`e84c799`](https://github.com/datasci4citizens/server-saude/commit/e84c7999ca2b6055ad63d4591b3b1da73c677903))
+
+- **sau-53**: Add attention point
+  ([`1496819`](https://github.com/datasci4citizens/server-saude/commit/1496819f88f5a02b45bc349857119ddaf19d58ad))
+
+- **sau-53**: Add attention point
+  ([`e60c34b`](https://github.com/datasci4citizens/server-saude/commit/e60c34b5115967037a7f80f9ff3a37ff094f0c7c))
+
+- **sau-53**: Add attention point ([#56](https://github.com/datasci4citizens/server-saude/pull/56),
+  [`08b1514`](https://github.com/datasci4citizens/server-saude/commit/08b15144408a8497c807fdce96fa697a3eeeb936))
+
+### Refactoring
+
+- Diary with interest areas
+  ([`2e47a37`](https://github.com/datasci4citizens/server-saude/commit/2e47a3770c6aef82aa751d4c9c240355a9e7be3b))
+
+- **SAU-53**: Simplify update method
+  ([`0cf5c17`](https://github.com/datasci4citizens/server-saude/commit/0cf5c17497de0de585fb6fd0e9de4456f5d5b6e3))
+
+
 ## v1.1.0 (2025-05-30)
 
 ### Bug Fixes
