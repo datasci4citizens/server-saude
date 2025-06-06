@@ -111,7 +111,7 @@ As outras tabelas estão relacionadas aos mecanismos de funcionamento do aplicat
 
 -**sites**
 
-![Banco de dados OMOP CDM](https://github.com/datasci4citizens/server-saude/blob/develop/docs_omop_cdm/images/SAUDE-DB.png)
+![Banco de dados OMOP CDM](./images/SAUDE-DB.png)
 
 ### 4.2 Explicação das tabelas e vocabulários escolhidos
 
@@ -120,11 +120,14 @@ As outras tabelas estão relacionadas aos mecanismos de funcionamento do aplicat
 Por se tratar de um modelo que vem sendo desenvolvido ao longo de vários anos, e com grande engajamento da comunidade, o OMOP CDM apresenta um alto número de ferramentas para auxiliar os gerenciadores de bancos de dados que queiram aderir ao padrão. Aqui serão apresentadas 3 das principais, sendo as duas primeiras utilizadas diretamente pelo grupo para o desenvolvimento do modelo SAÚDE!. 
 
 ### 5.1 ATHENA
-Ferramenta para encontrar conceitos e vocabulários importantes.
+O [Athena](https://athena.ohdsi.org/search-terms/start) é a fonte para encontrar conceitos necessários para utilizar no banco de dados. Existem duas formas distintas de fazer essa busca, procurar por conceitos específicos ou por vocabulários inteiros. No caso de vocabulários inteiros é necessário fazer um login (2) e clicar no botão do lado superior direito (1). Você será redirecionado para uma lista com todos os vocabulários disponíveis. Alguns não são públicos e só permitem acesso com uma chave de acesso apropriada. Após a escolha dos vocabulários escolhidos, o sistema gerará uma pasta com todos os conceitos escolhidos (não só os conceitos daquele vocabulário, mas outros que tenham alguma relação com ele) e também outras entradas importantes, como entradas para as tabelas concept_ancestor, concept_class, concept_relationship, concept_synonym, domain, drug_strengh, relationship e vocabulary. Tais dados já estão no modelo padrão, dessa forma, basta importa-los diretamente para o banco. 
 
-![IMAGEM ATHENA 1](https://github.com/datasci4citizens/server-saude/blob/develop/docs_omop_cdm/images/ATHENA_1.png)
 
-![IMAGEM ATHENA 2](https://github.com/datasci4citizens/server-saude/blob/develop/docs_omop_cdm/images/ATHENA_2.png)
+Uma questão a ser considerada é em relação ao tamanho dos arquivos. Enquanto que ao baixar apenas os conceitos, temos um arquivo, em geral, pequeno, ao baixar vocabulários, recebemos outras entradas, que podem não ser de interesse dependendo da complexidade do projeto.
+
+![IMAGEM ATHENA 1](./images/ATHENA_1.png)
+
+![IMAGEM ATHENA 2](./images/ATHENA_2.png)
 
 ### 5.2 THEMIS
 Ferramenta para centralizar questões importantes de como popular as tabelas do OMOP CDM. Colocar seções existentes em geral em um tópico. Comentar sobre o DataQualityDashboard
