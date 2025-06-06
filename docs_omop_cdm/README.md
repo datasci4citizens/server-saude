@@ -117,8 +117,17 @@ As outras tabelas estão relacionadas aos mecanismos de funcionamento do aplicat
 
 ## 5 Ferramentas importantes
 
+Por se tratar de um modelo que vem sendo desenvolvido ao longo de vários anos, e com grande engajamento da comunidade, o OMOP CDM apresenta um alto número de ferramentas para auxiliar os gerenciadores de bancos de dados que queiram aderir ao padrão. Aqui serão apresentadas 3 das principais, sendo as duas primeiras utilizadas diretamente pelo grupo para o desenvolvimento do modelo SAÚDE!. 
+
 ### 5.1 ATHENA
+Ferramenta para encontrar conceitos e vocabulários importantes.
+
+![IMAGEM ATHENA 1](https://github.com/datasci4citizens/server-saude/blob/develop/docs_omop_cdm/images/ATHENA_1.png)
+
+![IMAGEM ATHENA 2](https://github.com/datasci4citizens/server-saude/blob/develop/docs_omop_cdm/images/ATHENA_2.png)
 
 ### 5.2 THEMIS
+Ferramenta para centralizar questões importantes de como popular as tabelas do OMOP CDM. Colocar seções existentes em geral em um tópico. Comentar sobre o DataQualityDashboard
 
 ### 5.3 ATLAS
+Ferramenta para análise de dados no padrão OMOP. Não utilizada durante o projeto do MVP do aplicativo, mas pode ser importante para próximas etapas.
