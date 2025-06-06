@@ -733,7 +733,7 @@ def dev_login_as_person(request):
         return Response({"detail": "Not available in production"}, status=403)
 
     User = get_user_model()
-    user = User.objects.get(email="Dummy@email.com")
+    user = User.objects.get(email="mock-person@email.com")
     refresh = RefreshToken.for_user(user)
     return Response(
         {
@@ -1002,6 +1002,8 @@ class ProviderPersonDiariesView(APIView):
         diary_entries = Observation.objects.filter(
             person=person, observation_concept=get_concept_by_code("diary_entry"), shared_with_provider=True
         ).order_by("-observation_date")
+
+        print(f"Found {diary_entries.count()} diary entries for person {person_id}")
 
         result = []
         for diary in diary_entries:
