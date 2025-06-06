@@ -172,6 +172,7 @@ class AccountViewSet(FlexibleViewSet):
         serializer = UserRetrieveSerializer(user)
         return Response(serializer.data)
 
+    @extend_schema(responses={200: UserRetrieveSerializer})
     def retrieve(self, request, *args, **kwargs):
         return Response({"detail": "This endpoint is not available."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -874,7 +875,7 @@ class DiaryView(APIView):
             return Response(serializer.data)
 
         except Exception as e:
-            logger.error(f"Error retrieving diaries: {str(e)}")
+            logger.error(f"Error retrieving diaries: {str(e)}", e)
             return Response({"error": "Failed to retrieve diaries"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
@@ -908,7 +909,7 @@ class DiaryDetailView(APIView):
             return Response(serializer.data)
 
         except Exception as e:
-            logger.error(f"Error retrieving diary {diary_id}: {str(e)}")
+            logger.error(f"Error retrieving diary {diary_id}: {str(e)}", e)
             return Response({"error": "Failed to retrieve diary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
@@ -944,25 +945,16 @@ class PersonDiariesView(APIView):
 
 
 @extend_schema(
-    tags=["Diary"],
+    tags=["Provider"],
     responses=DiaryRetrieveSerializer(many=True),
 )
 class ProviderPersonDiariesView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        provider = get_object_or_404(Provider, user=request.user)
-        linked_persons_ids = FactRelationship.objects.filter(
-            fact_id_2=provider.provider_id,
-            domain_concept_1_id=get_concept_by_code("PERSON"),
-            domain_concept_2_id=get_concept_by_code("PROVIDER"),
-            relationship_concept_id=get_concept_by_code("PERSON_PROVIDER"),
-        ).values_list("fact_id_1", flat=True)
-
-        persons = Person.objects.filter(person_id__in=linked_persons_ids)
-
+    def get(self, request, person_id):
+        provider, person = get_provider_and_linked_person_or_404(request.user, person_id)
         diaries = Observation.objects.filter(
-            person_id__in=persons.values_list("person_id", flat=True),
+            person=person,
             observation_concept_id=get_concept_by_code("diary_entry").concept_id,
             shared_with_provider=True,
         ).order_by("-observation_date")
@@ -972,6 +964,7 @@ class ProviderPersonDiariesView(APIView):
 
 
 # Fiquei com medo de mudar essa funcao, mas teoricamente absoleta
+@extend_schema(tags=["Provider"])
 class ProviderPersonDiaryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1026,7 +1019,7 @@ class ProviderPersonDiaryDetailView(APIView):
             return Response(diary_data)
 
         except Exception as e:
-            logger.error(f"Error retrieving diary details: {str(e)}")
+            logger.error(f"Error retrieving diary details: {str(e)}", e)
             return Response({"error": "Failed to retrieve diary details"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
