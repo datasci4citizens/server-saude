@@ -363,29 +363,6 @@ class DrugExposureViewSet(FlexibleViewSet):
 class ObservationViewSet(FlexibleViewSet):
     queryset = Observation.objects.all()
 
-    # Create the PATCH request, that receives only the value_as_concept field
-    @extend_schema(
-        request=MarkAttentionPointSerializer,
-        responses={204: OpenApiTypes.OBJECT},
-    )
-    def patch(self, request, *args, **kwargs):
-        serializer = MarkAttentionPointSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        # Update the observation
-        observation = get_object_or_404(Observation, id=data["observation_id"])
-        if data["is_attention_point"]:
-            # If is_attention_point is True, set value_as_concept to YES
-            observation.value_as_concept = get_concept_by_code("value_yes")
-        else:
-            # If is_attention_point is False, set value_as_concept to NO
-            observation.value_as_concept = get_concept_by_code("value_no")
-
-        observation.save()
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 @extend_schema(tags=["VisitOccurrence"])
 class VisitOccurrenceViewSet(FlexibleViewSet):
@@ -1104,6 +1081,40 @@ class PersonInterestAreaView(APIView):
         result = serializer.save()
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["Interest_Areas"],
+    operation_id="markObservationAsAttentionPoint",
+    description="Marcar área como ponto de atenção",
+    request=MarkAttentionPointSerializer,
+    responses={204: OpenApiTypes.OBJECT},
+)
+class MarkAttentionPointView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        serializer = MarkAttentionPointSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            provider = get_object_or_404(Provider, user=request.user)
+            data = serializer.validated_data
+
+            observation = get_object_or_404(Observation, observation_id=data["area_id"])
+            if data["is_attention_point"]:
+                observation.value_as_concept = get_concept_by_code("value_yes")
+                observation.provider = provider
+            else:
+                observation.value_as_concept = get_concept_by_code("value_no")
+                observation.provider = None
+
+            observation.save()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"Error marking attention point: {str(e)}", e)
+            return Response({"error": "Failed to mark attention point"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(tags=["Interest_Areas"])
