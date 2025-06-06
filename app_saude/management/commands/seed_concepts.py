@@ -354,6 +354,7 @@ class Command(BaseCommand):
 
         # Valores possíveis
         add_concept(999501, "Yes", "Yes/No", "value_yes", "Value", "Value", "Sim")
+
         add_concept(999502, "No", "Yes/No", "value_no", "Value", "Value", "Não")
 
         WELLBEING = [
