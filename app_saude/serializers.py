@@ -707,6 +707,9 @@ class InterestAreaSerializer(serializers.Serializer):
     interest_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     value_as_string = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     triggers = InterestAreaTriggerCreateSerializer(many=True, required=False)
+    is_attention_point = serializers.BooleanField(
+        required=False, default=False, help_text="Indicates if the interest area is marked for attention"
+    )
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("interest_name"):
@@ -745,6 +748,7 @@ class InterestAreaSerializer(serializers.Serializer):
         if created:
             interest_area.value_as_concept = get_concept_by_code("value_no")
             interest_area.shared_with_provider = validated_data.get("shared_with_provider", False)
+            interest_area.is_attention_point = validated_data.get("is_attention_point", False)
             interest_area.save()
 
         # Triggers
@@ -918,8 +922,9 @@ class InterestAreaSerializer(serializers.Serializer):
             "interest_name": instance.observation_source_value,
             "interest_area_id": instance.observation_id,
             "observation_concept_id": instance.observation_concept_id,
+            "provider_name": instance.provider.user.get_full_name() if instance.provider else None,
             "value_as_string": instance.value_as_string,
-            "value_as_concept": instance.value_as_concept.concept_id,
+            "is_attention_point": instance.value_as_concept.concept_id == get_concept_by_code("value_yes").concept_id,
             "shared_with_provider": instance.shared_with_provider,
         }
 
@@ -1147,9 +1152,9 @@ class LogoutSerializer(serializers.Serializer):
 
 
 class MarkAttentionPointSerializer(serializers.Serializer):
-    observation_id = serializers.IntegerField(help_text="ID of the observation to be marked as an attention point")
+    area_id = serializers.IntegerField(help_text="ID of the interest area to be marked as an attention point")
     is_attention_point = serializers.BooleanField(
-        help_text="Indicates whether the observation should be marked as an attention point"
+        help_text="Indicates whether the interest area should be marked as an attention point"
     )
 
 
