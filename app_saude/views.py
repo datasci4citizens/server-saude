@@ -899,7 +899,6 @@ class DiaryView(APIView):
 
             result = []
             for diary in diary_entries:
-                # Get related observations more precisely using the same timestamp
                 related_observations = Observation.objects.filter(
                     person=person,
                     observation_date=diary.observation_date,
