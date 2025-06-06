@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Prefetch
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
