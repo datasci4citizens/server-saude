@@ -979,7 +979,7 @@ class DiaryCreateSerializer(serializers.Serializer):
             observation_concept=get_concept_by_code("diary_entry"),
             value_as_string=validated_data["date_range_type"],
             observation_date=now,
-            shared_with_provider=False,
+            shared_with_provider=True,
             observation_type_concept=get_concept_by_code("diary_entry_type"),
         )
 

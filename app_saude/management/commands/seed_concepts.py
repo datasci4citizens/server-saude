@@ -377,8 +377,24 @@ class Command(BaseCommand):
             defaults={"username": "mockprovider", "first_name": "Dr. Mock", "last_name": "Provider"},
         )
 
-        # Provider.objects.get_or_create(user=user)
-        self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
+        Provider.objects.get_or_create(user=user, defaults={"professional_registration": "1111111"})
+
+        provider, _ = Provider.objects.get_or_create(user=user)
+
+        user, _ = User.objects.get_or_create(
+            email="mock-person@email.com",
+            defaults={"username": "mockperson", "first_name": "Mock", "last_name": "Person"},
+        )
+
+        person, _ = Person.objects.get_or_create(user=user)
+
+        FactRelationship.objects.get_or_create(
+            fact_id_1=person.person_id,
+            domain_concept_1_id=9202,  # Person
+            fact_id_2=provider.provider_id,
+            domain_concept_2_id=9201,  # Provider
+            relationship_concept_id=9200001,
+        )
 
         # Sintomas predefinidos
         concept_class("Wellness", "Wellness", 999100)
@@ -441,3 +457,5 @@ class Command(BaseCommand):
             ConceptRelationship.objects.update_or_create(
                 concept_1_id=concept_id, concept_2_id=value_type_concept_id, relationship_id="has_value_type"
             )
+
+        self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
