@@ -203,7 +203,7 @@ class Person(MyAbstractUser):
 class Provider(MyAbstractUser):
     provider_id = models.AutoField(primary_key=True, db_comment="Primary key of Provider")
     professional_registration = models.IntegerField(
-        blank=True, null=True, db_comment="Professional registration number"
+        blank=True, unique=True, db_comment="Professional registration number"
     )
     specialty_concept = models.ForeignKey(
         Concept,
@@ -363,6 +363,12 @@ class Observation(TimestampedModel):
         null=True,
         related_name="observation_type_concept_set",
         db_comment="Observation Type Concept",
+    )
+    observation_source_value = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        db_comment="Source value of the observation",
     )
     shared_with_provider = models.BooleanField(blank=True, null=True, db_comment="Visibility to assigned provider")
 

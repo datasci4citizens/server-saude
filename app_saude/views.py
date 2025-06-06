@@ -9,10 +9,10 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -29,23 +29,6 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-# Just a test endpoint to check if the user is logged in and return user info
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        return Response(
-            {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-            }
-        )
-
-
 class GoogleLoginView(APIView):
     serializer_class = AuthSerializer
     permission_classes = [AllowAny]
@@ -58,7 +41,7 @@ class GoogleLoginView(APIView):
 
         validated_data = auth_serializer.validated_data
 
-        # get user data from google
+        # Get user data from google
         user_data = google_get_user_data(validated_data)
 
         # Creates user in DB if first time login
@@ -80,7 +63,7 @@ class GoogleLoginView(APIView):
             person_id = Person.objects.get(user=user).pk
             role = "person"
 
-        # generate jwt token for the user
+        # Generate jwt token for the user
         token = RefreshToken.for_user(user)
         response = {
             "access": str(token.access_token),
@@ -128,6 +111,30 @@ class AdminLoginView(APIView):
         )
 
 
+@extend_schema(tags=["Logout"], request=LogoutSerializer)
+class LogoutView(APIView):
+    """
+    View to logout the user.
+    Removes the refresh token and returns a success response.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
+        except AttributeError:
+            return Response({"detail": "Token blacklisting not enabled."}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        except Exception as e:
+            print(f"Logout error: {str(e)}")
+            return Response(
+                {"detail": "Invalid token or token already blacklisted."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
 class UserRole:
     def get_role(self, request):
         role = "none"
@@ -148,6 +155,33 @@ class FlexibleViewSet(viewsets.ModelViewSet):
         return globals()[f"{prefix}RetrieveSerializer"]
 
 
+@extend_schema(tags=["Account"])
+class AccountViewSet(FlexibleViewSet):
+    """
+    ViewSet to manage user accounts.
+    Allowed HTTP methods: GET, DELETE.
+    """
+
+    http_method_names = ["get", "delete"]
+
+    queryset = User.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserRetrieveSerializer(user)
+        return Response(serializer.data)
+
+    @extend_schema(responses={200: UserRetrieveSerializer})
+    def retrieve(self, request, *args, **kwargs):
+        return Response({"detail": "This endpoint is not available."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 @extend_schema(tags=["Person"])
 class PersonViewSet(FlexibleViewSet):
     queryset = Person.objects.all()
@@ -158,22 +192,11 @@ class PersonViewSet(FlexibleViewSet):
     ordering_fields = "__all__"
     search_fields = ["social_name"]
 
-    def get_queryset(self):
-        return Person.objects.all()
-
+    @extend_schema(request=PersonCreateSerializer, responses={201: PersonRetrieveSerializer})
     def create(self, request, *args, **kwargs):
         if Person.objects.filter(user=request.user).exists():
             raise ValidationError("You already have a person registration.")
         return super().create(request, *args, **kwargs)
-
-    def destroy(self, request, *args, **kwargs):
-        if Person.objects.filter(user=request.user).exists():
-            if request.user == self.get_object().user:
-                # Delete the user and their related Person object
-                return super().destroy(request, *args, **kwargs)
-            else:
-                # If not, raise a permission denied error
-                raise PermissionDenied("You can only delete your own account.")
 
 
 @extend_schema(tags=["Provider"])
@@ -186,16 +209,11 @@ class ProviderViewSet(FlexibleViewSet):
     ordering_fields = "__all__"
     search_fields = ["social_name"]
 
-    def get_queryset(self):
-        return Provider.objects.all()
-
+    @extend_schema(request=ProviderCreateSerializer, responses={201: ProviderRetrieveSerializer})
     def create(self, request, *args, **kwargs):
         if Provider.objects.filter(user=request.user).exists():
             raise ValidationError("You already have a provider registration.")
         return super().create(request, *args, **kwargs)
-
-    def destroy(self, request, *args, **kwargs):
-        raise PermissionDenied("DELETE not allowed.")
 
 
 class UserRoleView(APIView):
@@ -204,21 +222,21 @@ class UserRoleView(APIView):
     def get(self, request):
         user = request.user
 
-        # Verifica se o usuário está associado a um Person
+        # Check if the user is associated with a Person
         try:
             person = Person.objects.get(user=user)
             return Response({"person_id": person.person_id}, status=status.HTTP_200_OK)
         except Person.DoesNotExist:
             pass
 
-        # Verifica se o usuário está associado a um Provider
+        # Check if the user is associated with a Provider
         try:
             provider = Provider.objects.get(user=user)
             return Response({"provider_id": provider.provider_id}, status=status.HTTP_200_OK)
         except Provider.DoesNotExist:
             pass
 
-        # Caso o usuário não esteja associado a nenhum dos dois
+        # If the user is not associated with either
         return Response(
             {"detail": "User is not associated with a Person or Provider."},
             status=status.HTTP_404_NOT_FOUND,
@@ -240,16 +258,16 @@ class ConceptClassViewSet(FlexibleViewSet):
     parameters=[
         OpenApiParameter(
             name="class",
-            description="Lista de concept_class_id (ex: class=Gender,Ethnicity)",
+            description="concept_class_id list (ex: class=Gender,Ethnicity)",
             required=False,
             type=str,
             style="form",
             explode=False,
         ),
-        OpenApiParameter(name="lang", description="Idioma da tradução (ex: pt)", required=False, type=str),
+        OpenApiParameter(name="lang", description="Translation language (ex: pt)", required=False, type=str),
         OpenApiParameter(
             name="relationship",
-            description="relationship_id a buscar para cada concept (ex: has_value_type)",
+            description="relationship_id to search for each concept (ex: has_value_type)",
             required=False,
             type=str,
         ),
@@ -266,11 +284,11 @@ class ConceptViewSet(FlexibleViewSet):
         relationship_id = self.request.query_params.get("relationship")
 
         if class_ids:
-            # Suporta múltiplos separados por vírgula
+            # Supports multiple separated by comma
             class_id_list = [s.strip() for s in class_ids.split(",")]
             queryset = queryset.filter(concept_class__concept_class_id__in=class_id_list)
 
-        # traz só os sinônimos no idioma desejado
+        # Prefetch only synonyms in the desired language
         queryset = queryset.prefetch_related(
             Prefetch(
                 "concept_synonym_concept_set",
@@ -279,7 +297,7 @@ class ConceptViewSet(FlexibleViewSet):
             )
         )
 
-        self._enrich_relationship_id = relationship_id  # armazenar para uso posterior
+        self._enrich_relationship_id = relationship_id  # Store for later use
         self._lang = lang
         return queryset
 
@@ -291,7 +309,7 @@ class ConceptViewSet(FlexibleViewSet):
         results = []
 
         for concept in queryset:
-            # Serializa o conceito principal
+            # Serialize the main concept
             base = ConceptRetrieveSerializer(concept).data
 
             if relationship_id:
@@ -309,7 +327,7 @@ class ConceptViewSet(FlexibleViewSet):
                 )
 
                 if rel:
-                    # Serializa o conceito relacionado com o mesmo serializer
+                    # Serialize the related concept with the same serializer
                     base["related_concept"] = ConceptRetrieveSerializer(rel.concept_2).data
 
             results.append(base)
@@ -368,11 +386,12 @@ class FactRelationshipViewSet(FlexibleViewSet):
     responses={201: FullPersonRetrieveSerializer},
 )
 class FullPersonViewSet(FlexibleViewSet):
-    http_method_names = ["post"]  # limita só para POST
-    queryset = Person.objects.none()  # evita problemas, mas não retorna nada se alguém fizer GET
+    http_method_names = ["post"]  # only allow POST
+    queryset = Person.objects.none()  # prevents GET from returning anything
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data, context={"request": request})
+        serializer = self.get_serializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         person_data = data["person"]
         location_data = data["location"]
@@ -381,21 +400,21 @@ class FullPersonViewSet(FlexibleViewSet):
 
         try:
             with transaction.atomic():
-                # 1. Criar Person
+                # 1. Create Person
                 person = Person.objects.create(**person_data)
 
-                # 2. Criar Location (associada a person)
+                # 2. Create Location (associated with person)
                 Location.objects.create(person=person, **location_data)
 
-                # 3. Criar Observations
+                # 3. Create Observations
                 for obs in observations_data:
                     Observation.objects.create(person=person, **obs)
 
-                # 4. Criar Drug Exposures
+                # 4. Create Drug Exposures
                 for drug in drug_exposures_data:
                     DrugExposure.objects.create(person=person, **drug)
 
-                return Response({"message": "Onboarding concluído com sucesso"}, status=status.HTTP_201_CREATED)
+                return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -414,17 +433,17 @@ class FullProviderViewSet(FlexibleViewSet):
     def post(self, request):
         serializer = self.get_serializer(data=request.data, context={"request": request})
 
-        # Valida os dados
+        # Validate the data
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             with transaction.atomic():
-                # Delega a criação ao serializer
+                # Delegate creation to the serializer
                 result = serializer.save()
 
                 return Response(
-                    {"message": "Provider criado com sucesso", "data": result},
+                    {"message": "Provider created successfully", "data": result},
                     status=status.HTTP_201_CREATED,
                 )
 
@@ -439,12 +458,12 @@ class GenerateProviderLinkCodeView(APIView):
     def post(self, request):
         provider = get_object_or_404(Provider, user=request.user)
 
-        code = uuid.uuid4().hex[:6].upper()  # Ex: 'A1B2C3'
+        code = uuid.uuid4().hex[:6].upper()  # E.g., 'A1B2C3'
 
         obs, created = Observation.objects.get_or_create(
             person=None,
-            observation_concept_id=9200010,  # PROVIDER_LINK_CODE
-            observation_type_concept_id=9200011,  # CLINICIAN_GENERATED
+            observation_concept_id=get_concept_by_code("PROVIDER_LINK_CODE").concept_id,  # PROVIDER_LINK_CODE
+            observation_type_concept_id=get_concept_by_code("CLINICIAN_GENERATED").concept_id,  # CLINICIAN_GENERATED
             provider_id=provider.provider_id,
             defaults={
                 "value_as_string": code,
@@ -453,7 +472,7 @@ class GenerateProviderLinkCodeView(APIView):
         )
 
         if not created:
-            # Atualiza o código e a data se já existe
+            # Update the code and date if it already exists
             obs.value_as_string = code
             obs.observation_date = timezone.now()
             obs.save(update_fields=["value_as_string", "observation_date"])
@@ -476,27 +495,27 @@ class PersonLinkProviderView(APIView):
         obs = (
             Observation.objects.filter(
                 value_as_string=code,
-                observation_concept_id=9200010,
+                observation_concept_id=get_concept_by_code("PROVIDER_LINK_CODE").concept_id,
                 observation_date__gte=timezone.now() - timedelta(minutes=10),
-                person__isnull=True,  # ainda não usado
+                person__isnull=True,  # not used yet
             )
             .order_by("-observation_date")
             .first()
         )
 
         if not obs or not obs.provider_id:
-            return Response({"error": "Código inválido ou expirado."}, status=400)
+            return Response({"error": "Invalid or expired code."}, status=400)
 
-        # Relacionamento person ↔ provider
+        # Relationship person ↔ provider
         FactRelationship.objects.get_or_create(
             fact_id_1=person.person_id,
-            domain_concept_1_id=9202,  # Concept ID para "Person" (OMOP)
+            domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
             fact_id_2=obs.provider_id,
-            domain_concept_2_id=9201,  # Concept ID para "Provider" (OMOP)
-            relationship_concept_id=9200001,  # Person linked to Provider
+            domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
+            relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,  # Person linked to Provider
         )
 
-        # Marca como usado
+        # Mark as used
         obs.person_id = person.person_id
         obs.save(update_fields=["person_id"])
 
@@ -509,7 +528,7 @@ class PersonLinkProviderView(APIView):
     responses=ProviderRetrieveSerializer,
 )
 class ProviderByLinkCodeView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         code = request.data.get("code")
@@ -519,7 +538,7 @@ class ProviderByLinkCodeView(APIView):
         obs = (
             Observation.objects.filter(
                 value_as_string=code,
-                observation_concept_id=9200010,
+                observation_concept_id=get_concept_by_code("PROVIDER_LINK_CODE").concept_id,
                 observation_date__gte=timezone.now() - timedelta(minutes=10),
             )
             .order_by("-observation_date")
@@ -527,11 +546,35 @@ class ProviderByLinkCodeView(APIView):
         )
 
         if not obs or not obs.provider_id:
-            return Response({"error": "Código inválido ou expirado."}, status=400)
+            return Response({"error": "Invalid or expired code."}, status=400)
 
         provider = get_object_or_404(Provider, provider_id=obs.provider_id)
         serializer = ProviderRetrieveSerializer(provider)
         return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Link-Person-Provider"],
+    request=PersonProviderUnlinkRequestSerializer,
+    responses=PersonProviderUnlinkResponseSerializer,
+)
+class PersonProviderUnlinkView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, person_id, provider_id):
+        person = get_object_or_404(Person, person_id=person_id)
+        provider = get_object_or_404(Provider, provider_id=provider_id)
+
+        # Remove the relationship
+        FactRelationship.objects.filter(
+            fact_id_1=person.person_id,
+            domain_concept_1_id=9202,  # Person
+            fact_id_2=provider.provider_id,
+            domain_concept_2_id=9201,  # Provider
+            relationship_concept_id=9200001,
+        ).delete()
+
+        return Response({"status": "unlinked"})
 
 
 @extend_schema(
@@ -545,9 +588,9 @@ class PersonProvidersView(APIView):
         person = get_object_or_404(Person, user=request.user)
         relationships = FactRelationship.objects.filter(
             fact_id_1=person.person_id,
-            domain_concept_1_id=9202,  # Person
-            domain_concept_2_id=9201,  # Provider
-            relationship_concept_id=9200001,
+            domain_concept_1_id=get_concept_by_code("PERSON"),  # Person
+            domain_concept_2_id=get_concept_by_code("PROVIDER"),  # Provider
+            relationship_concept_id=get_concept_by_code("PERSON_PROVIDER"),  # Person linked to Provider
         )
         provider_ids = relationships.values_list("fact_id_2", flat=True)
         providers = Provider.objects.filter(provider_id__in=provider_ids)
@@ -555,24 +598,92 @@ class PersonProvidersView(APIView):
         return Response(serializer.data)
 
 
-@extend_schema(
-    tags=["Link-Person-Provider"],
-    responses=PersonRetrieveSerializer(many=True),
-)
+@extend_schema(tags=["Link-Person-Provider"], responses=ProviderPersonSummarySerializer(many=True))
 class ProviderPersonsView(APIView):
+    """
+    View to retrieve all patients linked to the authenticated provider additional information
+    """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # Check if user is a provider and get their ID
         provider = get_object_or_404(Provider, user=request.user)
-        relationships = FactRelationship.objects.filter(
-            fact_id_2=provider.provider_id,
-            domain_concept_1_id=9202,  # Person
-            domain_concept_2_id=9201,  # Provider
-            relationship_concept_id=9200001,
-        )
-        person_ids = relationships.values_list("fact_id_1", flat=True)
-        persons = Person.objects.filter(person_id__in=person_ids)
-        serializer = PersonRetrieveSerializer(persons, many=True)
+        provider_id = provider.provider_id
+
+        # Find IDs of persons linked to this provider through FactRelationship
+        linked_persons_ids = FactRelationship.objects.filter(
+            fact_id_2=provider_id,
+            domain_concept_1_id=get_concept_by_code("PERSON"),
+            domain_concept_2_id=get_concept_by_code("PROVIDER"),
+            relationship_concept_id=get_concept_by_code("PERSON_PROVIDER"),
+        ).values_list("fact_id_1", flat=True)
+
+        # Get persons with these IDs
+        persons = Person.objects.filter(person_id__in=linked_persons_ids)
+
+        # Prepare response data with additional information
+        person_summaries = []
+        for person in persons:
+            today = timezone.now()
+            age = None
+
+            # Calculate age
+            if person.birth_datetime:
+                age = today.year - person.birth_datetime.year
+                # Adjust if birthday hasn't occurred this year
+                if today.month < person.birth_datetime.month or (
+                    today.month == person.birth_datetime.month and today.day < person.birth_datetime.day
+                ):
+                    age -= 1
+            elif person.year_of_birth:
+                age = today.year - person.year_of_birth
+
+            # Get the last visit (consultation) with this provider
+            last_visit = None
+            visit = (
+                VisitOccurrence.objects.filter(person=person, provider_id=provider_id, visit_start_date__isnull=False)
+                .order_by("-visit_start_date")
+                .first()
+            )
+
+            if visit:
+                last_visit = visit.visit_start_date
+
+            # Get the last recorded help
+            last_help = None
+            help = (
+                Observation.objects.filter(
+                    person=person,
+                    observation_concept_id=get_concept_by_code("HELP"),
+                    observation_date__isnull=False,
+                )
+                .order_by("-observation_date")
+                .first()
+            )
+
+            if help:
+                last_help = help.observation_date
+
+            # Name could be in social_name or associated user
+            name = person.social_name
+            if not name and person.user:
+                name = f"{person.user.first_name} {person.user.last_name}".strip()
+                if not name:
+                    name = person.user.username
+
+            person_summaries.append(
+                {
+                    "person_id": person.person_id,
+                    "name": name,
+                    "age": age,
+                    "last_visit_date": last_visit,
+                    "last_help_date": last_help,
+                }
+            )
+
+        # Use the serializer to format and validate the data
+        serializer = ProviderPersonSummarySerializer(person_summaries, many=True)
         return Response(serializer.data)
 
 
@@ -580,7 +691,7 @@ class ProviderPersonsView(APIView):
 @permission_classes([AllowAny])
 def dev_login_as_provider(request):
     if not settings.DEBUG:
-        return Response({"detail": "Não disponível em produção"}, status=403)
+        return Response({"detail": "Not available in production"}, status=403)
 
     User = get_user_model()
     user = User.objects.get(email="mock-provider@email.com")
@@ -597,10 +708,10 @@ def dev_login_as_provider(request):
 @permission_classes([AllowAny])
 def dev_login_as_person(request):
     if not settings.DEBUG:
-        return Response({"detail": "Não disponível em produção"}, status=403)
+        return Response({"detail": "Not available in production"}, status=403)
 
     User = get_user_model()
-    user = User.objects.get(email="Dummy@email.com")
+    user = User.objects.get(email="mock-person@email.com")
     refresh = RefreshToken.for_user(user)
     return Response(
         {
@@ -610,236 +721,107 @@ def dev_login_as_person(request):
     )
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-@extend_schema(
-    tags=["Link-Person-Provider"],
-    responses={
-        "200": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "person_id": {"type": "integer"},
-                    "name": {"type": "string"},
-                    "age": {"type": "integer", "nullable": True},
-                    "last_visit_date": {"type": "string", "format": "date-time", "nullable": True},
-                    "last_visit_notes": {"type": "string", "nullable": True},
-                    "last_emergency_date": {"type": "string", "format": "date-time", "nullable": True},
-                },
-            },
-        }
-    },
-)
-def provider_persons(request):
-    """
-    Função para obter todos os pacientes vinculados ao médico (provider) autenticado
+@extend_schema(tags=["Help"], responses=HelpCountSerializer)
+class HelpCountView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    Returns:
-        lista de dicionários com os dados de cada paciente:
-            - person_id: ID do paciente
-            - name: Nome do paciente (social_name ou nome do usuário)
-            - age: Idade calculada com base na data de nascimento ou ano de nascimento
-            - last_visit_date: Data da última consulta com este provider
-            - last_visit_notes: Notas da última consulta com este provider
-            - last_emergency_date: Data da última emergência registrada
-    """
-    # Verifica se o usuário é um provider e obtém seu ID
-    provider = get_object_or_404(Provider, user=request.user)
-    provider_id = provider.provider_id
+    def get(self, request):
+        """
+        This endpoint counts the number of active helps (observations) for all patients linked to the provider.
 
-    # Encontra os IDs de pessoas vinculadas ao provider através do FactRelationship
-    linked_persons_ids = FactRelationship.objects.filter(
-        fact_id_2=provider_id,
-        domain_concept_1_id=9202,  # Person
-        domain_concept_2_id=9201,  # Provider
-        relationship_concept_id=9200001,  # Person linked to Provider
-    ).values_list("fact_id_1", flat=True)
+        Returns:
+            Object with the count of active helps:
+                - help_count: number of active helps
+        """
+        # Check if user is a provider and get ID
+        provider = get_object_or_404(Provider, user=request.user)
+        provider_id = provider.provider_id
 
-    # Busca as pessoas com esses IDs
-    persons = Person.objects.filter(person_id__in=linked_persons_ids)
+        # Find IDs of persons linked to the provider through FactRelationship
+        linked_persons_ids = FactRelationship.objects.filter(
+            fact_id_2=provider_id,
+            domain_concept_1_id=get_concept_by_code("PERSON"),  # Person concept
+            domain_concept_2_id=get_concept_by_code("PROVIDER"),  # Provider concept
+            relationship_concept_id=get_concept_by_code("PERSON_PROVIDER"),  # Person-Provider relationship
+        ).values_list("fact_id_1", flat=True)
 
-    # Prepara os dados da resposta com informações adicionais
-    result = []
-    for person in persons:
+        # Count active helps for these persons
+        help_count = Observation.objects.filter(
+            person_id__in=linked_persons_ids,
+            provider_id=provider_id,  # Only helps from this provider
+            observation_concept_id=get_concept_by_code("HELP"),  # Help concept
+            value_as_concept_id=get_concept_by_code("ACTIVE"),  # Active status concept
+        )
+
+        # Use serializer for response data validation and formatting
+        serializer = HelpCountSerializer({"help_count": help_count.count()})
+        return Response(serializer.data)
+
+
+@extend_schema(tags=["Linked_Persons"], responses=NextVisitSerializer)
+class NextScheduledVisitView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Get the next scheduled visit for the authenticated provider
+
+        Returns:
+            Object with details about the next visit:
+                - next_visit: Object containing:
+                    - person_name: Patient name
+                    - visit_date: Date and time of the appointment
+        """
+        # Check if user is a provider and get ID
+        provider = get_object_or_404(Provider, user=request.user)
+        provider_id = provider.provider_id
+
+        # Find the next scheduled visit for this provider
+        # Only consider future visits (from current date)
         today = timezone.now()
-        age = None
-
-        # Calcula a idade
-        if person.birth_datetime:
-            age = today.year - person.birth_datetime.year
-            # Ajusta se ainda não fez aniversário este ano
-            if today.month < person.birth_datetime.month or (
-                today.month == person.birth_datetime.month and today.day < person.birth_datetime.day
-            ):
-                age -= 1
-        elif person.year_of_birth:
-            age = today.year - person.year_of_birth
-
-        # Busca a última visita (consulta) com este provider
-        last_visit = None
-        visit = (
-            VisitOccurrence.objects.filter(person=person, provider_id=provider_id, visit_start_date__isnull=False)
-            .order_by("-visit_start_date")
+        next_visit = (
+            VisitOccurrence.objects.filter(provider_id=provider_id, visit_start_date__gt=today)
+            .order_by("visit_start_date")
             .first()
         )
 
-        if visit:
-            last_visit = visit.visit_start_date
+        if not next_visit:
+            serializer = NextVisitSerializer({"next_visit": None})
+            return Response(serializer.data)
 
-        # Busca a última emergência registrada
-        last_emergency = None
-        emergency = (
-            Observation.objects.filter(
-                person=person, observation_concept_id=2000001, observation_date__isnull=False  # Emergency concept
-            )
-            .order_by("-observation_date")
-            .first()
-        )
+        # Get patient name
+        person = next_visit.person
+        person_name = person.social_name
+        if not person_name and person.user:
+            person_name = f"{person.user.first_name} {person.user.last_name}".strip()
+            if not person_name:
+                person_name = person.user.username
 
-        if emergency:
-            last_emergency = emergency.observation_date
+        # Prepare response
+        visit_data = {"next_visit": {"person_name": person_name, "visit_date": next_visit.visit_start_date}}
 
-        # Nome pode estar em social_name ou no user associado
-        name = person.social_name
-        if not name and person.user:
-            name = f"{person.user.first_name} {person.user.last_name}".strip()
-            if not name:
-                name = person.user.username
-
-        result.append(
-            {
-                "person_id": person.person_id,
-                "name": name,
-                "age": age,
-                "last_visit_date": last_visit,
-                "last_emergency_date": last_emergency,
-            }
-        )
-
-    return Response(result)
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-@extend_schema(
-    tags=["Linked_Persons"],
-    responses={
-        "200": {
-            "type": "object",
-            "properties": {
-                "emergency_count": {"type": "integer"},
-            },
-        }
-    },
-)
-def get_emergency(request):
-    """
-    Função para obter o número de emergências ativas para os pacientes vinculados ao provider autenticado
-
-    Returns:
-        objeto com a contagem de emergências ativas:
-            - emergency_count: número de emergências ativas
-    """
-    # Verifica se o usuário é um provider e obtém seu ID
-    provider = get_object_or_404(Provider, user=request.user)
-    provider_id = provider.provider_id
-
-    # Encontra os IDs de pessoas vinculadas ao provider através do FactRelationship
-    linked_persons_ids = FactRelationship.objects.filter(
-        fact_id_2=provider_id,
-        domain_concept_1_id=9202,  # Person
-        domain_concept_2_id=9201,  # Provider
-        relationship_concept_id=9200001,  # Person linked to Provider
-    ).values_list("fact_id_1", flat=True)
-
-    # Conta as emergências ativas para essas pessoas
-    emergency_count = Observation.objects.filter(
-        person_id__in=linked_persons_ids,
-        observation_concept_id=2000001,  # Emergency concept
-        value_as_concept_id=9200021,  # Active status concept
-    ).count()
-
-    return Response({"emergency_count": emergency_count})
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-@extend_schema(
-    tags=["Linked_Persons"],
-    responses={
-        "200": {
-            "type": "object",
-            "properties": {
-                "next_visit": {
-                    "type": "object",
-                    "properties": {
-                        "person_name": {"type": "string"},
-                        "visit_date": {"type": "string", "format": "date-time"},
-                    },
-                    "nullable": True,
-                }
-            },
-        }
-    },
-)
-def get_next_scheduled_visit(request):
-    """
-    Função para obter a próxima visita agendada para o provider autenticado
-
-    Returns:
-        objeto com informações sobre a próxima visita:
-            - person_name: Nome do paciente
-            - visit_date: Data e horário da consulta
-    """
-    # Verifica se o usuário é um provider e obtém seu ID
-    provider = get_object_or_404(Provider, user=request.user)
-    provider_id = provider.provider_id
-
-    # Busca a próxima visita agendada para este provider
-    # Consideramos apenas visitas futuras (a partir da data atual)
-    today = timezone.now()
-    next_visit = (
-        VisitOccurrence.objects.filter(provider_id=provider_id, visit_start_date__gt=today)
-        .order_by("visit_start_date")
-        .first()
-    )
-
-    if not next_visit:
-        return Response({"next_visit": None})
-
-    # Obtém o nome do paciente
-    person = next_visit.person
-    person_name = person.social_name
-    if not person_name and person.user:
-        person_name = f"{person.user.first_name} {person.user.last_name}".strip()
-        if not person_name:
-            person_name = person.user.username
-
-    # Prepara a resposta simplificada
-    response_data = {"next_visit": {"person_name": person_name, "visit_date": next_visit.visit_start_date}}
-
-    return Response(response_data)
+        serializer = NextVisitSerializer(visit_data)
+        return Response(serializer.data)
 
 
 @extend_schema(
-    tags=["Emergency"],
-    request=EmergencyCreateSerializer(many=True),
+    tags=["Help"],
+    request=HelpCreateSerializer(many=True),
     responses=ObservationRetrieveSerializer(many=True),
 )
-class SendEmergencyView(APIView):
+class SendHelpView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = EmergencyCreateSerializer(data=request.data, many=True)
+        serializer = HelpCreateSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         data_list = serializer.validated_data
 
         observations = []
         for data in data_list:
             data["person_id"] = request.user.person.person_id
-            data["observation_concept_id"] = 2000001
-            data["value_as_concept_id"] = None
+            data["observation_concept_id"] = get_concept_by_code("HELP").concept_id
+            data["value_as_concept_id"] = get_concept_by_code("ACTIVE").concept_id
             data["observation_date"] = timezone.now()
             data["observation_type_concept_id"] = None
 
@@ -851,69 +833,55 @@ class SendEmergencyView(APIView):
 
 
 @extend_schema(
-    tags=["Emergency"],
+    tags=["Help"],
     responses=ObservationRetrieveSerializer(many=True),
 )
-class ReceivedEmergenciesView(APIView):
+class ReceivedHelpsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         provider = get_object_or_404(Provider, user=request.user)
-        emergencies = Observation.objects.filter(
-            provider_id=provider.provider_id, observation_concept_id=2000001  # Emergência
+        helps = Observation.objects.filter(
+            provider_id=provider.provider_id, observation_concept_id=get_concept_by_code("HELP")  # Ajuda
         ).order_by("-observation_date")
-        serializer = ObservationRetrieveSerializer(emergencies, many=True)
+        print(helps)
+        serializer = ObservationRetrieveSerializer(helps, many=True)
         return Response(serializer.data)
 
 
+@extend_schema(
+    tags=["Diary"],
+)
 class DiaryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        person = Person.objects.get(user=request.user)
+        try:
+            # Get optional limit parameter
+            limit = request.query_params.get("limit")
 
-        # Busca todas as entradas "mãe"
-        diary_entries = Observation.objects.filter(
-            person=person, observation_concept=get_concept_by_code("diary_entry")
-        ).order_by("-observation_date")
+            # Search for all "mother" diary entries
+            diary_entries_query = Observation.objects.filter(
+                observation_concept_id=get_concept_by_code("diary_entry").concept_id
+            ).order_by("-observation_date")
 
-        result = []
-        for diary in diary_entries:
-            siblings = Observation.objects.filter(person=person, observation_date=diary.observation_date).exclude(
-                pk=diary.pk
-            )
+            # Apply limit if provided
+            if limit and limit.isdigit():
+                diary_entries_query = diary_entries_query[: int(limit)]
 
-            result.append(
-                {
-                    "diary_id": diary.observation_id,
-                    "date": diary.observation_date,
-                    "scope": diary.value_as_string,
-                    "entries": ObservationRetrieveSerializer(siblings, many=True).data,
-                }
-            )
+            diary_entries = diary_entries_query.select_related("observation_concept")
 
-        return Response(result)
+            serializer = DiaryRetrieveSerializer(diary_entries, many=True)
+            return Response(serializer.data)
+
+        except Exception as e:
+            logger.error(f"Error retrieving diaries: {str(e)}", e)
+            return Response({"error": "Failed to retrieve diaries"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
-        summary="Cria um novo diário para o usuário logado",
+        summary="Create a new diary for the logged-in user",
         request=DiaryCreateSerializer,
         responses={201: OpenApiTypes.OBJECT},
-        examples=[
-            OpenApiExample(
-                name="Exemplo de criação de diário",
-                value={
-                    "date_range_type": "today",
-                    "text": "Hoje me senti mal",
-                    "text_shared": True,
-                    "observations_shared": True,
-                    "observations": [
-                        {"concept_id": 999101, "value": "999201"},
-                        {"concept_id": 999102, "value": "999202"},
-                    ],
-                },
-                request_only=True,
-            )
-        ],
     )
     def post(self, request):
         serializer = DiaryCreateSerializer(data=request.data, context={"request": request})
@@ -922,84 +890,242 @@ class DiaryView(APIView):
         return Response(result, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["Diary"],
+    responses=DiaryRetrieveSerializer(),
+)
 class DiaryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, diary_id):
-        person = Person.objects.get(user=request.user)
-
         try:
-            diary = Observation.objects.get(pk=diary_id, person=person)
-        except Observation.DoesNotExist:
-            return Response({"detail": "Diário não encontrado"}, status=404)
+            diary = get_object_or_404(
+                Observation,
+                observation_id=diary_id,
+                observation_concept_id=get_concept_by_code("diary_entry").concept_id,
+            )
 
-        siblings = Observation.objects.filter(person=person, observation_date=diary.observation_date).exclude(
-            pk=diary.pk
-        )
+            serializer = DiaryRetrieveSerializer(diary)
+            return Response(serializer.data)
 
-        return Response(
-            {
-                "diary_id": diary.observation_id,
-                "date": diary.observation_date,
-                "scope": diary.value_as_string,
-                "entries": ObservationRetrieveSerializer(siblings, many=True).data,
-            }
-        )
+        except Exception as e:
+            logger.error(f"Error retrieving diary {diary_id}: {str(e)}", e)
+            return Response({"error": "Failed to retrieve diary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @extend_schema(
+        responses={204: None},
+        parameters=[
+            OpenApiParameter(
+                name="diary_id", type=int, location=OpenApiParameter.PATH, description="ID of the diary to delete"
+            )
+        ],
+    )
+    def delete(self, request, diary_id):
+        serializer = DiaryDeleteSerializer()
+        result = serializer.delete({"diary_id": diary_id})
+        return Response(result, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    tags=["Diary"],
+    responses=DiaryRetrieveSerializer(many=True),
+)
+class PersonDiariesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        person = get_object_or_404(Person, user=request.user)
+
+        diaries = Observation.objects.filter(
+            person=person, observation_concept_id=get_concept_by_code("diary_entry").concept_id
+        ).order_by("-observation_date")
+
+        serializer = DiaryRetrieveSerializer(diaries, many=True)
+        return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Provider"],
+    responses=DiaryRetrieveSerializer(many=True),
+)
 class ProviderPersonDiariesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, person_id):
-        _, person = get_provider_and_linked_person_or_404(request.user, person_id)
-
-        diary_entries = Observation.objects.filter(
-            person=person, observation_concept=get_concept_by_code("diary_entry"), shared_with_provider=True
+        provider, person = get_provider_and_linked_person_or_404(request.user, person_id)
+        diaries = Observation.objects.filter(
+            person=person,
+            observation_concept_id=get_concept_by_code("diary_entry").concept_id,
+            shared_with_provider=True,
         ).order_by("-observation_date")
 
-        result = []
-        for diary in diary_entries:
-            children = Observation.objects.filter(
-                person=person, observation_date=diary.observation_date, shared_with_provider=True
-            ).exclude(pk=diary.pk)
-
-            result.append(
-                {
-                    "diary_id": diary.observation_id,
-                    "date": diary.observation_date,
-                    "scope": diary.value_as_string,
-                    "entries": ObservationRetrieveSerializer(children, many=True).data,
-                }
-            )
-
-        return Response(result)
+        serializer = DiaryRetrieveSerializer(diaries, many=True)
+        return Response(serializer.data)
 
 
+@extend_schema(tags=["Provider"])
 class ProviderPersonDiaryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, person_id, diary_id):
-        _, person = get_provider_and_linked_person_or_404(request.user, person_id)
+
+        person = Person.objects.get(person_id=person_id)
+        # Get the specific diary
+        diary = get_object_or_404(
+            Observation,
+            observation_id=diary_id,
+            person=person,
+            observation_concept_id=get_concept_by_code("diary_entry").concept_id,
+        )
+
+        serializer = DiaryRetrieveSerializer(diary)
+        return Response(serializer.data)
+
+
+@extend_schema(tags=["Interest_Areas"], responses={200: InterestAreaSerializer(many=True)})
+class PersonInterestAreaView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        person = get_object_or_404(Person, user=request.user)
+
+        interest_areas = Observation.objects.filter(
+            person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
+        ).select_related("observation_concept")
+
+        results = []
+
+        for interest_area in interest_areas:
+            interest_data = InterestAreaSerializer(interest_area).data
+
+            relationships = FactRelationship.objects.filter(
+                domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                fact_id_1=interest_area.observation_id,
+                relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+            )
+
+            trigger_ids = relationships.values_list("fact_id_2", flat=True)
+
+            # Searching for triggers related to the interest area
+            triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
+
+            interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+            results.append(interest_data)
+
+        return Response(results)
+
+    @extend_schema(tags=["Interest_Areas"], request=InterestAreaSerializer, responses={201: InterestAreaSerializer})
+    def post(self, request):
+
+        serializer = InterestAreaSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        interest_area = serializer.save()
+
+        return Response(InterestAreaSerializer(interest_area).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=InterestAreaBulkUpdateSerializer,
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def patch(self, request):
+        serializer = InterestAreaBulkUpdateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        result = serializer.save()
+
+        return Response(result, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["Interest_Areas"],
+    operation_id="markObservationAsAttentionPoint",
+    description="Marcar área como ponto de atenção",
+    request=MarkAttentionPointSerializer,
+    responses={204: OpenApiTypes.OBJECT},
+)
+class MarkAttentionPointView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        serializer = MarkAttentionPointSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
 
         try:
-            diary = Observation.objects.get(
-                pk=diary_id,
-                person=person,
-                observation_concept=get_concept_by_code("diary_entry"),
-                shared_with_provider=True,
-            )
-        except Observation.DoesNotExist:
-            return Response({"detail": "Diário não encontrado ou não compartilhado"}, status=404)
+            provider = get_object_or_404(Provider, user=request.user)
+            data = serializer.validated_data
 
-        children = Observation.objects.filter(
-            person=person, observation_date=diary.observation_date, shared_with_provider=True
-        ).exclude(pk=diary.pk)
+            observation = get_object_or_404(Observation, observation_id=data["area_id"])
+            if data["is_attention_point"]:
+                observation.value_as_concept = get_concept_by_code("value_yes")
+                observation.provider = provider
+            else:
+                observation.value_as_concept = get_concept_by_code("value_no")
+                observation.provider = None
 
-        return Response(
-            {
-                "diary_id": diary.observation_id,
-                "date": diary.observation_date,
-                "scope": diary.value_as_string,
-                "entries": ObservationRetrieveSerializer(children, many=True).data,
-            }
+            observation.save()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"Error marking attention point: {str(e)}", e)
+            return Response({"error": "Failed to mark attention point"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(tags=["Interest_Areas"])
+class PersonInterestAreaDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: InterestAreaSerializer})
+    def get(self, request, interest_area_id):
+        person = get_object_or_404(Person, user=request.user)
+
+        interest_area = get_object_or_404(
+            Observation,
+            observation_id=interest_area_id,
+            person=person,
+            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
         )
+
+        interest_data = InterestAreaSerializer(interest_area).data
+
+        relationships = FactRelationship.objects.filter(
+            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+            fact_id_1=interest_area.observation_id,
+            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+        )
+
+        trigger_ids = relationships.values_list("fact_id_2", flat=True)
+        triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
+
+        interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+
+        return Response(interest_data)
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, interest_area_id):
+        person = get_object_or_404(Person, user=request.user)
+
+        interest_area = get_object_or_404(
+            Observation,
+            observation_id=interest_area_id,
+            person=person,
+            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+        )
+
+        relationships = FactRelationship.objects.filter(
+            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+            fact_id_1=interest_area.observation_id,
+            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+        )
+
+        trigger_ids = list(relationships.values_list("fact_id_2", flat=True))
+
+        relationships.delete()
+
+        for trigger_id in trigger_ids:
+            if not FactRelationship.objects.filter(
+                domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id, fact_id_2=trigger_id
+            ).exists():
+                Observation.objects.filter(observation_id=trigger_id).delete()
+
+        interest_area.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

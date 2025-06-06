@@ -2,8 +2,7 @@ name: Python Semantic Release
 
 on:
   push:
-    branches:
-      - main, develop
+    branches: [main]
 
 jobs:
   release:
@@ -29,17 +28,17 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-    
-      - name: Create changelog and tag
+
+      - name: Verifica pyproject.toml
         run: |
-          semantic-release version
-      
-      - name: Push changes
-        run: |
-          git push origin main --follow-tags
-      
-      - name: Create GitHub release
+          cat pyproject.toml
+
+      - name: Verifica commits recentes
+        run: git log --oneline -n 10
+
+      - name: Run Semantic Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOG_LEVEL: DEBUG
         run: |
-          semantic-release publish
+          python -m semantic_release publish
