@@ -8,6 +8,7 @@ from rest_framework import serializers
 
 from .models import *
 from .utils.concept import get_concept_by_code
+from .utils.provider import get_provider_full_name
 
 User = get_user_model()
 
@@ -711,6 +712,9 @@ class InterestAreaSerializer(serializers.Serializer):
     is_attention_point = serializers.BooleanField(
         required=False, default=False, help_text="Indicates if the interest area is marked for attention"
     )
+    provider_name = serializers.CharField(
+        read_only=True, help_text="Name of the provider associated with the interest area"
+    )
 
     def validate(self, data):
         if not data.get("observation_concept_id") and not data.get("interest_name"):
@@ -923,7 +927,7 @@ class InterestAreaSerializer(serializers.Serializer):
             "interest_name": instance.observation_source_value,
             "interest_area_id": instance.observation_id,
             "observation_concept_id": instance.observation_concept_id,
-            "provider_name": instance.provider.user.get_full_name() if instance.provider else None,
+            "provider_name": get_provider_full_name(instance.provider_id),
             "value_as_string": instance.value_as_string,
             "is_attention_point": instance.value_as_concept.concept_id == get_concept_by_code("value_yes").concept_id,
             "shared_with_provider": instance.shared_with_provider,
@@ -1184,6 +1188,7 @@ class DiaryRetrieveSerializer(serializers.Serializer):
             triggers = Observation.objects.filter(observation_id__in=trigger_ids)
 
             interest_data = InterestAreaSerializer(interest_area).data
+            interest_data["provider_name"] = get_provider_full_name(interest_area.provider_id)
             interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
             interest_areas_with_triggers.append(interest_data)
 
@@ -1191,10 +1196,42 @@ class DiaryRetrieveSerializer(serializers.Serializer):
 
 
 class UserRetrieveSerializer(BaseRetrieveSerializer):
+    role = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "is_active", "is_staff", "date_joined"]
+        fields = [
+            "id",
+            "username",
+            "email",
+            "full_name",
+            "first_name",
+            "last_name",
+            "is_active",
+            "role",
+            "is_staff",
+            "date_joined",
+        ]
         read_only_fields = fields
+
+    def get_role(self, obj):
+        if obj.is_staff:
+            return "admin"
+        elif Person.objects.filter(user=obj).exists():
+            return "person"
+        elif Provider.objects.filter(user=obj).exists():
+            return "provider"
+        return "unknown"
+
+    def get_full_name(self, obj):
+        role = self.get_role(obj)
+        if role in ["person", "provider"]:
+            if hasattr(obj, "social_name") and obj.social_name:
+                return obj.social_name
+            else:
+                return f"{obj.first_name} {obj.last_name}".strip()
+        return None
 
 
 class UserDeleteSerializer(serializers.Serializer):
