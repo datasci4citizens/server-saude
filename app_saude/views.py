@@ -900,6 +900,17 @@ class DiaryView(APIView):
             logger.error(f"Error retrieving diaries: {str(e)}")
             return Response({"error": "Failed to retrieve diaries"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @extend_schema(
+        summary="Create a new diary for the logged-in user",
+        request=DiaryCreateSerializer,
+        responses={201: OpenApiTypes.OBJECT},
+    )
+    def post(self, request):
+        serializer = DiaryCreateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        result = serializer.save()
+        return Response(result, status=status.HTTP_201_CREATED)
+
 
 @extend_schema(
     tags=["Diary"],
@@ -922,17 +933,6 @@ class DiaryDetailView(APIView):
         except Exception as e:
             logger.error(f"Error retrieving diary {diary_id}: {str(e)}")
             return Response({"error": "Failed to retrieve diary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @extend_schema(
-        summary="Create a new diary for the logged-in user",
-        request=DiaryCreateSerializer,
-        responses={201: OpenApiTypes.OBJECT},
-    )
-    def post(self, request):
-        serializer = DiaryCreateSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        result = serializer.save()
-        return Response(result, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         responses={204: None},
