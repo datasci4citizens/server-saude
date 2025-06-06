@@ -422,8 +422,6 @@ class PersonUpdateSerializer(BaseUpdateSerializer):
 class PersonRetrieveSerializer(BaseRetrieveSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
-    first_name = serializers.CharField(source="user.first_name", read_only=True)
-    last_name = serializers.CharField(source="user.last_name", read_only=True)
 
     class Meta:
         model = Person
@@ -459,8 +457,6 @@ class ProviderUpdateSerializer(BaseUpdateSerializer):
 class ProviderRetrieveSerializer(BaseRetrieveSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
-    first_name = serializers.CharField(source="user.first_name", read_only=True)
-    last_name = serializers.CharField(source="user.last_name", read_only=True)
 
     class Meta:
         model = Provider
