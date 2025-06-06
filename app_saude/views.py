@@ -973,7 +973,7 @@ class PersonDiariesView(APIView):
 class ProviderPersonDiariesView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, person_id):
+    def get(self, request):
         provider = get_object_or_404(Provider, user=request.user)
         linked_persons_ids = FactRelationship.objects.filter(
             fact_id_2=provider.provider_id,
