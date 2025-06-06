@@ -365,6 +365,7 @@ class Command(BaseCommand):
         # Fact Relationships
         add_concept(2000400, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
         add_concept(2000401, "AOI_Diary", None, "AOI_DIARY", None, None, "Diario area de interesse")
+        add_concept(2000402, "Text_Diary", None, "TEXT_DIARY", None, None, "Diario area de interesse")
 
         # Link AOI to Trigger
 

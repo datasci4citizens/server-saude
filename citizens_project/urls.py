@@ -69,7 +69,8 @@ urlpatterns = [
     path("provider/next-visit/", NextScheduledVisitView.as_view(), name="next-scheduled-visit"),
     path("diaries/", DiaryView.as_view(), name="diary"),
     path("diaries/<str:diary_id>/", DiaryDetailView.as_view(), name="diary-detail"),
-    path("provider/patients/<int:person_id>/diaries/", ProviderPersonDiariesView.as_view(), name="acs-diaries"),
+    path("provider/patients/diaries/", ProviderPersonDiariesView.as_view(), name="acs-diaries"),
+    path("person/diaries/", PersonDiariesView.as_view(), name="person-diaries"),
     path(
         "provider/patients/<int:person_id>/diaries/<str:diary_id>/",
         ProviderPersonDiaryDetailView.as_view(),
