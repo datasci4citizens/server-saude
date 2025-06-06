@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
@@ -733,7 +733,7 @@ def dev_login_as_person(request):
         return Response({"detail": "Not available in production"}, status=403)
 
     User = get_user_model()
-    user = User.objects.get(email="Dummy@email.com")
+    user = User.objects.get(email="mock-person@email.com")
     refresh = RefreshToken.for_user(user)
     return Response(
         {
@@ -1035,6 +1035,8 @@ class ProviderPersonDiariesView(APIView):
             person=person, observation_concept=get_concept_by_code("diary_entry"), shared_with_provider=True
         ).order_by("-observation_date")
 
+        print(f"Found {diary_entries.count()} diary entries for person {person_id}")
+
         result = []
         for diary in diary_entries:
             children = Observation.objects.filter(
@@ -1113,6 +1115,11 @@ class ProviderPersonDiaryDetailView(APIView):
 
 @extend_schema(tags=["Interest_Areas"], responses={200: InterestAreaSerializer(many=True)})
 class PersonInterestAreaView(APIView):
+    """
+    View to manage interest areas for the authenticated user.
+    Allows listing, creating, and updating interest areas.
+    """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
