@@ -1005,6 +1005,7 @@ class ProviderPersonDiaryDetailView(APIView):
                 # Format interest area with its triggers
                 interest_data = InterestAreaSerializer(interest_area).data
                 interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+                print(interest_data)
                 interest_areas_with_triggers.append(interest_data)
 
             # Prepare full response
