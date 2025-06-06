@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v1.2.1 (2025-06-06)
+
+### Bug Fixes
+
+- **SAU**: Acs retrieve diary
+  ([`72518f8`](https://github.com/datasci4citizens/server-saude/commit/72518f8c5334aca64b825fc74f3895f53262b839))
+
+- **SAU**: Acs retrieve diary ([#66](https://github.com/datasci4citizens/server-saude/pull/66),
+  [`6eb0a0a`](https://github.com/datasci4citizens/server-saude/commit/6eb0a0ae173271fabcf6e64945121872ceb6c195))
+
+### Chores
+
+- **nojira**: Release ([#67](https://github.com/datasci4citizens/server-saude/pull/67),
+  [`50bd95a`](https://github.com/datasci4citizens/server-saude/commit/50bd95a18b6496740f7dcd722de35c8119c801c2))
+
+
 ## v1.2.0 (2025-06-06)
 
 ### Bug Fixes
