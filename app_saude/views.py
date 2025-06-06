@@ -963,65 +963,23 @@ class ProviderPersonDiariesView(APIView):
         return Response(serializer.data)
 
 
-# Fiquei com medo de mudar essa funcao, mas teoricamente absoleta
 @extend_schema(tags=["Provider"])
 class ProviderPersonDiaryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, person_id, diary_id):
-        try:
-            person = Person.objects.get(person_id=person_id)
-            # Get the specific diary
-            diary = get_object_or_404(
-                Observation,
-                observation_id=diary_id,
-                person=person,
-                observation_concept_id=get_concept_by_code("diary_entry").concept_id,
-            )
 
-            # Get related observations using the same timestamp
-            related_observations = Observation.objects.filter(
-                person=person,
-                observation_date=diary.observation_date,
-                observation_type_concept_id=get_concept_by_code("diary_entry_type").concept_id,
-            ).exclude(observation_id=diary.observation_id)
+        person = Person.objects.get(person_id=person_id)
+        # Get the specific diary
+        diary = get_object_or_404(
+            Observation,
+            observation_id=diary_id,
+            person=person,
+            observation_concept_id=get_concept_by_code("diary_entry").concept_id,
+        )
 
-            interest_areas = Observation.objects.filter(
-                person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
-            ).select_related("observation_concept")
-
-            # Get triggers for each interest area
-            interest_areas_with_triggers = []
-            for interest_area in interest_areas:
-                # Get triggers for this interest area
-                trigger_relationships = FactRelationship.objects.filter(
-                    domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                    fact_id_1=interest_area.observation_id,
-                    relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-                )
-                trigger_ids = trigger_relationships.values_list("fact_id_2", flat=True)
-                triggers = Observation.objects.filter(observation_id__in=trigger_ids)
-
-                # Format interest area with its triggers
-                interest_data = InterestAreaSerializer(interest_area).data
-                interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
-                print(interest_data)
-                interest_areas_with_triggers.append(interest_data)
-
-            # Prepare full response
-            diary_data = {
-                "diary_id": diary.observation_id,
-                "date": diary.observation_date,
-                "scope": diary.value_as_string,
-                "entries": ObservationRetrieveSerializer(related_observations, many=True).data,
-                "interest_areas": interest_areas_with_triggers,
-            }
-
-            return Response(diary_data)
-
-        except Exception as e:
-            logger.error(f"Error retrieving diary details: {str(e)}", e)
-            return Response({"error": "Failed to retrieve diary details"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        serializer = DiaryRetrieveSerializer(diary)
+        return Response(serializer.data)
 
 
 @extend_schema(tags=["Interest_Areas"], responses={200: InterestAreaSerializer(many=True)})
