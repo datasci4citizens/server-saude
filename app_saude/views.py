@@ -49,22 +49,47 @@ class GoogleLoginView(APIView):
             email=user_data.get("email"),
             username=user_data.get("email"),
             first_name=user_data.get("given_name"),
-            last_name=user_data.get("given_name"),
+            last_name=user_data.get("family_name"),
         )
 
         # Check if user is already registered as a provider or person
         provider_id = None
         person_id = None
+        social_name = None
         role = "none"
+
+        # Check if user is already registered as a provider
         if Provider.objects.filter(user=user).exists():
-            provider_id = Provider.objects.get(user=user).pk
+            provider = Provider.objects.get(user=user)
+            social_name = getattr(provider, "social_name", None)
+            profile_picture = user_data.get("picture")
+            if profile_picture:
+                provider.profile_picture = profile_picture
+                provider.save(update_fields=["profile_picture"])
+            provider_id = provider.provider_id
             role = "provider"
-        elif Person.objects.filter(user=user).exists():
-            person_id = Person.objects.get(user=user).pk
+
+        # Check if user is already registered as a person
+        if Person.objects.filter(user=user).exists():
+            person = Person.objects.get(user=user)
+            social_name = getattr(person, "social_name", None)
+            profile_picture = user_data.get("picture")
+            if profile_picture:
+                person.profile_picture = profile_picture
+                person.save(update_fields=["profile_picture"])
+            person_id = person.person_id
             role = "person"
 
         # Generate jwt token for the user
         token = RefreshToken.for_user(user)
+
+        # Name could be in social_name or associated user
+        name = social_name
+        if not name and user:
+            name = f"{user.first_name} {user.last_name}".strip()
+            if not name:
+                name = user.username
+
         response = {
             "access": str(token.access_token),
             "refresh": str(token),
@@ -72,6 +97,8 @@ class GoogleLoginView(APIView):
             "person_id": person_id,
             "role": role,
             "user_id": user.pk,
+            "full_name": name,
+            "profile_picture": user_data.get("picture", ""),
         }
 
         return Response(response, status=200)
@@ -79,6 +106,58 @@ class GoogleLoginView(APIView):
 
 class AdminLoginView(APIView):
     permission_classes = [AllowAny]
+
+    # Add query params to the schema
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("email", OpenApiTypes.STR, description="Email of the user"),
+            OpenApiParameter("username", OpenApiTypes.STR, description="Admin username"),
+            OpenApiParameter("password", OpenApiTypes.STR, description="Admin password"),
+        ]
+    )
+    def get(self, request):
+        """
+        Admin login endpoint.
+        Passes admin user and pass to authenticate, and a email to get the user data.
+        Returns a JWT token for the email if successful.
+        """
+        email = request.query_params.get("email")
+
+        # Authenticate the user using admin credentials
+        username = request.query_params.get("username")
+        password = request.query_params.get("password")
+        admin_user = authenticate(username=username, password=password)
+
+        if not admin_user or not admin_user.is_staff:
+            return Response(
+                {"detail": "Invalid credentials or insufficient permissions."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not email:
+            return Response(
+                {"detail": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response(
+                {"detail": "User with this email does not exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user_id": user.id,
+                "username": user.username,
+                "person_id": getattr(user.person, "person_id", None) if hasattr(user, "person") else None,
+                "provider_id": getattr(user.provider, "provider_id", None) if hasattr(user, "provider") else None,
+            }
+        )
 
     @extend_schema(request=AdminLoginSerializer)
     def post(self, request, *args, **kwargs):
@@ -446,9 +525,9 @@ class FullProviderViewSet(FlexibleViewSet):
                     {"message": "Provider created successfully", "data": result},
                     status=status.HTTP_201_CREATED,
                 )
-
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"Error creating provider", e, exc_info=True)
+            return Response({"error": f"Failed to create provider: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Link-Person-Provider"], responses=ProviderLinkCodeResponseSerializer)
