@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
@@ -12,6 +13,8 @@ from .utils.concept import get_concept_by_code
 from .utils.provider import get_provider_full_name
 
 User = get_user_model()
+
+logger = logging.getLogger("app_saude")
 
 
 ######## AUTH SERIALIZERS ########
@@ -413,12 +416,12 @@ class PersonCreateSerializer(BaseCreateSerializer):
     def create(self, validated_data):
         user = self.context.get("request").user
         if not user:
-            print("Error: User not found in the request context.")
+            logger.warning("Error: User not found in the request context.")
             raise serializers.ValidationError("User not found in the request context.")
 
         if Person.objects.filter(user=user).exists():
-            print(f"Error: Person with user {user} already exists.")
-            raise serializers.ValidationError("A provider with this user already exists.")
+            logger.warning(f"Error: Person with user {user} already exists.")
+            raise serializers.ValidationError("A person with this user already exists.")
 
         validated_data["user"] = user
         return super().create(validated_data)
@@ -449,19 +452,17 @@ class ProviderCreateSerializer(BaseCreateSerializer):
 
     def create(self, validated_data):
         user = self.context.get("request").user
-        if not user:
-            print("Error: User not found in the request context.")
-            raise serializers.ValidationError("User not found in the request context.")
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError({"user": "User not authenticated."})
 
         if Provider.objects.filter(user=user).exists():
-            print(f"Error: Provider with user {user} already exists.")
-            raise serializers.ValidationError("A provider with this user already exists.")
+            raise serializers.ValidationError({"user": "This user is already linked to a provider."})
 
-        if Provider.objects.filter(professional_registration=validated_data.get("professional_registration")).exists():
-            print(
-                f"Error: Provider with professional registration {validated_data.get('professional_registration')} already exists."
+        registration = validated_data.get("professional_registration")
+        if Provider.objects.filter(professional_registration=registration, user__is_active=True).exists():
+            raise serializers.ValidationError(
+                {"professional_registration": "A provider with this professional registration already exists."}
             )
-            raise serializers.ValidationError("A provider with this professional registration already exists.")
 
         validated_data["user"] = user
         return super().create(validated_data)
@@ -587,11 +588,14 @@ class FullProviderCreateSerializer(serializers.Serializer):
             provider_data["specialty_concept"] = specialty_concept.concept_id
 
         # Validate and create the provider using ProviderCreateSerializer
-        provider_serializer = ProviderCreateSerializer(data=provider_data, context=self.context)
-        provider_serializer.is_valid(raise_exception=True)
-        provider = provider_serializer.save()
-
-        return {"provider": provider}
+        try:
+            provider_serializer = ProviderCreateSerializer(data=provider_data, context=self.context)
+            provider_serializer.is_valid(raise_exception=True)
+            provider = provider_serializer.save()
+            return {"provider": provider}
+        except serializers.ValidationError as e:
+            logger.warning("Provider validation error", extra={"errors": provider_serializer.errors})
+            raise
 
 
 class FullProviderRetrieveSerializer(serializers.Serializer):
@@ -656,7 +660,7 @@ def build_observations_from_list(obs_list, now, person, shared_flag):
             observation_type_concept=get_concept_by_code("diary_entry_type"),
         )
 
-        print(f"Processing observation: {obs}")
+        logger.info(f"Processing observation: {obs}")
 
         if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
             observation.value_as_string = str(value)
@@ -702,7 +706,7 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
         return data
 
     def to_representation(self, instance):
-        print(instance.value_as_string, instance.observation_id)
+        logger.info(f"Serializing InterestAreaTrigger: {instance}")
         representation = {
             "trigger_name": instance.observation_source_value,
             "trigger_id": instance.observation_id,

@@ -11,7 +11,6 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from app_saude.views import *
 
 router = DefaultRouter()
-router.register(r"account", AccountViewSet, basename="account")
 router.register(r"person", PersonViewSet)
 router.register(r"provider", ProviderViewSet)
 router.register(r"vocabulary", VocabularyViewSet)
@@ -48,10 +47,11 @@ urlpatterns = [
     path("auth/login/admin/", AdminLoginView.as_view(), name="admin_login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("admin/", admin.site.urls),
-    path("accounts/", include("allauth.urls")),
+    path("account/", include("allauth.urls")),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # API
     path("api/", include(router.urls)),
+    path("accounts/", AccountView.as_view(), name="account"),
     path("api/user-entity/", UserRoleView.as_view(), name="user-entity"),
     path("provider/link-code/", GenerateProviderLinkCodeView.as_view(), name="generate-link-code"),
     path("person/link-code/", PersonLinkProviderView.as_view(), name="person-link-code"),

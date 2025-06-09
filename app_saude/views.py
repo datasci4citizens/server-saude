@@ -26,7 +26,7 @@ from .serializers import *
 from .utils.provider import *
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app_saude")
 
 
 class GoogleLoginView(APIView):
@@ -235,29 +235,37 @@ class FlexibleViewSet(viewsets.ModelViewSet):
 
 
 @extend_schema(tags=["Account"])
-class AccountViewSet(FlexibleViewSet):
+class AccountView(APIView):
     """
     ViewSet to manage user accounts.
     Allowed HTTP methods: GET, DELETE.
     """
 
-    http_method_names = ["get", "delete"]
-
-    queryset = User.objects.all()
     permission_classes = [IsAuthenticated]
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         user = request.user
         serializer = UserRetrieveSerializer(user)
         return Response(serializer.data)
 
-    @extend_schema(responses={200: UserRetrieveSerializer})
-    def retrieve(self, request, *args, **kwargs):
-        return Response({"detail": "This endpoint is not available."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def destroy(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         user = request.user
-        user.delete()
+        id = None
+        if Provider.objects.filter(user=user).exists():
+            id = Provider.objects.get(user=user).provider_id
+        elif Person.objects.filter(user=user).exists():
+            id = Person.objects.get(user=user).person_id
+
+        # Atomic
+        with transaction.atomic():
+            FactRelationship.objects.filter(fact_id_1=id).delete()
+            FactRelationship.objects.filter(fact_id_2=id).delete()
+
+            # Soft delete
+            user.email = f"deleted_{user.email}"
+            user.username = f"deleted_{user.username}"
+            user.is_active = False
+            user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -468,7 +476,7 @@ class FullPersonViewSet(FlexibleViewSet):
     http_method_names = ["post"]  # only allow POST
     queryset = Person.objects.none()  # prevents GET from returning anything
 
-    def post(self, request):
+    def create(self, request):
         serializer = self.get_serializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -509,25 +517,39 @@ class FullProviderViewSet(FlexibleViewSet):
     queryset = Provider.objects.none()
     permission_classes = [AllowAny]
 
-    def post(self, request):
+    def create(self, request):
         serializer = self.get_serializer(data=request.data, context={"request": request})
 
         # Validate the data
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            errors = serializer.errors
+            logger.warning(f"Validation failed: {json.dumps(errors, ensure_ascii=False)}")
+            return Response(
+                {
+                    "message": "Validation failed",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        try:
-            with transaction.atomic():
-                # Delegate creation to the serializer
+        with transaction.atomic():
+            try:
                 result = serializer.save()
-
+                response = ProviderRetrieveSerializer(result["provider"]).data
                 return Response(
-                    {"message": "Provider created successfully", "data": result},
+                    {"message": "Provider created successfully", "data": response},
                     status=status.HTTP_201_CREATED,
                 )
-        except Exception as e:
-            logger.error(f"Error creating provider", e, exc_info=True)
-            return Response({"error": f"Failed to create provider: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception:
+                # revert the transaction
+                transaction.set_rollback(True)
+                logger.error(
+                    "Unexpected error during provider creation", exc_info=True, extra={"request_data": request.data}
+                )
+                return Response(
+                    {"error": "Erro interno ao criar o provedor"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
 
 @extend_schema(tags=["Link-Person-Provider"], responses=ProviderLinkCodeResponseSerializer)
