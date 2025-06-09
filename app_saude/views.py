@@ -45,7 +45,7 @@ class GoogleLoginView(APIView):
         user_data = google_get_user_data(validated_data)
 
         # Creates user in DB if first time login
-        user, _ = User.objects.get_or_create(
+        user, created = User.objects.get_or_create(
             email=user_data.get("email"),
             username=user_data.get("email"),
             defaults={
@@ -53,6 +53,11 @@ class GoogleLoginView(APIView):
                 "last_name": user_data.get("family_name", ""),
             },
         )
+
+        if not created:
+            user.first_name = user_data.get("given_name", "")
+            user.last_name = user_data.get("family_name", "")
+            user.save()
 
         # Check if user is already registered as a provider or person
         provider_id = None
