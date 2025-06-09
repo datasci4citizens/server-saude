@@ -332,7 +332,7 @@ class Observation(TimestampedModel):
     observation_id = models.AutoField(primary_key=True, db_comment="Primary key of Observation")
     person = models.ForeignKey(
         Person,
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         db_comment="Patient linked to the observation",
@@ -441,7 +441,7 @@ class Measurement(TimestampedModel):
     measurement_id = models.AutoField(primary_key=True, db_comment="Primary key of Measurement")
     person = models.ForeignKey(
         Person,
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         db_comment="Patient linked to the measurement",
@@ -473,21 +473,21 @@ class FactRelationship(TimestampedModel):
     domain_concept_1 = models.ForeignKey(
         Concept,
         related_name="factrel_domain_concept_1_set",
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         db_comment="Domain Concept of first fact",
     )
     fact_id_1 = models.IntegerField(db_comment="ID of first fact")
     domain_concept_2 = models.ForeignKey(
         Concept,
         related_name="factrel_domain_concept_2_set",
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         db_comment="Domain Concept of second fact",
     )
     fact_id_2 = models.IntegerField(db_comment="ID of second fact")
     relationship_concept = models.ForeignKey(
         Concept,
         related_name="factrel_relationship_concept_set",
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         db_comment="Type of relationship Concept",
     )
 
