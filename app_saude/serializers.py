@@ -1,5 +1,6 @@
+import json
+
 from django.contrib.auth import get_user_model
-from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -26,6 +27,14 @@ class AuthTokenResponseSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
     provider_id = serializers.IntegerField(allow_null=True)
     person_id = serializers.IntegerField(allow_null=True)
+    full_name = serializers.CharField(
+        help_text="Full name of the user.",
+    )
+    profile_picture = serializers.CharField(
+        help_text="URL of the user's profile picture.",
+        allow_blank=True,
+        allow_null=True,
+    )
 
 
 class AdminLoginSerializer(serializers.Serializer):
@@ -447,6 +456,12 @@ class ProviderCreateSerializer(BaseCreateSerializer):
         if Provider.objects.filter(user=user).exists():
             print(f"Error: Provider with user {user} already exists.")
             raise serializers.ValidationError("A provider with this user already exists.")
+
+        if Provider.objects.filter(professional_registration=validated_data.get("professional_registration")).exists():
+            print(
+                f"Error: Provider with professional registration {validated_data.get('professional_registration')} already exists."
+            )
+            raise serializers.ValidationError("A provider with this professional registration already exists.")
 
         validated_data["user"] = user
         return super().create(validated_data)
@@ -985,113 +1000,22 @@ class DiaryCreateSerializer(serializers.Serializer):
         person = Person.objects.get(user=user)
         now = timezone.now()
 
-        with transaction.atomic():
-            # Observation "mother"
-            diary_entry = Observation.objects.create(
-                person=person,
-                observation_concept=get_concept_by_code("diary_entry"),
-                value_as_string=validated_data["date_range_type"],
-                observation_date=now,
-                shared_with_provider=validated_data["diary_shared"],
-                observation_type_concept=get_concept_by_code("diary_entry_type"),
-            )
+        diary_payload = {
+            "date_range_type": validated_data["date_range_type"],
+            "text": validated_data["text"],
+            "text_shared": validated_data["text_shared"],
+            "diary_shared": validated_data["diary_shared"],
+            "interest_areas": validated_data.get("interest_areas", []),
+        }
 
-            # Free text
-            if validated_data["text"]:
-                text_observation = Observation.objects.create(
-                    person=person,
-                    observation_concept=get_concept_by_code("diary_text"),
-                    value_as_string=validated_data["text"],
-                    shared_with_provider=validated_data["text_shared"],
-                    observation_date=now,
-                    observation_type_concept=get_concept_by_code("diary_entry_type"),
-                )
-
-                FactRelationship.objects.create(
-                    domain_concept_1_id=get_concept_by_code("diary_entry").concept_id,
-                    fact_id_1=diary_entry.observation_id,
-                    domain_concept_2_id=get_concept_by_code("diary_text").concept_id,
-                    fact_id_2=text_observation.observation_id,
-                    relationship_concept_id=get_concept_by_code("TEXT_DIARY").concept_id,
-                )
-
-            # Interest Areas
-            interest_areas = Observation.objects.filter(
-                person=person,
-                observation_type_concept=get_concept_by_code("INTEREST_AREA").concept_id,
-            )
-
-            for interest_area in interest_areas:
-                interest_area_copy = Observation.objects.create(
-                    person=person,
-                    observation_concept_id=interest_area.observation_concept_id,
-                    observation_source_value=interest_area.observation_source_value,
-                    value_as_concept=interest_area.value_as_concept,
-                    observation_date=now,
-                    observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                    shared_with_provider=interest_area.shared_with_provider,
-                )
-
-                FactRelationship.objects.create(
-                    domain_concept_1_id=get_concept_by_code("diary_entry").concept_id,
-                    fact_id_1=diary_entry.observation_id,
-                    domain_concept_2_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                    fact_id_2=interest_area.observation_id,
-                    relationship_concept_id=get_concept_by_code("AOI_DIARY").concept_id,
-                )
-
-                # Triggers
-                trigger_relationships = FactRelationship.objects.filter(
-                    domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                    fact_id_1=interest_area.observation_id,
-                    relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-                )
-
-                for triggers in trigger_relationships:
-                    trigger_observation = Observation.objects.get(
-                        observation_id=triggers.fact_id_2,
-                        person=person,
-                    )
-
-                    trigger_copy = Observation.objects.create(
-                        person=person,
-                        observation_concept_id=trigger_observation.observation_concept_id,
-                        observation_source_value=trigger_observation.observation_source_value,
-                        observation_date=now,
-                        observation_type_concept_id=get_concept_by_code("TRIGGER").concept_id,
-                        value_as_string=trigger_observation.value_as_string,
-                        value_as_concept=trigger_observation.value_as_concept,
-                    )
-
-                    FactRelationship.objects.create(
-                        domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                        fact_id_1=interest_area_copy.observation_id,
-                        domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id,
-                        fact_id_2=trigger_copy.observation_id,
-                        relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-                    )
-
-                    trigger_observation.person = None
-                    trigger_observation.save()
-
-                interest_area.person = None
-                interest_area.save()
-
-            # Update texts
-            for interest_area_data in validated_data.get("interest_areas", []):
-                interest_area = Observation.objects.get(
-                    observation_id=interest_area_data.get("interest_area_id"),
-                )
-                interest_area.value_as_string = interest_area_data.get("value_as_string", "")
-                interest_area.shared_with_provider = interest_area_data.get("shared_with_provider", False)
-                interest_area.save()
-
-                for trigger_data in interest_area_data.get("triggers", []):
-                    trigger = Observation.objects.get(
-                        observation_id=trigger_data.get("trigger_id"),
-                    )
-                    trigger.value_as_string = trigger_data.get("value_as_string", "")
-                    trigger.save()
+        diary_entry = Observation.objects.create(
+            person=person,
+            observation_concept=get_concept_by_code("diary_entry"),
+            value_as_string=json.dumps(diary_payload),
+            observation_date=now,
+            shared_with_provider=validated_data["diary_shared"],
+            observation_type_concept=get_concept_by_code("diary_entry_type"),
+        )
 
         return {
             "diary_id": diary_entry.observation_id,
@@ -1111,41 +1035,7 @@ class DiaryDeleteSerializer(serializers.Serializer):
             observation_concept_id=get_concept_by_code("diary_entry").concept_id,
         )
 
-        diary_text_relationship = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("diary_entry").concept_id,
-            fact_id_1=diary.observation_id,
-            domain_concept_2_id=get_concept_by_code("diary_text").concept_id,
-        )
-
-        text_ids = diary_text_relationship.values_list("fact_id_2", flat=True)
-        texts = Observation.objects.filter(observation_id__in=text_ids)
-
-        diary_interests_relationship = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("diary_entry").concept_id,
-            fact_id_1=diary.observation_id,
-            domain_concept_2_id=get_concept_by_code("INTEREST_AREA").concept_id,
-        )
-
-        interest_area_ids = diary_interests_relationship.values_list("fact_id_2", flat=True)
-        interest_areas = Observation.objects.filter(observation_id__in=interest_area_ids)
-
-        trigger_relationships = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-            fact_id_1__in=interest_area_ids,
-            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-        )
-
-        trigger_ids = trigger_relationships.values_list("fact_id_2", flat=True)
-        triggers = Observation.objects.filter(observation_id__in=trigger_ids)
-
-        with transaction.atomic():
-            diary_text_relationship.delete()
-            texts.delete()
-            triggers.delete()
-            interest_areas.delete()
-            trigger_relationships.delete()
-            diary_interests_relationship.delete()
-            diary.delete()
+        diary.delete()
 
         return {"deleted": True, "diary_id": diary_id}
 
@@ -1153,50 +1043,38 @@ class DiaryDeleteSerializer(serializers.Serializer):
 class DiaryRetrieveSerializer(serializers.Serializer):
     diary_id = serializers.IntegerField(source="observation_id")
     date = serializers.DateTimeField(source="observation_date")
-    scope = serializers.CharField(source="value_as_string")
     entries = serializers.SerializerMethodField()
     interest_areas = serializers.SerializerMethodField()
 
-    def get_entries(self, diary):
-        related_observation_ids = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("diary_entry").concept_id,
-            fact_id_1=diary.observation_id,
-            domain_concept_2_id=get_concept_by_code("diary_text").concept_id,
-            relationship_concept_id=get_concept_by_code("TEXT_DIARY").concept_id,
-        ).values_list("fact_id_2", flat=True)
+    def _load_json(self, diary):
+        try:
+            return json.loads(diary.value_as_string)
+        except Exception:
+            return {}
 
-        related_observations = Observation.objects.filter(observation_id__in=related_observation_ids)
-        return ObservationRetrieveSerializer(related_observations, many=True).data
+    def get_entries(self, diary):
+        data = self._load_json(diary)
+        return [
+            {
+                "text": data.get("text", ""),
+                "text_shared": data.get("text_shared", False),
+            }
+        ]
 
     def get_interest_areas(self, diary):
-        interest_area_ids = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("diary_entry").concept_id,
-            fact_id_1=diary.observation_id,
-            domain_concept_2_id=get_concept_by_code("INTEREST_AREA").concept_id,
-            relationship_concept_id=get_concept_by_code("AOI_DIARY").concept_id,
-        ).values_list("fact_id_2", flat=True)
+        data = self._load_json(diary)
+        interest_areas = data.get("interest_areas", [])
+        for area in interest_areas:
+            area_full: Observation = Observation.objects.filter(observation_id=area.get("interest_area_id")).first()
+            if area_full:
+                area["interest_name"] = area_full.observation_source_value
+                area["provider_name"] = get_provider_full_name(area_full.provider_id)
 
-        interest_areas = Observation.objects.filter(
-            observation_id__in=interest_area_ids,
-            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
-        ).select_related("observation_concept")
-
-        interest_areas_with_triggers = []
-        for interest_area in interest_areas:
-            trigger_relationships = FactRelationship.objects.filter(
-                domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                fact_id_1=interest_area.observation_id,
-                relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-            )
-            trigger_ids = trigger_relationships.values_list("fact_id_2", flat=True)
-            triggers = Observation.objects.filter(observation_id__in=trigger_ids)
-
-            interest_data = InterestAreaSerializer(interest_area).data
-            interest_data["provider_name"] = get_provider_full_name(interest_area.provider_id)
-            interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
-            interest_areas_with_triggers.append(interest_data)
-
-        return interest_areas_with_triggers
+            for trigger in area.get("triggers", []):
+                trigger_full: Observation = Observation.objects.filter(observation_id=trigger.get("trigger_id")).first()
+                if trigger_full:
+                    trigger["trigger_name"] = trigger_full.observation_source_value
+        return interest_areas
 
 
 class UserRetrieveSerializer(BaseRetrieveSerializer):

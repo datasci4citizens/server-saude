@@ -15,6 +15,12 @@ class MyAbstractUser(TimestampedModel):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=False, null=False)
     social_name = models.CharField(max_length=255, blank=True, null=True)
     birth_datetime = models.DateTimeField(blank=True, null=True, db_comment="Date and time of birth")
+    profile_picture = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        db_comment="URL of the profile picture",
+    )
 
     class Meta:
         abstract = True
@@ -354,7 +360,7 @@ class Observation(TimestampedModel):
         related_name="observation_value_as_concept_set",
         db_comment="Value as Concept",
     )
-    value_as_string = models.CharField(max_length=60, blank=True, null=True, db_comment="Free-text value")
+    value_as_string = models.CharField(max_length=1000, blank=True, null=True, db_comment="Free-text value")
     observation_date = models.DateTimeField(blank=True, null=True, db_comment="Date and time of observation")
     observation_type_concept = models.ForeignKey(
         Concept,
