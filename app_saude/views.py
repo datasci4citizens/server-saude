@@ -48,8 +48,10 @@ class GoogleLoginView(APIView):
         user, _ = User.objects.get_or_create(
             email=user_data.get("email"),
             username=user_data.get("email"),
-            first_name=user_data.get("given_name"),
-            last_name=user_data.get("family_name"),
+            defaults={
+                "first_name": user_data.get("given_name", ""),
+                "last_name": user_data.get("family_name", ""),
+            },
         )
 
         # Check if user is already registered as a provider or person
