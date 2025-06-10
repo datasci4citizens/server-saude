@@ -495,6 +495,11 @@ class FullPersonViewSet(FlexibleViewSet):
         try:
             with transaction.atomic():
                 # 1. Create Person
+                if Person.objects.filter(user=request.user).exists():
+                    raise ValidationError("You already have a person registration.")
+
+                # Ensure user is set in person_data
+                person_data["user_id"] = request.user.id
                 person = Person.objects.create(**person_data)
 
                 # 2. Create Location (associated with person)
@@ -511,6 +516,12 @@ class FullPersonViewSet(FlexibleViewSet):
                 return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
+            logger.error(
+                "Error during full person onboarding",
+                e,
+                exc_info=True,
+                extra={"request_data": request.data, "error": str(e)},
+            )
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
