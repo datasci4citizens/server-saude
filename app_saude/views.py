@@ -23,6 +23,7 @@ from libs.google import google_get_user_data
 
 from .models import *
 from .serializers import *
+from .utils.interest_area import get_interest_areas_and_triggers
 from .utils.provider import *
 
 User = get_user_model()
@@ -1105,31 +1106,43 @@ class ProviderPersonDiaryDetailView(APIView):
 class PersonInterestAreaView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        summary="Get interest areas for the authenticated user",
+        description="Retrieve the interest areas for the authenticated user. Optionally, can return crowd-sourced interest areas.",
+        parameters=[
+            OpenApiParameter(
+                name="crowd_source",
+                description="If true, returns interest areas that are crowd-sourced (not linked to a specific person).",
+                required=False,
+                type=bool,
+            )
+        ],
+    )
     def get(self, request):
         person = get_object_or_404(Person, user=request.user)
-
-        interest_areas = Observation.objects.filter(
-            person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
-        ).select_related("observation_concept")
-
-        results = []
-
-        for interest_area in interest_areas:
-            interest_data = InterestAreaSerializer(interest_area).data
-
-            relationships = FactRelationship.objects.filter(
-                domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                fact_id_1=interest_area.observation_id,
-                relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+        crowd_source = request.query_params.get("crowd_source", "false").lower() == "true"
+        if crowd_source:
+            logger.info("Fetching crowd-sourced interest areas")
+            interest_areas = (
+                Observation.objects.filter(
+                    person_id=None,  # All interest areas that the user wants other people to see, we create a new Observation with personId=None
+                    observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                )
+                .select_related("observation_concept")
+                .all()
+            )
+        else:
+            logger.info("Fetching personal interest areas")
+            interest_areas = (
+                Observation.objects.filter(
+                    person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
+                )
+                .select_related("observation_concept")
+                .all()
             )
 
-            trigger_ids = relationships.values_list("fact_id_2", flat=True)
-
-            # Searching for triggers related to the interest area
-            triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
-
-            interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
-            results.append(interest_data)
+        logger.info(f"Found {interest_areas.count()} interest areas for person {person.person_id}")
+        results = get_interest_areas_and_triggers(interest_areas)
 
         return Response(results)
 
