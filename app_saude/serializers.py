@@ -2,6 +2,7 @@ import json
 import logging
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -536,37 +537,41 @@ class FullPersonCreateSerializer(serializers.Serializer):
         observations_data = validated_data.pop("observations", [])
         drug_exposures_data = validated_data.pop("drug_exposures", [])
 
-        # Create Location
-        location = Location.objects.create(**location_data)
-
         # Convert concept objects to their IDs for the serializer
-        person_data["gender_concept"] = person_data.get("gender_concept").concept_id
-        person_data["ethnicity_concept"] = person_data.get("ethnicity_concept").concept_id
-        person_data["race_concept"] = person_data.get("race_concept").concept_id
+        person_data["gender_concept_id"] = person_data.pop("gender_concept")
+        person_data["ethnicity_concept_id"] = person_data.pop("ethnicity_concept")
+        person_data["race_concept_id"] = person_data.pop("race_concept")
 
-        # Add the Location instance to person_data
-        person_data["location"] = location
+        with transaction.atomic():
+            # 1. Create Location
+            location = Location.objects.create(**location_data)
 
-        # Validate and create the Person
-        person_serializer = PersonCreateSerializer(data=person_data, context=self.context)
-        person_serializer.is_valid(raise_exception=True)
-        person = person_serializer.save()
+            # Add the Location instance to person_data
+            person_data["location"] = location
 
-        # Create Observations and DrugExposures
-        for obs in observations_data:
-            obs.pop("person", None)  # remove if exists
-            Observation.objects.create(person=person, **obs)
+            # 2. Create Person
+            person_serializer = PersonCreateSerializer(data=person_data, context=self.context)
+            person_serializer.is_valid(raise_exception=True)
+            person = person_serializer.create(person_data)
 
-        for drug_data in drug_exposures_data:
-            drug_data.pop("person", None)  # remove if exists
-            DrugExposure.objects.create(person=person, **drug_data)
+            # 3. Create Observations
+            for obs in observations_data:
+                obs.pop("person", None)  # remove if exists
+                Observation.objects.create(person=person, **obs)
 
-        return {
-            "person": person,
-            "location": location,
-            "observations": observations_data,
-            "drug_exposures": drug_exposures_data,
-        }
+            # 4. Create Drug Exposures
+            for drug in drug_exposures_data:
+                drug.pop("person", None)  # remove if exists
+                DrugExposure.objects.create(person=person, **drug)
+
+            return {
+                "person": person,
+                "location": location,
+                "observations": observations_data,
+                "drug_exposures": drug_exposures_data,
+            }
+
+        raise serializers.ValidationError("Failed to create FullPerson due to an error in the transaction.")
 
 
 class FullPersonRetrieveSerializer(serializers.Serializer):

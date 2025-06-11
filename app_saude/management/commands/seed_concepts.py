@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from app_saude.models import *
+from app_saude.utils.concept import get_concept_by_code
 
 # app_saude/management/commands/seed_concepts.py
 
@@ -59,7 +61,12 @@ class Command(BaseCommand):
 
             if pt_name:
                 ConceptSynonym.objects.update_or_create(
-                    concept=concept, concept_synonym_name=pt_name, language_concept_id=4180186  # pt
+                    id=concept.concept_id,
+                    defaults={
+                        "concept": concept,
+                        "concept_synonym_name": pt_name,
+                        "language_concept_id": 4180186,  # pt
+                    },
                 )
 
         def dummy_person(
@@ -83,6 +90,15 @@ class Command(BaseCommand):
             for trigger_id in trigger_ids:
                 ConceptRelationship.objects.update_or_create(
                     concept_1_id=interest_id, concept_2_id=trigger_id, relationship_id=relationship_id
+                )
+
+                FactRelationship.objects.update_or_create(
+                    id=trigger_id,
+                    domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                    fact_id_1=interest_id,
+                    domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id,
+                    fact_id_2=trigger_id,
+                    relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
                 )
 
         # Idioma pt
@@ -869,6 +885,36 @@ class Command(BaseCommand):
 
         for interest_id, trigger_ids in INTEREST_TO_TRIGGERS.items():
             relate_concepts(interest_id, trigger_ids, "AOI_Trigger")
+
+        # Create the default observations
+        for interest_id, trigger_ids in INTEREST_TO_TRIGGERS.items():
+            # Create the AOI observation
+            Observation.objects.update_or_create(
+                observation_id=interest_id,
+                defaults={
+                    "observation_concept_id": 2000000201,
+                    "observation_type_concept_id": 2000000200,
+                    "observation_date": timezone.now(),
+                    "observation_source_value": ConceptSynonym.objects.filter(concept_id=interest_id)
+                    .first()
+                    .concept_synonym_name,
+                    "value_as_concept_id": 999502,
+                },
+            )
+
+            for trigger_id in trigger_ids:
+                # Create the AOI trigger observation
+                Observation.objects.update_or_create(
+                    observation_id=trigger_id,
+                    defaults={
+                        "observation_concept_id": 2000000400,
+                        "observation_type_concept_id": 2000000300,
+                        "observation_date": timezone.now(),
+                        "observation_source_value": ConceptSynonym.objects.filter(concept_id=trigger_id)
+                        .first()
+                        .concept_synonym_name,
+                    },
+                )
 
         User = get_user_model()
         user, _ = User.objects.get_or_create(
