@@ -725,6 +725,7 @@ class InterestAreaTriggerUpdateSerializer(serializers.Serializer):
 
 
 class InterestAreaSerializer(serializers.Serializer):
+    interest_area_id = serializers.IntegerField(required=False, allow_null=True)
     observation_concept_id = serializers.IntegerField(required=False, allow_null=True)
     interest_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     value_as_string = serializers.CharField(required=False, allow_blank=True, allow_null=True)
