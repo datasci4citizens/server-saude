@@ -194,9 +194,6 @@ CSRF_TRUSTED_ORIGINS = [
     SAUDE_MOBILE_URL,
     "https://server-saude.onrender.com",
     "https://localhost",
-    "https://server-saude-staging.paas.ic.unicamp.br",
-    "http://localhost:5173",
-    "http://localhost:8000",
 ]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
