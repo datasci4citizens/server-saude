@@ -371,7 +371,7 @@ class Observation(TimestampedModel):
         db_comment="Observation Type Concept",
     )
     observation_source_value = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         null=True,
         db_comment="Source value of the observation",

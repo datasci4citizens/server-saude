@@ -76,13 +76,15 @@ urlpatterns = [
         ProviderPersonDiaryDetailView.as_view(),
         name="acs-diary-detail",
     ),
-    path(
-        "person/interest-areas/<int:interest_area_id>/",
-        PersonInterestAreaDetailView.as_view(),
-        name="person-interest-area-detail",
-    ),
-    path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
+    # path(
+    #     "person/interest-areas/<int:interest_area_id>/",
+    #     PersonInterestAreaDetailView.as_view(),
+    #     name="person-interest-area-detail",
+    # ),
+    # path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
     path("person/interest-areas/mark-attention-point/", MarkAttentionPointView.as_view()),
+    path("person/interest-areas", InterestAreaView.as_view()),
+    path("person/custom-interest-area", CustomInterestAreaView.as_view(), name="person-custom-interest"),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

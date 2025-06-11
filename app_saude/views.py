@@ -513,6 +513,14 @@ class FullPersonViewSet(FlexibleViewSet):
                 for drug in drug_exposures_data:
                     DrugExposure.objects.create(person=person, **drug)
 
+                # 5. Create interest areas observation
+                person_interests = Observation.objects.create(
+                    person=person,
+                    observation_concept_id=get_concept_by_code("PATIENT_INTEREST").concept_id,
+                    observation_date=timezone.now(),
+                    value_as_string=json.dumps({}),
+                )
+
                 return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
@@ -1101,57 +1109,119 @@ class ProviderPersonDiaryDetailView(APIView):
         return Response(serializer.data)
 
 
-@extend_schema(tags=["Interest_Areas"], responses={200: InterestAreaSerializer(many=True)})
-class PersonInterestAreaView(APIView):
-    permission_classes = [IsAuthenticated]
+# @extend_schema(tags=["Interest_Areas"], responses={200: InterestAreaSerializer(many=True)})
+# class PersonInterestAreaView(APIView):
+#     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        person = get_object_or_404(Person, user=request.user)
+#     def get(self, request):
+#         person = get_object_or_404(Person, user=request.user)
 
-        interest_areas = Observation.objects.filter(
-            person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
-        ).select_related("observation_concept")
+#         interest_areas = Observation.objects.filter(
+#             person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
+#         ).select_related("observation_concept")
 
-        results = []
+#         results = []
 
-        for interest_area in interest_areas:
-            interest_data = InterestAreaSerializer(interest_area).data
+#         for interest_area in interest_areas:
+#             interest_data = InterestAreaSerializer(interest_area).data
 
-            relationships = FactRelationship.objects.filter(
-                domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                fact_id_1=interest_area.observation_id,
-                relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-            )
+#             relationships = FactRelationship.objects.filter(
+#                 domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+#                 fact_id_1=interest_area.observation_id,
+#                 relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+#             )
 
-            trigger_ids = relationships.values_list("fact_id_2", flat=True)
+#             trigger_ids = relationships.values_list("fact_id_2", flat=True)
 
-            # Searching for triggers related to the interest area
-            triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
+#             # Searching for triggers related to the interest area
+#             triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
 
-            interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
-            results.append(interest_data)
+#             interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+#             results.append(interest_data)
 
-        return Response(results)
+#         return Response(results)
 
-    @extend_schema(tags=["Interest_Areas"], request=InterestAreaSerializer, responses={201: InterestAreaSerializer})
-    def post(self, request):
+#     @extend_schema(tags=["Interest_Areas"], request=InterestAreaSerializer, responses={201: InterestAreaSerializer})
+#     def post(self, request):
 
-        serializer = InterestAreaSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        interest_area = serializer.save()
+#         serializer = InterestAreaSerializer(data=request.data, context={"request": request})
+#         serializer.is_valid(raise_exception=True)
+#         interest_area = serializer.save()
 
-        return Response(InterestAreaSerializer(interest_area).data, status=status.HTTP_201_CREATED)
+#         return Response(InterestAreaSerializer(interest_area).data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(
-        request=InterestAreaBulkUpdateSerializer,
-        responses={200: OpenApiTypes.OBJECT},
-    )
-    def patch(self, request):
-        serializer = InterestAreaBulkUpdateSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        result = serializer.save()
+#     @extend_schema(
+#         request=InterestAreaBulkUpdateSerializer,
+#         responses={200: OpenApiTypes.OBJECT},
+#     )
+#     def patch(self, request):
+#         serializer = InterestAreaBulkUpdateSerializer(data=request.data, context={"request": request})
+#         serializer.is_valid(raise_exception=True)
+#         result = serializer.save()
 
-        return Response(result, status=status.HTTP_200_OK)
+#         return Response(result, status=status.HTTP_200_OK)
+
+
+# @extend_schema(tags=["Interest_Areas"])
+# class PersonInterestAreaDetailView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     @extend_schema(responses={200: InterestAreaSerializer})
+#     def get(self, request, interest_area_id):
+#         person = get_object_or_404(Person, user=request.user)
+
+#         interest_area = get_object_or_404(
+#             Observation,
+#             observation_id=interest_area_id,
+#             person=person,
+#             observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+#         )
+
+#         interest_data = InterestAreaSerializer(interest_area).data
+
+#         relationships = FactRelationship.objects.filter(
+#             domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+#             fact_id_1=interest_area.observation_id,
+#             relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+#         )
+
+#         trigger_ids = relationships.values_list("fact_id_2", flat=True)
+#         triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
+
+#         interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
+
+#         return Response(interest_data)
+
+#     @extend_schema(responses={204: None})
+#     def delete(self, request, interest_area_id):
+#         person = get_object_or_404(Person, user=request.user)
+
+#         interest_area = get_object_or_404(
+#             Observation,
+#             observation_id=interest_area_id,
+#             person=person,
+#             observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+#         )
+
+#         relationships = FactRelationship.objects.filter(
+#             domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
+#             fact_id_1=interest_area.observation_id,
+#             relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+#         )
+
+#         trigger_ids = list(relationships.values_list("fact_id_2", flat=True))
+
+#         relationships.delete()
+
+#         for trigger_id in trigger_ids:
+#             if not FactRelationship.objects.filter(
+#                 domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id, fact_id_2=trigger_id
+#             ).exists():
+#                 Observation.objects.filter(observation_id=trigger_id).delete()
+
+#         interest_area.delete()
+
+#         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(
@@ -1188,63 +1258,69 @@ class MarkAttentionPointView(APIView):
             return Response({"error": "Failed to mark attention point"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@extend_schema(tags=["Interest_Areas"])
-class PersonInterestAreaDetailView(APIView):
+@extend_schema(tags=["Interest_Areas"], request=InterestAreaCreateSerializer)
+class InterestAreaView(APIView):
+    # Add serializer_class for schema generation
+
+    def post(self, request):
+        serializer = InterestAreaCreateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        interest_area = serializer.save()
+
+        # Return the dictionary directly without re-serializing
+        return Response(interest_area, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        tags=["Interest_Areas"],
+        responses={200: PersonInterestAreaSerializer(many=True)},
+    )
+    def get(self, request):
+        person = get_object_or_404(Person, user=request.user)
+
+        # Get the observation for interest areas
+        person_interests = Observation.objects.filter(
+            person=person,
+            observation_concept_id=get_concept_by_code("PATIENT_INTEREST").concept_id,
+        ).first()
+
+        if not person_interests:
+            return Response({"message": "No interest areas found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            interest_data = json.loads(person_interests.value_as_string)
+        except json.JSONDecodeError:
+            interest_data = {}
+
+        # Wrap the dictionary in an object with the 'interest' attribute
+        serializer = PersonInterestAreaSerializer(
+            {"interest_area_dict": interest_data, "observation_id": person_interests.observation_id}  # Add this line
+        )
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=InterestAreaUpdateSerializer,
+        responses={200: InterestAreaUpdateSerializer},
+    )
+    def patch(self, request):
+        serializer = InterestAreaUpdateSerializer(data=request.data, partial=True, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        interest_area = serializer.save()
+
+        return Response(interest_area, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["Interest_Areas"],
+    request=CustomInterestAreaCreateSerializer,
+)
+class CustomInterestAreaView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses={200: InterestAreaSerializer})
-    def get(self, request, interest_area_id):
-        person = get_object_or_404(Person, user=request.user)
+    def post(self, request):
 
-        interest_area = get_object_or_404(
-            Observation,
-            observation_id=interest_area_id,
-            person=person,
-            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
-        )
+        serializer = CustomInterestAreaCreateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        interest_area = serializer.save()
 
-        interest_data = InterestAreaSerializer(interest_area).data
-
-        relationships = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-            fact_id_1=interest_area.observation_id,
-            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-        )
-
-        trigger_ids = relationships.values_list("fact_id_2", flat=True)
-        triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
-
-        interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
-
-        return Response(interest_data)
-
-    @extend_schema(responses={204: None})
-    def delete(self, request, interest_area_id):
-        person = get_object_or_404(Person, user=request.user)
-
-        interest_area = get_object_or_404(
-            Observation,
-            observation_id=interest_area_id,
-            person=person,
-            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
-        )
-
-        relationships = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-            fact_id_1=interest_area.observation_id,
-            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-        )
-
-        trigger_ids = list(relationships.values_list("fact_id_2", flat=True))
-
-        relationships.delete()
-
-        for trigger_id in trigger_ids:
-            if not FactRelationship.objects.filter(
-                domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id, fact_id_2=trigger_id
-            ).exists():
-                Observation.objects.filter(observation_id=trigger_id).delete()
-
-        interest_area.delete()
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(interest_area, status=status.HTTP_201_CREATED)

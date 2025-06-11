@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from app_saude.models import *
+from django.utils import timezone
 
 # app_saude/management/commands/seed_concepts.py
 
@@ -341,37 +342,159 @@ class Command(BaseCommand):
         add_concept(999005, "Diary interest", "Diary", "diary_interest", None, None, "Alcance do diário")
 
         # Help
-        add_concept(2000100, "Help", None, "HELP", None, None, "Ajuda")
-        add_concept(2000101, "Active", None, "ACTIVE", None, None, "Ativo")
+        add_concept(2000100000, "Help", None, "HELP", None, None, "Ajuda")
+        add_concept(2000101000, "Active", None, "ACTIVE", None, None, "Ativo")
 
         # Area of Interest
-        add_concept(2000200, "Interest Area", "Interest", "INTEREST_AREA", None, None, "Área de Interesse")
-        add_concept(2000201, "Custom Interest", "Interest", "CUSTOM_INTEREST", None, None, "Interesse Personalizado")
-        add_concept(2000202, "Hypertension", "Interest", "HTN", None, None, "Hipertensão")
-        add_concept(2000203, "Diabetes", "Interest", "DIABETES", None, None, "Diabetes")
-        add_concept(2000204, "Sleep", "Interest", "Sleep", None, None, "Sono")
+        add_concept(2000000200, "Interest Area", "Interest", "INTEREST_AREA", None, None, "Área de Interesse")
+        add_concept(2000000201, "Custom Interest", "Interest", "CUSTOM_INTEREST", None, None, "Interesse Personalizado")
+        add_concept(2000000202, "Patient Interest", "Interest", "PATIENT_INTEREST", None, None, "Interesse do Paciente")
+        add_concept(2000000203, "Hypertension", "Interest", "HTN", None, None, "Hipertensão")
+        add_concept(2000000204, "Diabetes", "Interest", "DIABETES", None, None, "Diabetes")
+        add_concept(2000000205, "Sleep", "Interest", "Sleep", None, None, "Sono")
+        add_concept(
+            2000000206, "Clinical Examinations", "Interest", "CLINICAL_EXAMS", None, None, "Meus Exames Clínicos"
+        )
+        add_concept(2000000207, "Pain", "Interest", "PAIN", None, None, "Dores que estou sentindo")
+        add_concept(2000000208, "Mental Health", "Interest", "MENTAL_HEALTH", None, None, "Minha Saúde Mental")
+        add_concept(2000000209, "Medication", "Interest", "MEDICATION", None, None, "Medicação")
+        add_concept(2000000210, "Food", "Interest", "FOOD", None, None, "Alimentação")
+        add_concept(
+            2000000211, "Substances", "Interest", "SUBSTANCES", None, None, "Uso de álcool ou outras substâncias"
+        )
+        add_concept(
+            2000000212, "Emotional Health", "Interest", "EMOTIONAL_HEALTH", None, None, "Humor e saúde emocional"
+        )
+        add_concept(
+            2000000213, "Daily Activities", "Interest", "DAILY_ACTIVITIES", None, None, "Atividades do dia a dia"
+        )
+        add_concept(
+            2000000214, "Social Security", "Interest", "SOCIAL_SECURITY", None, None, "Segurança e proteção social"
+        )
+        add_concept(
+            2000000215, "Support Network", "Interest", "SUPPORT_NETWORK", None, None, "Rede de apoio e vínculos"
+        )
+
+        # Create an Observation for each Interest concept
+        for concept_id in range(2000000202, 2000000215):
+            concept = Concept.objects.get(concept_id=concept_id)
+            pt_synonym = ConceptSynonym.objects.filter(concept=concept, language_concept_id=4180186).first()
+            source_value = pt_synonym.concept_synonym_name if pt_synonym else concept.concept_name
+            Observation.objects.update_or_create(
+                observation_concept_id=concept_id,
+                defaults={
+                    "observation_date": timezone.now(),
+                    "observation_source_value": source_value,
+                },
+            )
 
         # AOI Triggers
-        add_concept(2000300, "Trigger", "Trigger", "TRIGGER", None, None, "Gatilho")
-        add_concept(2000301, "Custom Trigger", "Trigger", "CUSTOM_TRIGGER", None, None, "Gatilho Personalizado")
-        add_concept(2000302, "Diet", "Trigger", "DIET", None, None, "Alimentação")
-        add_concept(2000303, "Physical Activity", "Trigger", "PHYSICAL_ACTIVITY", None, None, "Atividade Física")
-        add_concept(2000304, "Sleep", "Trigger", "SLEEP", None, None, "Sono")
-        add_concept(2000305, "Stress", "Trigger", "STRESS", None, None, "Estresse")
-        add_concept(2000306, "Weight", "Trigger", "WEIGHT", None, None, "Peso")
-        add_concept(2000307, "Medication", "Trigger", "MEDICATION", None, None, "Medicação")
-        add_concept(2000308, "Environment", "Trigger", "ENVIRONMENT", None, None, "Ambiente")
+        add_concept(2000000300, "Trigger", "Trigger", "TRIGGER", None, None, "Gatilho")
+        add_concept(2000000301, "Custom Trigger", "Trigger", "CUSTOM_TRIGGER", None, None, "Gatilho Personalizado")
+        # AOI Questions as Observations
+
+        AOI_Triggers = [
+            # Hypertension
+            (2000000202, "Você mediu sua pressão hoje?"),
+            (2000000202, "Qual foi o valor?"),
+            (2000000202, "Em que horário mediu sua pressão?"),
+            (2000000202, "Teve sintomas como dor de cabeça, tontura ou mal-estar?"),
+            (2000000202, "Gostaria de compartilhar esta informação com profissionais do CAPS ou da UBS?"),
+            # Diabetes
+            (2000000203, "Você mediu sua glicemia hoje?"),
+            (2000000203, "Qual foi o valor?"),
+            (2000000203, "Em que horário mediu sua glicemia?"),
+            (2000000203, "Teve sintomas de hipo ou hiperglicemia?"),
+            (2000000203, "Gostaria de compartilhar esta informação com profissionais do CAPS ou da UBS?"),
+            # Sleep
+            (2000000204, "Que horas você dormiu e acordou?"),
+            (2000000204, "Dormiu bem esta noite?"),
+            (2000000204, "Acordou durante a noite?"),
+            (2000000204, "Quantas horas dormiu?"),
+            # My clinical exams
+            (2000000205, "Você realizou algum exame clínico recentemente?"),
+            (2000000205, "Qual exame foi realizado?"),
+            (2000000205, "Recebeu o resultado?"),
+            (2000000205, "Gostaria de discutir esse exame com alguém do CAPS ou da UBS?"),
+            # Pains I am feeling
+            (2000000206, "Está sentindo alguma dor hoje?"),
+            (2000000206, "Onde é a dor?"),
+            (2000000206, "De 0 a 10, qual a intensidade da dor?"),
+            (2000000206, "Desde quando está com essa dor?"),
+            (2000000206, "Gostaria de relatar isso para seu profissional de saúde?"),
+            # Mental health questions
+            (2000000207, "Como você está se sentindo agora?"),
+            (2000000207, "Teve momentos de ansiedade, tristeza ou irritação hoje?"),
+            (2000000207, "Conseguiu se concentrar nas suas atividades?"),
+            (2000000207, "Gostaria de compartilhar como está se sentindo com sua equipe de cuidado?"),
+            # Medication
+            (2000000208, "Você tomou sua medicação hoje?"),
+            (2000000208, "Em que horário tomou?"),
+            (2000000208, "Teve algum efeito colateral?"),
+            (2000000208, "Gostaria de comunicar isso ao CAPS ou à UBS?"),
+            # Food
+            (2000000209, "Como foi sua alimentação hoje?"),
+            (2000000209, "Conseguiu fazer suas refeições principais?"),
+            (2000000209, "Teve algum enjoo, vômito ou falta de apetite?"),
+            (2000000209, "Bebeu bastante água hoje?"),
+            # Use of alcohol or other substances
+            (2000000210, "Usou alguma substância hoje (álcool, cigarro, outras)?"),
+            (2000000210, "Que horas foi o uso?"),
+            (2000000210, "Sentiu vontade de usar e conseguiu evitar?"),
+            (2000000210, "Gostaria de apoio para lidar com isso?"),
+            # Mood and emotional health
+            (2000000211, "Como você está se sentindo neste momento?"),
+            (2000000211, "Se sentiu sozinho(a) hoje?"),
+            (2000000211, "Teve pensamentos difíceis de controlar?"),
+            (2000000211, "Gostaria de conversar com alguém sobre isso?"),
+            # Daily activities
+            (2000000212, "Conseguiu tomar banho e se alimentar hoje?"),
+            (2000000212, "Realizou alguma atividade em casa?"),
+            (2000000212, "Saiu de casa hoje?"),
+            (2000000212, "Teve dificuldade com alguma atividade cotidiana?"),
+            # Safety and social protection
+            (2000000213, "Se sentiu seguro(a) no lugar onde dormiu?"),
+            (2000000213, "Alguém te tratou mal ou te ameaçou hoje?"),
+            (2000000213, "Faltou algo essencial (comida, lugar para dormir)?"),
+            (2000000213, "Gostaria que um ACS ou profissional de saúde entrasse em contato com você?"),
+            # Support network and bonds
+            (2000000214, "Conversou com alguém próximo hoje?"),
+            (2000000214, "Participou de alguma atividade em grupo?"),
+            (2000000214, "Teve vontade de encontrar alguém?"),
+            (2000000214, "Gostaria de participar de atividades com outras pessoas?"),
+        ]
 
         # Fact Relationships
-        add_concept(2000400, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
-        add_concept(2000401, "AOI_Diary", None, "AOI_DIARY", None, None, "Diario area de interesse")
-        add_concept(2000402, "Text_Diary", None, "TEXT_DIARY", None, None, "Diario area de interesse")
+        add_concept(2000000400, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
+        add_concept(2000000401, "AOI_Diary", None, "AOI_DIARY", None, None, "Diario area de interesse")
+        add_concept(2000000402, "Text_Diary", None, "TEXT_DIARY", None, None, "Diario area de interesse")
 
-        # Link AOI to Trigger
+        for trigger in AOI_Triggers:
+            obs, created = Observation.objects.update_or_create(
+                observation_source_value=trigger[1],
+                observation_concept_id=2000000200,
+                defaults={"observation_date": timezone.now()},
+            )
 
-        relate_concepts(2000202, [2000302, 2000303, 2000304], "AOI_Trigger")  # Hypertension  # Diet, PA, Sleep
-        relate_concepts(2000203, [2000302, 2000306, 2000307], "AOI_Trigger")  # Diabetes  # Diet, Weight, Medication
-        relate_concepts(2000204, [2000305, 2000308, 2000307], "AOI_Trigger")  # Sleep  # Stress, Environment, Medication
+            FactRelationship.objects.update_or_create(
+                fact_id_1=Observation.objects.get(observation_concept_id=trigger[0]).observation_id,
+                domain_concept_1_id=2000000200,  # Interest Area
+                fact_id_2=obs.observation_id,
+                domain_concept_2_id=2000000300,  # Trigger
+                relationship_concept_id=2000000400,  # AOI_TRIGGER
+            )
+
+        # # Link AOI to Trigger
+
+        # relate_concepts(
+        #     2000000202, [2000000302, 2000000303, 2000000304], "AOI_Trigger"
+        # )  # Hypertension  # Diet, PA, Sleep
+        # relate_concepts(
+        #     2000000203, [2000000302, 2000000306, 2000000307], "AOI_Trigger"
+        # )  # Diabetes  # Diet, Weight, Medication
+        # relate_concepts(
+        #     2000000204, [2000000305, 2000000308, 2000000307], "AOI_Trigger"
+        # )  # Sleep  # Stress, Environment, Medication
 
         User = get_user_model()
         user, _ = User.objects.get_or_create(
