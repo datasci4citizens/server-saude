@@ -24,6 +24,7 @@ from libs.google import google_get_user_data
 from .models import *
 from .serializers import *
 from .utils.interest_area import get_interest_areas_and_triggers
+from .utils.person import get_person_or_404
 from .utils.provider import *
 
 User = get_user_model()
@@ -485,44 +486,15 @@ class FullPersonViewSet(FlexibleViewSet):
     queryset = Person.objects.none()  # prevents GET from returning anything
 
     def create(self, request):
-        serializer = self.get_serializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        person_data = data["person"]
-        location_data = data["location"]
-        observations_data = data["observations"]
-        drug_exposures_data = data["drug_exposures"]
-
+        serializer: FullPersonCreateSerializer = self.get_serializer(data=request.data, context={"request": request})
         try:
-            with transaction.atomic():
-                # 1. Create Person
-                if Person.objects.filter(user=request.user).exists():
-                    raise ValidationError("You already have a person registration.")
-
-                # Ensure user is set in person_data
-                person_data["user_id"] = request.user.id
-                person = Person.objects.create(**person_data)
-
-                # 2. Create Location (associated with person)
-                Location.objects.create(person=person, **location_data)
-
-                # 3. Create Observations
-                for obs in observations_data:
-                    Observation.objects.create(person=person, **obs)
-
-                # 4. Create Drug Exposures
-                for drug in drug_exposures_data:
-                    DrugExposure.objects.create(person=person, **drug)
-
-                return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_201_CREATED)
-
+            if Person.objects.filter(user=request.user).exists():
+                raise ValidationError("You already have a person registration.")
+            serializer.is_valid(raise_exception=True)
+            serializer.create(request.data)
+            return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_201_CREATED)
         except Exception as e:
-            logger.error(
-                "Error during full person onboarding",
-                e,
-                exc_info=True,
-                extra={"request_data": request.data, "error": str(e)},
-            )
+            logger.error(f"Error during full person onboarding. request_data: {request.data}, error: {str(e)}", e)
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -1004,9 +976,11 @@ class DiaryView(APIView):
         responses={201: OpenApiTypes.OBJECT},
     )
     def post(self, request):
+        logger.info(f"Creating diary entry.. Request data: {request.data}")
         serializer = DiaryCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         result = serializer.save()
+        logger.info(f"Diary entry created successfully: {result}")
         return Response(result, status=status.HTTP_201_CREATED)
 
 
@@ -1119,7 +1093,7 @@ class PersonInterestAreaView(APIView):
         ],
     )
     def get(self, request):
-        person = get_object_or_404(Person, user=request.user)
+        person = get_person_or_404(request.user)
         crowd_source = request.query_params.get("crowd_source", "false").lower() == "true"
         if crowd_source:
             logger.info("Fetching crowd-sourced interest areas")
@@ -1131,6 +1105,7 @@ class PersonInterestAreaView(APIView):
                 .select_related("observation_concept")
                 .all()
             )
+            logger.info(f"Found {interest_areas.count()} crowd-sourced interest areas")
         else:
             logger.info("Fetching personal interest areas")
             interest_areas = (
@@ -1140,8 +1115,8 @@ class PersonInterestAreaView(APIView):
                 .select_related("observation_concept")
                 .all()
             )
+            logger.info(f"Found {interest_areas.count()} interest areas for person {person.person_id}")
 
-        logger.info(f"Found {interest_areas.count()} interest areas for person {person.person_id}")
         results = get_interest_areas_and_triggers(interest_areas)
 
         return Response(results)
