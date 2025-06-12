@@ -360,6 +360,59 @@ class Command(BaseCommand):
         add_concept(2000100, "Help", None, "HELP", None, None, "Ajuda")
         add_concept(2000101, "Active", None, "ACTIVE", None, None, "Ativo")
 
+        User = get_user_model()
+        user, _ = User.objects.get_or_create(
+            email="mock-provider@email.com",
+            defaults={"username": "mockprovider", "first_name": "Dr. Mock", "last_name": "Provider"},
+        )
+
+        Provider.objects.get_or_create(user=user, defaults={"professional_registration": "1111111"})
+
+        provider, _ = Provider.objects.get_or_create(user=user)
+
+        user, _ = User.objects.get_or_create(
+            email="mock-person@email.com",
+            defaults={"username": "mockperson", "first_name": "Mock", "last_name": "Person"},
+        )
+
+        person, _ = Person.objects.get_or_create(user=user)
+
+        FactRelationship.objects.get_or_create(
+            fact_id_1=person.person_id,
+            domain_concept_1_id=9202,  # Person
+            fact_id_2=provider.provider_id,
+            domain_concept_2_id=9201,  # Provider
+            relationship_concept_id=9200001,
+        )
+
+        # Tipos de valores
+        concept_class("Value Type", "Value Type", 999200)
+
+        add_concept(999201, "Yes/No", "Value Type", "yes_no", "Value", "Value", "Sim/Não")
+        add_concept(999202, "Free Text", "Value Type", "free_text", "Value", "Value", "Texto livre")
+        add_concept(999203, "Scale", "Value Type", "scale", "Value", "Value", "Escala")
+        add_concept(999204, "Hours", "Value Type", "hours", "Value", "Value", "Horas")
+        add_concept(999205, "Times", "Value Type", "times", "Value", "Value", "Vezes")
+
+        concept_class("Yes/No", "Yes/No", 999201)
+        concept_class("Free Text", "Free Text", 999202)
+        concept_class("Scale", "Scale", 999203)
+        concept_class("Hours", "Hours", 999204)
+        concept_class("Times", "Times", 999205)
+
+        # Valores possíveis
+        add_concept(999501, "Yes", "Yes/No", "value_yes", "Value", "Value", "Sim")
+
+        add_concept(999502, "No", "Yes/No", "value_no", "Value", "Value", "Não")
+
+        VALUE_TYPE_CODE_TO_ID = {
+            "scale": 999203,
+            "yesno": 999201,
+            "freetext": 999202,
+            "times": 999205,
+            "hours": 999204,
+        }
+
         # Area of Interest
         add_concept(2000000200, "Interest Area", "Interest", "INTEREST_AREA", None, None, "Área de Interesse")
         add_concept(2000000201, "Custom Interest", "Interest", "CUSTOM_INTEREST", None, None, "Interesse Personalizado")
@@ -916,92 +969,14 @@ class Command(BaseCommand):
                     },
                 )
 
-        User = get_user_model()
-        user, _ = User.objects.get_or_create(
-            email="mock-provider@email.com",
-            defaults={"username": "mockprovider", "first_name": "Dr. Mock", "last_name": "Provider"},
-        )
+        # for i, (code, pt_name, value_type_code) in enumerate(WELLBEING):
+        #     concept_id = 999300 + i
+        #     add_concept(concept_id, pt_name, "Wellness", code, "Observation", "Observation", pt_name)
 
-        Provider.objects.get_or_create(user=user, defaults={"professional_registration": "1111111"})
-
-        provider, _ = Provider.objects.get_or_create(user=user)
-
-        user, _ = User.objects.get_or_create(
-            email="mock-person@email.com",
-            defaults={"username": "mockperson", "first_name": "Mock", "last_name": "Person"},
-        )
-
-        person, _ = Person.objects.get_or_create(user=user)
-
-        FactRelationship.objects.get_or_create(
-            fact_id_1=person.person_id,
-            domain_concept_1_id=9202,  # Person
-            fact_id_2=provider.provider_id,
-            domain_concept_2_id=9201,  # Provider
-            relationship_concept_id=9200001,
-        )
-
-        # Sintomas predefinidos
-        concept_class("Wellness", "Wellness", 999100)
-
-        # Tipos de valores
-        concept_class("Value Type", "Value Type", 999200)
-
-        add_concept(999201, "Yes/No", "Value Type", "yes_no", "Value", "Value", "Sim/Não")
-        add_concept(999202, "Free Text", "Value Type", "free_text", "Value", "Value", "Texto livre")
-        add_concept(999203, "Scale", "Value Type", "scale", "Value", "Value", "Escala")
-        add_concept(999204, "Hours", "Value Type", "hours", "Value", "Value", "Horas")
-        add_concept(999205, "Times", "Value Type", "times", "Value", "Value", "Vezes")
-
-        concept_class("Yes/No", "Yes/No", 999201)
-        concept_class("Free Text", "Free Text", 999202)
-        concept_class("Scale", "Scale", 999203)
-        concept_class("Hours", "Hours", 999204)
-        concept_class("Times", "Times", 999205)
-
-        # Valores possíveis
-        add_concept(999501, "Yes", "Yes/No", "value_yes", "Value", "Value", "Sim")
-
-        add_concept(999502, "No", "Yes/No", "value_no", "Value", "Value", "Não")
-
-        WELLBEING = [
-            ("sleep", "Qualidade do sono", "scale"),
-            ("medicine", "Tomar medicamentos", "yesno"),
-            ("medication_effects", "Efeitos da medicação", "scale"),
-            ("side_effects", "Efeitos colaterais da medicação", "yesno"),
-            ("physical_symptoms", "Sintomas físicos", "yesno"),
-            ("thoughts", "Pensamentos", "scale"),
-            ("triggers", "Exposição a gatilhos", "times"),
-            ("work", "Trabalho", "scale"),
-            ("chores", "Tarefas domésticas", "scale"),
-            ("food", "Alimentação", "scale"),
-            ("hobbies", "Hobbies", "scale"),
-            ("exercise", "Exercício físico", "hours"),
-            ("water", "Consumo de água", "scale"),
-            ("social", "Socialização", "scale"),
-            ("self_harm", "Auto mutilação", "times"),
-            ("intrusive_thoughts", "Pensamentos intrusivos", "scale"),
-            ("suicidal_ideation", "Ideação suicida", "yesno"),
-            ("dissociation", "Disassociação", "scale"),
-            ("paranoia", "Paranóia", "scale"),
-        ]
-
-        VALUE_TYPE_CODE_TO_ID = {
-            "scale": 999203,
-            "yesno": 999201,
-            "freetext": 999202,
-            "times": 999205,
-            "hours": 999204,
-        }
-
-        for i, (code, pt_name, value_type_code) in enumerate(WELLBEING):
-            concept_id = 999300 + i
-            add_concept(concept_id, pt_name, "Wellness", code, "Observation", "Observation", pt_name)
-
-            # Cria a relação has_value_type
-            value_type_concept_id = VALUE_TYPE_CODE_TO_ID[value_type_code]
-            ConceptRelationship.objects.update_or_create(
-                concept_1_id=concept_id, concept_2_id=value_type_concept_id, relationship_id="has_value_type"
-            )
+        #     # Cria a relação has_value_type
+        #     value_type_concept_id = VALUE_TYPE_CODE_TO_ID[value_type_code]
+        #     ConceptRelationship.objects.update_or_create(
+        #         concept_1_id=concept_id, concept_2_id=value_type_concept_id, relationship_id="has_value_type"
+        #     )
 
         self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
