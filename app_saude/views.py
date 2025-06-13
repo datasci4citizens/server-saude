@@ -23,10 +23,12 @@ from libs.google import google_get_user_data
 
 from .models import *
 from .serializers import *
+from .utils.interest_area import get_interest_areas_and_triggers
+from .utils.person import get_person_or_404
 from .utils.provider import *
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app_saude")
 
 
 class GoogleLoginView(APIView):
@@ -45,26 +47,58 @@ class GoogleLoginView(APIView):
         user_data = google_get_user_data(validated_data)
 
         # Creates user in DB if first time login
-        user, _ = User.objects.get_or_create(
+        user, created = User.objects.get_or_create(
             email=user_data.get("email"),
             username=user_data.get("email"),
-            first_name=user_data.get("given_name"),
-            last_name=user_data.get("given_name"),
+            defaults={
+                "first_name": user_data.get("given_name", ""),
+                "last_name": user_data.get("family_name", ""),
+            },
         )
+
+        if not created:
+            user.first_name = user_data.get("given_name", "")
+            user.last_name = user_data.get("family_name", "")
+            user.save()
 
         # Check if user is already registered as a provider or person
         provider_id = None
         person_id = None
+        social_name = None
         role = "none"
+
+        # Check if user is already registered as a provider
         if Provider.objects.filter(user=user).exists():
-            provider_id = Provider.objects.get(user=user).pk
+            provider = Provider.objects.get(user=user)
+            social_name = getattr(provider, "social_name", None)
+            profile_picture = user_data.get("picture")
+            if profile_picture:
+                provider.profile_picture = profile_picture
+                provider.save(update_fields=["profile_picture"])
+            provider_id = provider.provider_id
             role = "provider"
-        elif Person.objects.filter(user=user).exists():
-            person_id = Person.objects.get(user=user).pk
+
+        # Check if user is already registered as a person
+        if Person.objects.filter(user=user).exists():
+            person = Person.objects.get(user=user)
+            social_name = getattr(person, "social_name", None)
+            profile_picture = user_data.get("picture")
+            if profile_picture:
+                person.profile_picture = profile_picture
+                person.save(update_fields=["profile_picture"])
+            person_id = person.person_id
             role = "person"
 
         # Generate jwt token for the user
         token = RefreshToken.for_user(user)
+
+        # Name could be in social_name or associated user
+        name = social_name
+        if not name and user:
+            name = f"{user.first_name} {user.last_name}".strip()
+            if not name:
+                name = user.username
+
         response = {
             "access": str(token.access_token),
             "refresh": str(token),
@@ -72,6 +106,8 @@ class GoogleLoginView(APIView):
             "person_id": person_id,
             "role": role,
             "user_id": user.pk,
+            "full_name": name,
+            "profile_picture": user_data.get("picture", ""),
         }
 
         return Response(response, status=200)
@@ -79,6 +115,58 @@ class GoogleLoginView(APIView):
 
 class AdminLoginView(APIView):
     permission_classes = [AllowAny]
+
+    # Add query params to the schema
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("email", OpenApiTypes.STR, description="Email of the user"),
+            OpenApiParameter("username", OpenApiTypes.STR, description="Admin username"),
+            OpenApiParameter("password", OpenApiTypes.STR, description="Admin password"),
+        ]
+    )
+    def get(self, request):
+        """
+        Admin login endpoint.
+        Passes admin user and pass to authenticate, and a email to get the user data.
+        Returns a JWT token for the email if successful.
+        """
+        email = request.query_params.get("email")
+
+        # Authenticate the user using admin credentials
+        username = request.query_params.get("username")
+        password = request.query_params.get("password")
+        admin_user = authenticate(username=username, password=password)
+
+        if not admin_user or not admin_user.is_staff:
+            return Response(
+                {"detail": "Invalid credentials or insufficient permissions."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not email:
+            return Response(
+                {"detail": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response(
+                {"detail": "User with this email does not exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user_id": user.id,
+                "username": user.username,
+                "person_id": getattr(user.person, "person_id", None) if hasattr(user, "person") else None,
+                "provider_id": getattr(user.provider, "provider_id", None) if hasattr(user, "provider") else None,
+            }
+        )
 
     @extend_schema(request=AdminLoginSerializer)
     def post(self, request, *args, **kwargs):
@@ -156,29 +244,37 @@ class FlexibleViewSet(viewsets.ModelViewSet):
 
 
 @extend_schema(tags=["Account"])
-class AccountViewSet(FlexibleViewSet):
+class AccountView(APIView):
     """
     ViewSet to manage user accounts.
     Allowed HTTP methods: GET, DELETE.
     """
 
-    http_method_names = ["get", "delete"]
-
-    queryset = User.objects.all()
     permission_classes = [IsAuthenticated]
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         user = request.user
         serializer = UserRetrieveSerializer(user)
         return Response(serializer.data)
 
-    @extend_schema(responses={200: UserRetrieveSerializer})
-    def retrieve(self, request, *args, **kwargs):
-        return Response({"detail": "This endpoint is not available."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def destroy(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         user = request.user
-        user.delete()
+        id = None
+        if Provider.objects.filter(user=user).exists():
+            id = Provider.objects.get(user=user).provider_id
+        elif Person.objects.filter(user=user).exists():
+            id = Person.objects.get(user=user).person_id
+
+        # Atomic
+        with transaction.atomic():
+            FactRelationship.objects.filter(fact_id_1=id).delete()
+            FactRelationship.objects.filter(fact_id_2=id).delete()
+
+            # Soft delete
+            user.email = f"deleted_{user.email}"
+            user.username = f"deleted_{user.username}"
+            user.is_active = False
+            user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -389,34 +485,16 @@ class FullPersonViewSet(FlexibleViewSet):
     http_method_names = ["post"]  # only allow POST
     queryset = Person.objects.none()  # prevents GET from returning anything
 
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        person_data = data["person"]
-        location_data = data["location"]
-        observations_data = data["observations"]
-        drug_exposures_data = data["drug_exposures"]
-
+    def create(self, request):
+        serializer: FullPersonCreateSerializer = self.get_serializer(data=request.data, context={"request": request})
         try:
-            with transaction.atomic():
-                # 1. Create Person
-                person = Person.objects.create(**person_data)
-
-                # 2. Create Location (associated with person)
-                Location.objects.create(person=person, **location_data)
-
-                # 3. Create Observations
-                for obs in observations_data:
-                    Observation.objects.create(person=person, **obs)
-
-                # 4. Create Drug Exposures
-                for drug in drug_exposures_data:
-                    DrugExposure.objects.create(person=person, **drug)
-
-                return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_201_CREATED)
-
+            if Person.objects.filter(user=request.user).exists():
+                raise ValidationError("You already have a person registration.")
+            serializer.is_valid(raise_exception=True)
+            serializer.create(request.data)
+            return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_201_CREATED)
         except Exception as e:
+            logger.error(f"Error during full person onboarding. request_data: {request.data}, error: {str(e)}", e)
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -430,25 +508,39 @@ class FullProviderViewSet(FlexibleViewSet):
     queryset = Provider.objects.none()
     permission_classes = [AllowAny]
 
-    def post(self, request):
+    def create(self, request):
         serializer = self.get_serializer(data=request.data, context={"request": request})
 
         # Validate the data
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            errors = serializer.errors
+            logger.warning(f"Validation failed: {json.dumps(errors, ensure_ascii=False)}")
+            return Response(
+                {
+                    "message": "Validation failed",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        try:
-            with transaction.atomic():
-                # Delegate creation to the serializer
+        with transaction.atomic():
+            try:
                 result = serializer.save()
-
+                response = ProviderRetrieveSerializer(result["provider"]).data
                 return Response(
-                    {"message": "Provider created successfully", "data": result},
+                    {"message": "Provider created successfully", "data": response},
                     status=status.HTTP_201_CREATED,
                 )
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception:
+                # revert the transaction
+                transaction.set_rollback(True)
+                logger.error(
+                    "Unexpected error during provider creation", exc_info=True, extra={"request_data": request.data}
+                )
+                return Response(
+                    {"error": "Erro interno ao criar o provedor"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
 
 @extend_schema(tags=["Link-Person-Provider"], responses=ProviderLinkCodeResponseSerializer)
@@ -884,9 +976,11 @@ class DiaryView(APIView):
         responses={201: OpenApiTypes.OBJECT},
     )
     def post(self, request):
+        logger.info(f"Creating diary entry.. Request data: {request.data}")
         serializer = DiaryCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         result = serializer.save()
+        logger.info(f"Diary entry created successfully: {result}")
         return Response(result, status=status.HTTP_201_CREATED)
 
 
@@ -986,31 +1080,44 @@ class ProviderPersonDiaryDetailView(APIView):
 class PersonInterestAreaView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        person = get_object_or_404(Person, user=request.user)
-
-        interest_areas = Observation.objects.filter(
-            person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
-        ).select_related("observation_concept")
-
-        results = []
-
-        for interest_area in interest_areas:
-            interest_data = InterestAreaSerializer(interest_area).data
-
-            relationships = FactRelationship.objects.filter(
-                domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                fact_id_1=interest_area.observation_id,
-                relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+    @extend_schema(
+        summary="Get interest areas for the authenticated user",
+        description="Retrieve the interest areas for the authenticated user. Optionally, can return crowd-sourced interest areas.",
+        parameters=[
+            OpenApiParameter(
+                name="crowd_source",
+                description="If true, returns interest areas that are crowd-sourced (not linked to a specific person).",
+                required=False,
+                type=bool,
             )
+        ],
+    )
+    def get(self, request):
+        person = get_person_or_404(request.user)
+        crowd_source = request.query_params.get("crowd_source", "false").lower() == "true"
+        if crowd_source:
+            logger.info("Fetching crowd-sourced interest areas")
+            interest_areas = (
+                Observation.objects.filter(
+                    person_id=None,  # All interest areas that the user wants other people to see, we create a new Observation with personId=None
+                    observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                )
+                .select_related("observation_concept")
+                .all()
+            )
+            logger.info(f"Found {interest_areas.count()} crowd-sourced interest areas")
+        else:
+            logger.info("Fetching personal interest areas")
+            interest_areas = (
+                Observation.objects.filter(
+                    person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
+                )
+                .select_related("observation_concept")
+                .all()
+            )
+            logger.info(f"Found {interest_areas.count()} interest areas for person {person.person_id}")
 
-            trigger_ids = relationships.values_list("fact_id_2", flat=True)
-
-            # Searching for triggers related to the interest area
-            triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
-
-            interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
-            results.append(interest_data)
+        results = get_interest_areas_and_triggers(interest_areas)
 
         return Response(results)
 
