@@ -1,6 +1,89 @@
 # CHANGELOG
 
 
+## v1.3.0 (2025-06-13)
+
+### Bug Fixes
+
+- Staging admin
+  ([`1cf815d`](https://github.com/datasci4citizens/server-saude/commit/1cf815dfcfe3eb5d66b38f36a11773d249f34b03))
+
+- Staging admin ([#84](https://github.com/datasci4citizens/server-saude/pull/84),
+  [`58d1257`](https://github.com/datasci4citizens/server-saude/commit/58d125735f2765d06d64cb9f87997064e099bd1e))
+
+- **nojira**: Fix seed_concepts
+  ([`6a056cb`](https://github.com/datasci4citizens/server-saude/commit/6a056cb02b0b350aa45b661037f16c4ff5a52ccf))
+
+- **nojira**: Quick fix login
+  ([`916094c`](https://github.com/datasci4citizens/server-saude/commit/916094caa7f71dd88ef39f796f2f5d547fc41957))
+
+- **nojira**: Quick fix login
+  ([`0c9dfe2`](https://github.com/datasci4citizens/server-saude/commit/0c9dfe2e37d33f86e920b95d1c10971cc5a713eb))
+
+- **SAU**: Revert
+  ([`85ccd2e`](https://github.com/datasci4citizens/server-saude/commit/85ccd2e7c098b91de4d660b4d7cb0d4b4eac26b5))
+
+- **SAU**: Revert ([#85](https://github.com/datasci4citizens/server-saude/pull/85),
+  [`668a5b3`](https://github.com/datasci4citizens/server-saude/commit/668a5b33a7b41e6f254be61bffd2eb5830698073))
+
+- **sau-75**: Userid missing in FullPerson create
+  ([`50064f3`](https://github.com/datasci4citizens/server-saude/commit/50064f3f5b506d83b9af96c9f89e650e2e38ecef))
+
+- **sau-75**: Userid missing in FullPerson create
+  ([#76](https://github.com/datasci4citizens/server-saude/pull/76),
+  [`117b9fa`](https://github.com/datasci4citizens/server-saude/commit/117b9fa3f1d168e3fdf0e1de6383949b6cb453aa))
+
+### Documentation
+
+- **NOJIRA**: Secao 5 ferramentas
+  ([`4e8ea23`](https://github.com/datasci4citizens/server-saude/commit/4e8ea234c57f53a7b1261e61bb102fe22e77cd09))
+
+- **NOJIRA**: Secao 5 ferramentas (issue #38)
+  ([#88](https://github.com/datasci4citizens/server-saude/pull/88),
+  [`eae19f4`](https://github.com/datasci4citizens/server-saude/commit/eae19f4707c26f4120cd71ed89a87c6d36ae1873))
+
+Finalizada seção 5 da documentação do OMOP CDM (issu #38)
+
+### Features
+
+- **SAU**: New interest areas
+  ([`9192aa1`](https://github.com/datasci4citizens/server-saude/commit/9192aa1e023adf916b91a4c4fe121d7735a3a006))
+
+- **SAU**: New interest areas ([#82](https://github.com/datasci4citizens/server-saude/pull/82),
+  [`111f0b8`](https://github.com/datasci4citizens/server-saude/commit/111f0b83bcca7cd638c0a95e2165c96a8daf7310))
+
+- **SAU-29**: Areas default e fix TEXT observation
+  ([`abe65a3`](https://github.com/datasci4citizens/server-saude/commit/abe65a3336da171b1e3c0f9a7d3be5a8bc7e166b))
+
+- **SAU-29**: Areas default e fix TEXT observation
+  ([#80](https://github.com/datasci4citizens/server-saude/pull/80),
+  [`7cd1f3c`](https://github.com/datasci4citizens/server-saude/commit/7cd1f3c03a33bd27dc156a9737e4791ec27f3935))
+
+- **sau-29**: Feat
+  ([`f2c1b9d`](https://github.com/datasci4citizens/server-saude/commit/f2c1b9d2cfc8299b1f5ebf7d1f51a8cc42e01de3))
+
+- **sau-68**: Diario como json, lastname, login
+  ([`abc2122`](https://github.com/datasci4citizens/server-saude/commit/abc212284ccce6076ec1eefd580bca9987bdc9ed))
+
+- **sau-68**: Diario como json, lastname, login
+  ([#73](https://github.com/datasci4citizens/server-saude/pull/73),
+  [`2f2b1e2`](https://github.com/datasci4citizens/server-saude/commit/2f2b1e2224453d6666a78477185569d59db879e5))
+
+- **sau-71**: Soft delete account and other improvements
+  ([`74f1f3e`](https://github.com/datasci4citizens/server-saude/commit/74f1f3e92e0753f91ac936286c98df6f6e343907))
+
+- **sau-71**: Soft delete account and other improvements
+  ([#74](https://github.com/datasci4citizens/server-saude/pull/74),
+  [`6afd3e6`](https://github.com/datasci4citizens/server-saude/commit/6afd3e643d88ec08bee79a64720e9949ab64b2ce))
+
+- **sau-79**: Endpoint para interesses default
+  ([`ed0e81a`](https://github.com/datasci4citizens/server-saude/commit/ed0e81a19cad94386039e7b02337f992552446e5))
+
+- **sau-79**: Endpoint para interesses default
+  ([#86](https://github.com/datasci4citizens/server-saude/pull/86),
+  [`a9396e6`](https://github.com/datasci4citizens/server-saude/commit/a9396e690417bbb249735a01f297be0b203653df))
+
+
 ## v1.2.1 (2025-06-06)
 
 ### Bug Fixes
@@ -254,6 +337,11 @@
 
 - Views
   ([`8c577c6`](https://github.com/datasci4citizens/server-saude/commit/8c577c689f4238ffa3600bf1d2a9d6ccb39b2dfd))
+
+### Testing
+
+- **SAU**: Test
+  ([`2ba7daf`](https://github.com/datasci4citizens/server-saude/commit/2ba7daf8e373d99e5b65169e2cb0b98992481cf8))
 
 
 ## v0.9.1 (2025-05-28)
