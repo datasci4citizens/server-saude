@@ -1001,6 +1001,7 @@ class NextVisitSerializer(serializers.Serializer):
 class InterestAreaTriggerSerializer(serializers.Serializer):
     name = serializers.CharField()
     type = serializers.ChoiceField(choices=["boolean", "text", "int", "scale"], default="boolean")
+    response = serializers.CharField()
 
 
 class InterestAreaSerializer(serializers.Serializer):
@@ -1062,13 +1063,13 @@ class DiaryCreateSerializer(serializers.Serializer):
     text = serializers.CharField(allow_blank=True)
     text_shared = serializers.BooleanField()
     diary_shared = serializers.BooleanField()
-    # commenting for now
-    # interest_areas = InterestAreaUpdateSerializer(many=True, required=False, allow_empty=True)
+    interest_areas = InterestAreaSerializer(many=True, required=False, allow_empty=True)
 
     def create(self, validated_data):
         user = self.context["request"].user
         person = Person.objects.get(user=user)
         now = timezone.now()
+        logger.info(f"Validated Data in serializers: {validated_data}")
 
         diary_payload = {
             "date_range_type": validated_data["date_range_type"],
