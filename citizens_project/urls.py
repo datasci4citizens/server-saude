@@ -27,6 +27,7 @@ router.register(r"measurement", MeasurementViewSet)
 router.register(r"fact-relationship", FactRelationshipViewSet)
 router.register(r"full-person", FullPersonViewSet, basename="full-person")
 router.register(r"full-provider", FullProviderViewSet, basename="full-provider")
+router.register(r"interest-area", InterestAreaViewSet, basename="interest-area")
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -76,12 +77,12 @@ urlpatterns = [
         ProviderPersonDiaryDetailView.as_view(),
         name="acs-diary-detail",
     ),
-    path(
-        "person/interest-areas/<int:interest_area_id>/",
-        PersonInterestAreaDetailView.as_view(),
-        name="person-interest-area-detail",
-    ),
-    path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
+    # path(
+    #     "person/interest-areas/<int:interest_area_id>/",
+    #     PersonInterestAreaDetailView.as_view(),
+    #     name="person-interest-area-detail",
+    # ),
+    # path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
     path("person/interest-areas/mark-attention-point/", MarkAttentionPointView.as_view()),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

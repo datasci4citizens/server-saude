@@ -1,11 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from app_saude.models import *
-from app_saude.utils.concept import get_concept_by_code
-
-# app_saude/management/commands/seed_concepts.py
+from django.utils import timezone
+import json
 
 
 class Command(BaseCommand):
@@ -61,44 +59,7 @@ class Command(BaseCommand):
 
             if pt_name:
                 ConceptSynonym.objects.update_or_create(
-                    id=concept.concept_id,
-                    defaults={
-                        "concept": concept,
-                        "concept_synonym_name": pt_name,
-                        "language_concept_id": 4180186,  # pt
-                    },
-                )
-
-        def dummy_person(
-            name, year_of_birth=None, gender_concept=None, ethnicity_concept=None, race_concept=None, location=None
-        ):
-            user, _ = get_user_model().objects.get_or_create(
-                username=name, password="dummy_password", first_name=name, last_name="User", email=f"{name}@email.com"
-            )
-            person, _ = Person.objects.get_or_create(
-                user_id=user.id,
-                year_of_birth=year_of_birth,
-                gender_concept=Concept.objects.get(concept_id=gender_concept),
-                # ethnicity_concept = Concept.objects.get(concept_id=ethnicity_concept),
-                race_concept=Concept.objects.get(concept_id=race_concept),
-                # location
-                # ethnicity
-            )
-            return person
-
-        def relate_concepts(interest_id, trigger_ids, relationship_id):
-            for trigger_id in trigger_ids:
-                ConceptRelationship.objects.update_or_create(
-                    concept_1_id=interest_id, concept_2_id=trigger_id, relationship_id=relationship_id
-                )
-
-                FactRelationship.objects.update_or_create(
-                    id=trigger_id,
-                    domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                    fact_id_1=interest_id,
-                    domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id,
-                    fact_id_2=trigger_id,
-                    relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
+                    concept=concept, concept_synonym_name=pt_name, language_concept_id=4180186  # pt
                 )
 
         # Idioma pt
@@ -258,10 +219,6 @@ class Command(BaseCommand):
         add_concept(2000053, "CE", "Brazil States", "BR", "Geography", "BR_STATES", "CE")
         add_concept(2000054, "AM", "Brazil States", "BR", "Geography", "BR_STATES", "AM")
 
-        dummy_person("Dummy", year_of_birth=1990, gender_concept=8507, race_concept=8527)
-        dummy_person("Gummy", year_of_birth=1999, gender_concept=8532, race_concept=8657)
-        dummy_person("Sunny", year_of_birth=1981, gender_concept=8551, race_concept=8516)
-
         # Measurements
         add_concept(3025315, "Body Weight", "Measurement", "BW", "Measurement", "Measurement", "Peso corporal")
         add_concept(3023540, "Body Height", "Measurement", "BH", "Measurement", "Measurement", "Altura corporal")
@@ -357,8 +314,100 @@ class Command(BaseCommand):
         add_concept(999005, "Diary interest", "Diary", "diary_interest", None, None, "Alcance do diário")
 
         # Help
-        add_concept(2000100, "Help", None, "HELP", None, None, "Ajuda")
-        add_concept(2000101, "Active", None, "ACTIVE", None, None, "Ativo")
+        add_concept(2000100000, "Help", None, "HELP", None, None, "Ajuda")
+        add_concept(2000101000, "Active", None, "ACTIVE", None, None, "Ativo")
+
+        # Area of Interest
+        add_concept(2000000200, "Interest Area", "Interest", "INTEREST_AREA", None, None, "Área de Interesse")
+        add_concept(2000000300, "Trigger", "Trigger", "TRIGGER", None, None, "Gatilho")
+
+        # Fact Relationships
+        add_concept(2000000400, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
+        add_concept(2000000401, "AOI_Diary", None, "AOI_DIARY", None, None, "Diario area de interesse")
+        add_concept(2000000402, "Text_Diary", None, "TEXT_DIARY", None, None, "Diario area de interesse")
+
+        AOI_Triggers = [
+            ("Hipertensão", "Você mediu sua pressão hoje?"),
+            ("Hipertensão", "Qual foi o valor?"),
+            ("Hipertensão", "Em que horário mediu sua pressão?"),
+            ("Hipertensão", "Teve sintomas como dor de cabeça, tontura ou mal-estar?"),
+            ("Hipertensão", "Gostaria de compartilhar esta informação com profissionais do CAPS ou da UBS?"),
+            ("Diabetes", "Você mediu sua glicemia hoje?"),
+            ("Diabetes", "Qual foi o valor?"),
+            ("Diabetes", "Em que horário mediu sua glicemia?"),
+            ("Diabetes", "Teve sintomas de hipo ou hiperglicemia?"),
+            ("Diabetes", "Gostaria de compartilhar esta informação com profissionais do CAPS ou da UBS?"),
+            ("Sono", "Que horas você dormiu e acordou?"),
+            ("Sono", "Dormiu bem esta noite?"),
+            ("Sono", "Acordou durante a noite?"),
+            ("Sono", "Quantas horas dormiu?"),
+            ("Meus Exames Clínicos", "Você realizou algum exame clínico recentemente?"),
+            ("Meus Exames Clínicos", "Qual exame foi realizado?"),
+            ("Meus Exames Clínicos", "Recebeu o resultado?"),
+            ("Meus Exames Clínicos", "Gostaria de discutir esse exame com alguém do CAPS ou da UBS?"),
+            ("Dores que estou sentindo", "Está sentindo alguma dor hoje?"),
+            ("Dores que estou sentindo", "Onde é a dor?"),
+            ("Dores que estou sentindo", "De 0 a 10, qual a intensidade da dor?"),
+            ("Dores que estou sentindo", "Desde quando está com essa dor?"),
+            ("Dores que estou sentindo", "Gostaria de relatar isso para seu profissional de saúde?"),
+            ("Minha Saúde Mental", "Como você está se sentindo agora?"),
+            ("Minha Saúde Mental", "Teve momentos de ansiedade, tristeza ou irritação hoje?"),
+            ("Minha Saúde Mental", "Conseguiu se concentrar nas suas atividades?"),
+            ("Minha Saúde Mental", "Gostaria de compartilhar como está se sentindo com sua equipe de cuidado?"),
+            ("Medicação", "Você tomou sua medicação hoje?"),
+            ("Medicação", "Em que horário tomou?"),
+            ("Medicação", "Teve algum efeito colateral?"),
+            ("Medicação", "Gostaria de comunicar isso ao CAPS ou à UBS?"),
+            ("Alimentação", "Como foi sua alimentação hoje?"),
+            ("Alimentação", "Conseguiu fazer suas refeições principais?"),
+            ("Alimentação", "Teve algum enjoo, vômito ou falta de apetite?"),
+            ("Alimentação", "Bebeu bastante água hoje?"),
+            ("Uso de álcool ou outras substâncias", "Usou alguma substância hoje (álcool, cigarro, outras)?"),
+            ("Uso de álcool ou outras substâncias", "Que horas foi o uso?"),
+            ("Uso de álcool ou outras substâncias", "Sentiu vontade de usar e conseguiu evitar?"),
+            ("Uso de álcool ou outras substâncias", "Gostaria de apoio para lidar com isso?"),
+            ("Humor e saúde emocional", "Como você está se sentindo neste momento?"),
+            ("Humor e saúde emocional", "Se sentiu sozinho(a) hoje?"),
+            ("Humor e saúde emocional", "Teve pensamentos difíceis de controlar?"),
+            ("Humor e saúde emocional", "Gostaria de conversar com alguém sobre isso?"),
+            ("Atividades do dia a dia", "Conseguiu tomar banho e se alimentar hoje?"),
+            ("Atividades do dia a dia", "Realizou alguma atividade em casa?"),
+            ("Atividades do dia a dia", "Saiu de casa hoje?"),
+            ("Atividades do dia a dia", "Teve dificuldade com alguma atividade cotidiana?"),
+            ("Segurança e proteção social", "Se sentiu seguro(a) no lugar onde dormiu?"),
+            ("Segurança e proteção social", "Alguém te tratou mal ou te ameaçou hoje?"),
+            ("Segurança e proteção social", "Faltou algo essencial (comida, lugar para dormir)?"),
+            (
+                "Segurança e proteção social",
+                "Gostaria que um ACS ou profissional de saúde entrasse em contato com você?",
+            ),
+            ("Rede de apoio e vínculos", "Conversou com alguém próximo hoje?"),
+            ("Rede de apoio e vínculos", "Participou de alguma atividade em grupo?"),
+            ("Rede de apoio e vínculos", "Teve vontade de encontrar alguém?"),
+            ("Rede de apoio e vínculos", "Gostaria de participar de atividades com outras pessoas?"),
+        ]
+
+        interest_area_triggers = {}
+        for interest_area, trigger_text in AOI_Triggers:
+            if interest_area not in interest_area_triggers:
+                interest_area_triggers[interest_area] = []
+
+            trigger = {"name": trigger_text, "type": "boolean"}
+            interest_area_triggers[interest_area].append(trigger)
+
+        for interest_area, triggers in interest_area_triggers.items():
+            interest_area_data = {
+                "name": interest_area,
+                "is_attention_point": False,
+                "marked_by": [],
+                "triggers": triggers,
+            }
+
+            Observation.objects.update_or_create(
+                observation_concept_id=2000000200,  # Interest Area concept ID
+                value_as_string=json.dumps(interest_area_data, ensure_ascii=False),
+                defaults={"observation_date": timezone.now()},
+            )
 
         User = get_user_model()
         user, _ = User.objects.get_or_create(
@@ -385,6 +434,9 @@ class Command(BaseCommand):
             relationship_concept_id=9200001,
         )
 
+        # Sintomas predefinidos
+        concept_class("Wellness", "Wellness", 999100)
+
         # Tipos de valores
         concept_class("Value Type", "Value Type", 999200)
 
@@ -405,6 +457,28 @@ class Command(BaseCommand):
 
         add_concept(999502, "No", "Yes/No", "value_no", "Value", "Value", "Não")
 
+        WELLBEING = [
+            ("sleep", "Qualidade do sono", "scale"),
+            ("medicine", "Tomar medicamentos", "yesno"),
+            ("medication_effects", "Efeitos da medicação", "scale"),
+            ("side_effects", "Efeitos colaterais da medicação", "yesno"),
+            ("physical_symptoms", "Sintomas físicos", "yesno"),
+            ("thoughts", "Pensamentos", "scale"),
+            ("triggers", "Exposição a gatilhos", "times"),
+            ("work", "Trabalho", "scale"),
+            ("chores", "Tarefas domésticas", "scale"),
+            ("food", "Alimentação", "scale"),
+            ("hobbies", "Hobbies", "scale"),
+            ("exercise", "Exercício físico", "hours"),
+            ("water", "Consumo de água", "scale"),
+            ("social", "Socialização", "scale"),
+            ("self_harm", "Auto mutilação", "times"),
+            ("intrusive_thoughts", "Pensamentos intrusivos", "scale"),
+            ("suicidal_ideation", "Ideação suicida", "yesno"),
+            ("dissociation", "Disassociação", "scale"),
+            ("paranoia", "Paranóia", "scale"),
+        ]
+
         VALUE_TYPE_CODE_TO_ID = {
             "scale": 999203,
             "yesno": 999201,
@@ -413,570 +487,14 @@ class Command(BaseCommand):
             "hours": 999204,
         }
 
-        # Area of Interest
-        add_concept(2000000200, "Interest Area", "Interest", "INTEREST_AREA", None, None, "Área de Interesse")
-        add_concept(2000000201, "Custom Interest", "Interest", "CUSTOM_INTEREST", None, None, "Interesse Personalizado")
-        add_concept(2000000202, "Hypertension", "Interest", "HTN", None, None, "Hipertensão")
-        add_concept(2000000203, "Diabetes", "Interest", "DIABETES", None, None, "Diabetes")
-        add_concept(2000000204, "Sleep", "Interest", "SLEEP", None, None, "Sono")
-        add_concept(2000000205, "My Clinical Exams", "Interest", "CLINICAL_EXAMS", None, None, "Meus exames clínicos")
-        add_concept(2000000206, "Pains I'm Feeling", "Interest", "PAINS", None, None, "Dores que estou sentindo")
-        add_concept(
-            2000000207, "Mental Health Issues", "Interest", "MENTAL_HEALTH", None, None, "Questões de saúde mental"
-        )
-        add_concept(2000000208, "Medication", "Interest", "MEDICATION", None, None, "Medicação")
-        add_concept(2000000209, "Nutrition", "Interest", "NUTRITION", None, None, "Alimentação")
-        add_concept(
-            2000000210,
-            "Alcohol or Substance Use",
-            "Interest",
-            "SUBSTANCE_USE",
-            None,
-            None,
-            "Uso de álcool ou outras substâncias",
-        )
-        add_concept(2000000211, "Mood and Emotional Health", "Interest", "MOOD", None, None, "Humor e saúde emocional")
-        add_concept(
-            2000000212,
-            "Support Network and Bonds",
-            "Interest",
-            "SUPPORT_NETWORK",
-            None,
-            None,
-            "Rede de apoio e vínculos",
-        )
-        add_concept(
-            2000000213, "Daily Activities", "Interest", "DAILY_ACTIVITIES", None, None, "Atividades do dia a dia"
-        )
-        add_concept(
-            2000000214, "Safety and Social Protection", "Interest", "SAFETY", None, None, "Segurança e proteção social"
-        )
+        for i, (code, pt_name, value_type_code) in enumerate(WELLBEING):
+            concept_id = 999300 + i
+            add_concept(concept_id, pt_name, "Wellness", code, "Observation", "Observation", pt_name)
 
-        # AOI Triggers
-        add_concept(2000000300, "Trigger", "Trigger", "TRIGGER", None, None, "Gatilho")
-        add_concept(2000000301, "Custom Trigger", "Trigger", "CUSTOM_TRIGGER", None, None, "Gatilho Personalizado")
-
-        # Triggers for AOI questions
-        add_concept(
-            2000000403,
-            "Did you measure your blood glucose today?",
-            "Trigger",
-            "BLOOD_GLUCOSE_MEASURED",
-            None,
-            None,
-            "Você mediu sua glicemia hoje?",
-        )
-        add_concept(
-            2000000404,
-            "What was the blood glucose value?",
-            "Trigger",
-            "BLOOD_GLUCOSE_VALUE",
-            None,
-            None,
-            "Qual foi o valor?",
-        )
-        add_concept(
-            2000000405,
-            "Blood glucose time",
-            "Trigger",
-            "BLOOD_GLUCOSE_TIME",
-            None,
-            None,
-            "Em que horário mediu sua glicemia?",
-        )
-        add_concept(
-            2000000406,
-            "Hypo/hyperglycemia symptoms",
-            "Trigger",
-            "HYPO_HYPERGLYCEMIA_SYMPTOMS",
-            None,
-            None,
-            "Teve sintomas de hipo ou hiperglicemia?",
-        )
-        add_concept(
-            2000000407,
-            "Share blood glucose",
-            "Trigger",
-            "SHARE_BLOOD_GLUCOSE",
-            None,
-            None,
-            "Gostaria de compartilhar esta informação com profissionais do CAPS ou da UBS?",
-        )
-
-        add_concept(
-            2000000408,
-            "Did you measure your blood pressure today?",
-            "Trigger",
-            "BLOOD_PRESSURE_MEASURED",
-            None,
-            None,
-            "Você mediu sua pressão hoje?",
-        )
-        add_concept(
-            2000000409,
-            "What was the blood pressure value?",
-            "Trigger",
-            "BLOOD_PRESSURE_VALUE",
-            None,
-            None,
-            "Qual foi o valor?",
-        )
-        add_concept(
-            2000000410,
-            "Blood pressure time",
-            "Trigger",
-            "BLOOD_PRESSURE_TIME",
-            None,
-            None,
-            "Em que horário mediu sua pressão?",
-        )
-        add_concept(
-            2000000411,
-            "Blood pressure symptoms",
-            "Trigger",
-            "BLOOD_PRESSURE_SYMPTOMS",
-            None,
-            None,
-            "Teve sintomas como dor de cabeça, tontura ou mal-estar?",
-        )
-        add_concept(
-            2000000412,
-            "Share blood pressure",
-            "Trigger",
-            "SHARE_BLOOD_PRESSURE",
-            None,
-            None,
-            "Gostaria de compartilhar esta informação com profissionais do CAPS ou da UBS?",
-        )
-
-        add_concept(
-            2000000413,
-            "Recent clinical exam",
-            "Trigger",
-            "RECENT_CLINICAL_EXAM",
-            None,
-            None,
-            "Você realizou algum exame clínico recentemente?",
-        )
-        add_concept(
-            2000000414,
-            "Which exam was performed?",
-            "Trigger",
-            "EXAM_PERFORMED",
-            None,
-            None,
-            "Qual exame foi realizado?",
-        )
-        add_concept(
-            2000000415,
-            "Received exam result?",
-            "Trigger",
-            "RECEIVED_EXAM_RESULT",
-            None,
-            None,
-            "Recebeu o resultado?",
-        )
-        add_concept(
-            2000000416,
-            "Discuss exam",
-            "Trigger",
-            "DISCUSS_EXAM",
-            None,
-            None,
-            "Gostaria de discutir esse exame com alguém do CAPS ou da UBS?",
-        )
-
-        add_concept(
-            2000000417,
-            "Are you feeling pain today?",
-            "Trigger",
-            "PAIN_TODAY",
-            None,
-            None,
-            "Está sentindo alguma dor hoje?",
-        )
-        add_concept(2000000418, "Pain location", "Trigger", "PAIN_LOCATION", None, None, "Onde é a dor?")
-        add_concept(
-            2000000419,
-            "Pain intensity",
-            "Trigger",
-            "PAIN_INTENSITY",
-            None,
-            None,
-            "De 0 a 10, qual a intensidade da dor?",
-        )
-        add_concept(
-            2000000420, "Since when pain", "Trigger", "PAIN_SINCE_WHEN", None, None, "Desde quando está com essa dor?"
-        )
-        add_concept(
-            2000000421,
-            "Report pain to professional",
-            "Trigger",
-            "REPORT_PAIN",
-            None,
-            None,
-            "Gostaria de relatar isso para seu profissional de saúde?",
-        )
-
-        add_concept(
-            2000000422,
-            "How are you feeling now?",
-            "Trigger",
-            "FEELING_NOW",
-            None,
-            None,
-            "Como você está se sentindo agora?",
-        )
-        add_concept(
-            2000000423,
-            "Moments of anxiety/sadness/irritation",
-            "Trigger",
-            "MOMENTS_ANXIETY_SADNESS_IRRITATION",
-            None,
-            None,
-            "Teve momentos de ansiedade, tristeza ou irritação hoje?",
-        )
-        add_concept(
-            2000000424,
-            "Concentration on activities",
-            "Trigger",
-            "CONCENTRATION_ACTIVITIES",
-            None,
-            None,
-            "Conseguiu se concentrar nas suas atividades?",
-        )
-        add_concept(
-            2000000425,
-            "Share feelings",
-            "Trigger",
-            "SHARE_FEELINGS",
-            None,
-            None,
-            "Gostaria de compartilhar como está se sentindo com sua equipe de cuidado?",
-        )
-
-        add_concept(
-            2000000426,
-            "Did you take medication today?",
-            "Trigger",
-            "TOOK_MEDICATION",
-            None,
-            None,
-            "Você tomou sua medicação hoje?",
-        )
-        add_concept(2000000427, "Medication time", "Trigger", "MEDICATION_TIME", None, None, "Em que horário tomou?")
-        add_concept(2000000428, "Side effect", "Trigger", "SIDE_EFFECT", None, None, "Teve algum efeito colateral?")
-        add_concept(
-            2000000429,
-            "Communicate medication",
-            "Trigger",
-            "COMMUNICATE_MEDICATION",
-            None,
-            None,
-            "Gostaria de comunicar isso ao CAPS ou à UBS?",
-        )
-
-        add_concept(
-            2000000430,
-            "How was your eating today?",
-            "Trigger",
-            "EATING_TODAY",
-            None,
-            None,
-            "Como foi sua alimentação hoje?",
-        )
-        add_concept(
-            2000000431,
-            "Did you have main meals?",
-            "Trigger",
-            "MAIN_MEALS",
-            None,
-            None,
-            "Conseguiu fazer suas refeições principais?",
-        )
-        add_concept(
-            2000000432,
-            "Nausea/vomiting/loss of appetite",
-            "Trigger",
-            "NAUSEA_VOMITING_LOSS_APPETITE",
-            None,
-            None,
-            "Teve algum enjoo, vômito ou falta de apetite?",
-        )
-        add_concept(
-            2000000433, "Did you drink water today?", "Trigger", "DRANK_WATER", None, None, "Bebeu bastante água hoje?"
-        )
-
-        add_concept(
-            2000000434,
-            "Sleep/wake time",
-            "Trigger",
-            "SLEEP_WAKE_TIME",
-            None,
-            None,
-            "Que horas você dormiu e acordou?",
-        )
-        add_concept(2000000435, "Did you sleep well?", "Trigger", "SLEPT_WELL", None, None, "Dormiu bem esta noite?")
-        add_concept(
-            2000000436,
-            "Did you wake up during the night?",
-            "Trigger",
-            "WOKE_UP_NIGHT",
-            None,
-            None,
-            "Acordou durante a noite?",
-        )
-        add_concept(2000000437, "Hours of sleep", "Trigger", "HOURS_SLEEP", None, None, "Quantas horas dormiu?")
-
-        add_concept(
-            2000000438,
-            "Did you use any substance today?",
-            "Trigger",
-            "USED_SUBSTANCE",
-            None,
-            None,
-            "Usou alguma substância hoje (álcool, cigarro, outras)?",
-        )
-        add_concept(
-            2000000439,
-            "Substance use time",
-            "Trigger",
-            "SUBSTANCE_USE_TIME",
-            None,
-            None,
-            "Que horas foi o uso?",
-        )
-        add_concept(
-            2000000440,
-            "Desire to use substance",
-            "Trigger",
-            "DESIRE_USE_SUBSTANCE",
-            None,
-            None,
-            "Sentiu vontade de usar e conseguiu evitar?",
-        )
-        add_concept(
-            2000000441,
-            "Support to deal with use",
-            "Trigger",
-            "SUPPORT_DEAL_USE",
-            None,
-            None,
-            "Gostaria de apoio para lidar com isso?",
-        )
-
-        add_concept(
-            2000000442,
-            "How are you feeling at this moment?",
-            "Trigger",
-            "FEELING_THIS_MOMENT",
-            None,
-            None,
-            "Como você está se sentindo neste momento?",
-        )
-        add_concept(
-            2000000443,
-            "Did you feel alone today?",
-            "Trigger",
-            "FELT_ALONE_TODAY",
-            None,
-            None,
-            "Se sentiu sozinho(a) hoje?",
-        )
-        add_concept(
-            2000000444,
-            "Difficult to control thoughts",
-            "Trigger",
-            "DIFFICULT_CONTROL_THOUGHTS",
-            None,
-            None,
-            "Teve pensamentos difíceis de controlar?",
-        )
-        add_concept(
-            2000000445,
-            "Talk about feelings",
-            "Trigger",
-            "TALK_ABOUT_FEELINGS",
-            None,
-            None,
-            "Gostaria de conversar com alguém sobre isso?",
-        )
-
-        add_concept(
-            2000000446,
-            "Did you talk to someone close today?",
-            "Trigger",
-            "TALKED_TO_CLOSE_PERSON",
-            None,
-            None,
-            "Conversou com alguém próximo hoje?",
-        )
-        add_concept(
-            2000000447,
-            "Did you participate in a group activity?",
-            "Trigger",
-            "PARTICIPATED_GROUP_ACTIVITY",
-            None,
-            None,
-            "Participou de alguma atividade em grupo?",
-        )
-        add_concept(
-            2000000448,
-            "Desire to meet someone?",
-            "Trigger",
-            "DESIRE_MEET_SOMEONE",
-            None,
-            None,
-            "Teve vontade de encontrar alguém?",
-        )
-        add_concept(
-            2000000449,
-            "Participate in activities with others",
-            "Trigger",
-            "PARTICIPATE_ACTIVITIES_OTHERS",
-            None,
-            None,
-            "Gostaria de participar de atividades com outras pessoas?",
-        )
-
-        add_concept(
-            2000000450,
-            "Did you bathe and eat today?",
-            "Trigger",
-            "BATHED_AND_ATE_TODAY",
-            None,
-            None,
-            "Conseguiu tomar banho e se alimentar hoje?",
-        )
-        add_concept(
-            2000000451,
-            "Did you do any activity at home?",
-            "Trigger",
-            "DID_ACTIVITY_AT_HOME",
-            None,
-            None,
-            "Realizou alguma atividade em casa?",
-        )
-        add_concept(
-            2000000452,
-            "Did you leave the house today?",
-            "Trigger",
-            "LEFT_HOUSE_TODAY",
-            None,
-            None,
-            "Saiu de casa hoje?",
-        )
-        add_concept(
-            2000000453,
-            "Difficulty in daily activity?",
-            "Trigger",
-            "DIFFICULTY_DAILY_ACTIVITY",
-            None,
-            None,
-            "Teve dificuldade com alguma atividade cotidiana?",
-        )
-
-        add_concept(
-            2000000454,
-            "Did you feel safe where you slept?",
-            "Trigger",
-            "FELT_SAFE_WHERE_SLEPT",
-            None,
-            None,
-            "Se sentiu seguro(a) no lugar onde dormiu?",
-        )
-        add_concept(
-            2000000455,
-            "Were you mistreated or threatened today?",
-            "Trigger",
-            "MISTREATED_THREATENED_TODAY",
-            None,
-            None,
-            "Alguém te tratou mal ou te ameaçou hoje?",
-        )
-        add_concept(
-            2000000456,
-            "Was anything essential missing?",
-            "Trigger",
-            "ESSENTIAL_MISSING",
-            None,
-            None,
-            "Faltou algo essencial (comida, lugar para dormir)?",
-        )
-        add_concept(
-            2000000457,
-            "Contact with CHW or professional?",
-            "Trigger",
-            "CONTACT_CHW_PROFESSIONAL",
-            None,
-            None,
-            "Gostaria que um ACS ou profissional de saúde entrasse em contato com você?",
-        )
-
-        # Fact Relationships
-        add_concept(2000000400, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
-        add_concept(2000000401, "AOI_Diary", None, "AOI_DIARY", None, None, "Diario area de interesse")
-        add_concept(2000000402, "Text_Diary", None, "TEXT_DIARY", None, None, "Diario area de interesse")
-
-        # Link AOI to Trigger
-
-        INTEREST_TO_TRIGGERS = {
-            2000000202: [2000000408, 2000000409, 2000000410, 2000000411, 2000000412],  # Hypertension
-            2000000203: [2000000403, 2000000404, 2000000405, 2000000406, 2000000407],  # Diabetes
-            2000000204: [2000000434, 2000000435, 2000000436, 2000000437],  # Sleep
-            2000000205: [2000000413, 2000000414, 2000000415, 2000000416],  # My Clinical Exams
-            2000000206: [2000000417, 2000000418, 2000000419, 2000000420, 2000000421],  # Pains I'm Feeling
-            2000000207: [2000000422, 2000000423, 2000000424, 2000000425],  # Mental Health Issues
-            2000000208: [2000000426, 2000000427, 2000000428, 2000000429],  # Medication
-            2000000209: [2000000430, 2000000431, 2000000432, 2000000433],  # Nutrition
-            2000000210: [2000000438, 2000000439, 2000000440, 2000000441],  # Alcohol or Substance Use
-            2000000211: [2000000442, 2000000443, 2000000444, 2000000445],  # Mood and Emotional Health
-            2000000212: [2000000446, 2000000447, 2000000448, 2000000449],  # Support Network and Bonds
-            2000000213: [2000000450, 2000000451, 2000000452, 2000000453],  # Daily Activities
-            2000000214: [2000000454, 2000000455, 2000000456, 2000000457],  # Safety and Social Protection
-        }
-
-        for interest_id, trigger_ids in INTEREST_TO_TRIGGERS.items():
-            relate_concepts(interest_id, trigger_ids, "AOI_Trigger")
-
-        # Create the default observations
-        for interest_id, trigger_ids in INTEREST_TO_TRIGGERS.items():
-            # Create the AOI observation
-            Observation.objects.update_or_create(
-                observation_id=interest_id,
-                defaults={
-                    "observation_concept_id": 2000000201,
-                    "observation_type_concept_id": 2000000200,
-                    "observation_date": timezone.now(),
-                    "observation_source_value": ConceptSynonym.objects.filter(concept_id=interest_id)
-                    .first()
-                    .concept_synonym_name,
-                    "value_as_concept_id": 999502,
-                },
+            # Cria a relação has_value_type
+            value_type_concept_id = VALUE_TYPE_CODE_TO_ID[value_type_code]
+            ConceptRelationship.objects.update_or_create(
+                concept_1_id=concept_id, concept_2_id=value_type_concept_id, relationship_id="has_value_type"
             )
-
-            for trigger_id in trigger_ids:
-                # Create the AOI trigger observation
-                Observation.objects.update_or_create(
-                    observation_id=trigger_id,
-                    defaults={
-                        "observation_concept_id": 2000000400,
-                        "observation_type_concept_id": 2000000300,
-                        "observation_date": timezone.now(),
-                        "observation_source_value": ConceptSynonym.objects.filter(concept_id=trigger_id)
-                        .first()
-                        .concept_synonym_name,
-                    },
-                )
-
-        # for i, (code, pt_name, value_type_code) in enumerate(WELLBEING):
-        #     concept_id = 999300 + i
-        #     add_concept(concept_id, pt_name, "Wellness", code, "Observation", "Observation", pt_name)
-
-        #     # Cria a relação has_value_type
-        #     value_type_concept_id = VALUE_TYPE_CODE_TO_ID[value_type_code]
-        #     ConceptRelationship.objects.update_or_create(
-        #         concept_1_id=concept_id, concept_2_id=value_type_concept_id, relationship_id="has_value_type"
-        #     )
 
         self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
