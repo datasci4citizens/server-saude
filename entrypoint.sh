@@ -6,6 +6,7 @@ python manage.py migrate
 
 echo "Populando tabelas"
 python manage.py seed_concepts
+python manage.py seed_interests
 
 # Criação automática do superusuário
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
