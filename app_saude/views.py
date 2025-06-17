@@ -1073,7 +1073,7 @@ class ProviderPersonDiaryDetailView(APIView):
             observation_concept_id=get_concept_by_code("diary_entry").concept_id,
         )
 
-        serializer = DiaryRetrieveSerializer(diary)
+        serializer = DiaryRetrieveSerializer(diary, context={"person_id": person.person_id})
         return Response(serializer.data)
 
 
@@ -1110,7 +1110,10 @@ class InterestAreaViewSet(FlexibleViewSet):
 
         except Exception as e:
             return Response(
-                {"error": "An error occurred while creating the interest area"},
+                {
+                    "error": "An error occurred while creating the interest area",
+                    "details": str(e),
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -1145,7 +1148,7 @@ class MarkAttentionPointView(APIView):
 
         try:
             provider = get_object_or_404(Provider, user=request.user)
-            provider_name = f"{provider.user.first_name} {provider.user.last_name}".strip()
+            provider_name = provider.social_name
             data = serializer.validated_data
 
             observation = get_object_or_404(Observation, observation_id=data["area_id"])
