@@ -679,11 +679,11 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
 
 
 class InterestAreaSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    is_attention_point = serializers.BooleanField()
-    marked_by = serializers.ListField(child=serializers.CharField())
+    name = serializers.CharField(required=True)
+    is_attention_point = serializers.BooleanField(required=False, default=False)
+    marked_by = (serializers.ListField(child=serializers.CharField(), required=False, default=[]),)
+    shared_with_provider = serializers.BooleanField(required=False, default=False)
     triggers = InterestAreaTriggerSerializer(many=True, required=False, allow_empty=True)
-    shared_with_provider = serializers.BooleanField(allow_null=True)
 
 
 class InterestAreaCreateSerializer(serializers.Serializer):
@@ -713,24 +713,32 @@ class InterestAreaCreateSerializer(serializers.Serializer):
 
 class InterestAreaRetrieveSerializer(serializers.Serializer):
     def to_representation(self, validated_data):
-        interest_area_data = json.loads(validated_data.value_as_string)
-        return {
-            "observation_id": validated_data.observation_id,
-            "person_id": validated_data.person_id,
-            "interest_area": interest_area_data,
-        }
+        try:
+            interest_area_data = json.loads(validated_data.value_as_string)
+
+            return {
+                "observation_id": validated_data.observation_id,
+                "person_id": validated_data.person_id,
+                "interest_area": interest_area_data,
+            }
+
+        except Exception as e:
+            raise serializers.ValidationError(f"Error retrieving interest area: {str(e)}")
 
 
 class InterestAreaUpdateSerializer(serializers.Serializer):
     interest_area = InterestAreaSerializer()
 
     def update(self, instance, validated_data):
-        updated_interest_area = validated_data.get("interest_area", {})
-        instance.value_as_string = json.dumps(updated_interest_area)
-        instance.observation_date = timezone.now()
-        instance.save()
+        try:
+            updated_interest_area = validated_data.get("interest_area", {})
+            instance.value_as_string = json.dumps(updated_interest_area)
+            instance.observation_date = timezone.now()
+            instance.save()
 
-        return instance
+            return instance
+        except Exception as e:
+            raise serializers.ValidationError(f"Error updating interest area: {str(e)}")
 
 
 class DiaryCreateSerializer(serializers.Serializer):
