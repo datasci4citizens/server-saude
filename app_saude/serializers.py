@@ -680,8 +680,8 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
 
 class InterestAreaSerializer(serializers.Serializer):
     name = serializers.CharField(required=True)
-    is_attention_point = serializers.BooleanField(required=False, default=False)
-    marked_by = (serializers.ListField(child=serializers.CharField(), required=False, default=[]),)
+    is_attention_point = serializers.BooleanField(required=False, default=False)  # remove
+    marked_by = serializers.ListField(child=serializers.CharField(), required=False, default=[])
     shared_with_provider = serializers.BooleanField(required=False, default=False)
     triggers = InterestAreaTriggerSerializer(many=True, required=False, allow_empty=True)
 
@@ -700,9 +700,8 @@ class InterestAreaCreateSerializer(serializers.Serializer):
             interest_area_observation = Observation.objects.create(
                 person=person,
                 observation_concept=get_concept_by_code("INTEREST_AREA"),
-                value_as_string=json.dumps(validated_data["interest_area"]),
+                value_as_string=json.dumps(validated_data["interest_area"], ensure_ascii=False),
                 observation_date=timezone.now(),
-                shared_with_provider=False,
             )
             return interest_area_observation
 

@@ -1107,12 +1107,10 @@ class InterestAreaViewSet(FlexibleViewSet):
 
             retrieve_serializer = InterestAreaRetrieveSerializer(instance)
             return Response(retrieve_serializer.data, status=status.HTTP_201_CREATED)
-        except serializers.ValidationError:
-            raise
+
         except Exception as e:
-            logger.error(f"Error creating interest area: {str(e)}")
             return Response(
-                {"error": "An error occurred while saving the interest area"},
+                {"error": "An error occurred while creating the interest area"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -1147,19 +1145,26 @@ class MarkAttentionPointView(APIView):
 
         try:
             provider = get_object_or_404(Provider, user=request.user)
+            provider_name = f"{provider.user.first_name} {provider.user.last_name}".strip()
             data = serializer.validated_data
 
             observation = get_object_or_404(Observation, observation_id=data["area_id"])
-            if data["is_attention_point"]:
-                observation.value_as_concept = get_concept_by_code("value_yes")
-                observation.provider = provider
-            else:
-                observation.value_as_concept = get_concept_by_code("value_no")
-                observation.provider = None
+            interest_data = json.loads(observation.value_as_string) if observation.value_as_string else {}
 
+            if data["is_attention_point"]:
+                if provider_name not in interest_data["marked_by"]:
+                    interest_data["marked_by"].append(provider_name)
+            else:
+                if provider_name in interest_data["marked_by"]:
+                    interest_data["marked_by"].remove(provider_name)
+
+            observation.value_as_string = json.dumps(interest_data)
             observation.save()
 
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"provider_name": provider_name, "is_marked": data["is_attention_point"]}, status=status.HTTP_200_OK
+            )
+
         except Exception as e:
-            logger.error(f"Error marking attention point: {str(e)}", e)
+            logger.error(f"Error marking attention point: {str(e)}")
             return Response({"error": "Failed to mark attention point"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
