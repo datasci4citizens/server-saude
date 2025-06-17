@@ -694,8 +694,15 @@ class InterestAreaCreateSerializer(serializers.Serializer):
             user = self.context.get("request").user
             person = get_object_or_404(Person, user=user)
 
-            if not validated_data.get("interest_area"):
-                raise serializers.ValidationError({"interest_area": "This field is required."})
+            # Check if the interest area already exists for the person
+            interest_name = validated_data["interest_area"].get("name")
+            existing = Observation.objects.filter(
+                person=person,
+                observation_concept=get_concept_by_code("INTEREST_AREA"),
+                value_as_string__icontains=f'"name": "{interest_name}"',
+            ).exists()
+            if existing:
+                raise serializers.ValidationError({"interest_area": "An interest area with this name already exists."})
 
             interest_area_observation = Observation.objects.create(
                 person=person,
@@ -705,8 +712,9 @@ class InterestAreaCreateSerializer(serializers.Serializer):
             )
             return interest_area_observation
 
+        except serializers.ValidationError:
+            raise
         except Exception as e:
-            logger.error(f"Unexpected error while creating interest area: {str(e)}")
             raise serializers.ValidationError({"error": "An unexpected error occurred while processing your request."})
 
 
@@ -817,19 +825,21 @@ class DiaryRetrieveSerializer(serializers.Serializer):
     def get_interest_areas(self, diary):
         data = self._load_json(diary)
         interest_areas = data.get("interest_areas", [])
+        person_id = self.context.get("person_id")
+
         for area in interest_areas:
-            area["shared"] = area.get("shared_with_provider", False)
-
-            area_full: Observation = Observation.objects.filter(observation_id=area.get("interest_area_id")).first()
-            if area_full:
-                area["interest_name"] = area_full.observation_source_value
-                area["provider_name"] = get_provider_full_name(area_full.provider_id)
-
-            for trigger in area.get("triggers", []):
-
-                trigger_full: Observation = Observation.objects.filter(observation_id=trigger.get("trigger_id")).first()
-                if trigger_full:
-                    trigger["trigger_name"] = trigger_full.observation_source_value
+            if person_id:
+                interest_area = Observation.objects.filter(
+                    person_id=person_id,
+                    observation_concept=get_concept_by_code("INTEREST_AREA"),
+                    value_as_string__icontains=f'"name": "{area["name"]}"',
+                ).first()
+                if interest_area:
+                    interest_area_data = json.loads(interest_area.value_as_string)
+                    area["observation_id"] = interest_area.observation_id
+                    area["marked_by"] = interest_area_data.get("marked_by", [])
+                else:
+                    area["observation_id"] = None
         return interest_areas
 
 
