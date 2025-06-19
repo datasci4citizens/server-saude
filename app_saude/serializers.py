@@ -34,6 +34,7 @@ class AuthTokenResponseSerializer(serializers.Serializer):
     full_name = serializers.CharField(
         help_text="Full name of the user.",
     )
+    social_name = serializers.CharField()
     profile_picture = serializers.CharField(
         help_text="URL of the user's profile picture.",
         allow_blank=True,

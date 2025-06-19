@@ -108,6 +108,7 @@ class GoogleLoginView(APIView):
             "role": role,
             "user_id": user.pk,
             "full_name": name,
+            "social_name": social_name,
             "profile_picture": user_data.get("picture", ""),
         }
 
