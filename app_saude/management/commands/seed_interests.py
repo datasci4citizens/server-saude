@@ -1,7 +1,9 @@
-from app_saude.models import Observation
-from django.utils import timezone
-from django.core.management.base import BaseCommand
 import json
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from app_saude.models import Observation
 
 
 class Command(BaseCommand):
