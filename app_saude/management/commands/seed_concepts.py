@@ -314,6 +314,7 @@ class Command(BaseCommand):
         # Help
         add_concept(2000100000, "Help", None, "HELP", None, None, "Ajuda")
         add_concept(2000101000, "Active", None, "ACTIVE", None, None, "Ativo")
+        add_concept(2000102000, "Resolved", None, "RESOLVED", None, None, "Resolvido")
 
         # Area of Interest
         add_concept(2000000200, "Interest Area", "Interest", "INTEREST_AREA", None, None, "Área de Interesse")

@@ -25,7 +25,6 @@ from .models import *
 from .serializers import *
 
 # from .utils.interest_area import get_interest_areas_and_triggers
-from .utils.person import get_person_or_404
 from .utils.provider import *
 
 User = get_user_model()
@@ -278,6 +277,22 @@ class AccountView(APIView):
             user.is_active = False
             user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Account"])
+class SwitchDarkModeView(APIView):
+    """
+    ViewSet to switch dark mode for the user.
+    Allowed HTTP methods: POST.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        user.use_dark_mode = not user.use_dark_mode
+        user.save(update_fields=["use_dark_mode"])
+        return Response({"use_dark_mode": user.use_dark_mode}, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Person"])
@@ -749,6 +764,7 @@ class ProviderPersonsView(APIView):
             help = (
                 Observation.objects.filter(
                     person=person,
+                    provider_id=provider_id,
                     observation_concept_id=get_concept_by_code("HELP"),
                     observation_date__isnull=False,
                 )
@@ -938,9 +954,39 @@ class ReceivedHelpsView(APIView):
         helps = Observation.objects.filter(
             provider_id=provider.provider_id, observation_concept_id=get_concept_by_code("HELP")  # Ajuda
         ).order_by("-observation_date")
-        print(helps)
         serializer = ObservationRetrieveSerializer(helps, many=True)
+        logger.info(f"Retrieved {len(helps)} helps for provider {provider.provider_id}")
         return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Help"],
+    responses=ObservationRetrieveSerializer(many=True),
+)
+class MarkHelpAsResolvedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, help_id):
+        """
+        Marks a help as resolved by updating its value_as_concept_id to the RESOLVED concept.
+        """
+        try:
+            help_observation = get_object_or_404(
+                Observation,
+                observation_id=help_id,
+                observation_concept_id=get_concept_by_code("HELP").concept_id,
+            )
+
+            # Update the help observation to mark it as resolved
+            help_observation.value_as_concept_id = get_concept_by_code("RESOLVED").concept_id
+            help_observation.save(update_fields=["value_as_concept_id"])
+
+            serializer = ObservationRetrieveSerializer(help_observation)
+            logger.info(f"Help {help_id} marked as resolved successfully.")
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error marking help {help_id} as resolved: {str(e)}", e)
+            return Response({"error": "Failed to mark help as resolved"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
