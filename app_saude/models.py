@@ -21,6 +21,10 @@ class MyAbstractUser(TimestampedModel):
         null=True,
         db_comment="URL of the profile picture",
     )
+    use_dark_mode = models.BooleanField(
+        default=False,
+        db_comment="Indicates if the user prefers dark mode",
+    )
 
     class Meta:
         abstract = True

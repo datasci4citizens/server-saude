@@ -187,12 +187,11 @@ SAUDE_WEB_URL = os.environ.get("SAUDE_WEB_URL", "http://localhost:5173")
 SAUDE_MOBILE_URL = os.environ.get("SAUDE_MOBILE_URL", "capacitor://localhost")  # padrão Capacitor
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [SAUDE_WEB_URL, SAUDE_MOBILE_URL, "https://server-saude.onrender.com", "https://localhost"]
+CORS_ALLOWED_ORIGINS = [SAUDE_WEB_URL, SAUDE_MOBILE_URL, "https://localhost"]
 
 CSRF_TRUSTED_ORIGINS = [
-    SAUDE_WEB_URL.replace("http://", "http://*.").replace("https://", "https://*."),
+    SAUDE_WEB_URL,
     SAUDE_MOBILE_URL,
-    "https://server-saude.onrender.com",
     "https://localhost",
 ]
 

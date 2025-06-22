@@ -11,7 +11,6 @@ from rest_framework import serializers
 
 from .models import *
 from .utils.concept import get_concept_by_code
-from .utils.provider import get_provider_full_name
 
 User = get_user_model()
 
@@ -715,7 +714,7 @@ class InterestAreaCreateSerializer(serializers.Serializer):
 
         except serializers.ValidationError:
             raise
-        except Exception as e:
+        except Exception:
             raise serializers.ValidationError({"error": "An unexpected error occurred while processing your request."})
 
 
@@ -861,6 +860,7 @@ class UserRetrieveSerializer(BaseRetrieveSerializer):
             "role",
             "is_staff",
             "date_joined",
+            "use_dark_mode",
         ]
         read_only_fields = fields
 
