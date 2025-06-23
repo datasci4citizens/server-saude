@@ -1234,7 +1234,8 @@ class MarkAttentionPointView(APIView):
                 if provider_name in interest_data["marked_by"]:
                     interest_data["marked_by"].remove(provider_name)
 
-            observation.value_as_string = json.dumps(interest_data)
+            # Update the observation with the new interest data
+            observation.value_as_string = json.dumps(interest_data, ensure_ascii=False)
             observation.save()
 
             return Response(
