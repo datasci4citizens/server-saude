@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -826,19 +827,19 @@ class DiaryRetrieveSerializer(serializers.Serializer):
         interest_areas = data.get("interest_areas", [])
         person_id = self.context.get("person_id")
 
-        for area in interest_areas:
-            if person_id:
-                interest_area = Observation.objects.filter(
-                    person_id=person_id,
-                    observation_concept=get_concept_by_code("INTEREST_AREA"),
-                    value_as_string__icontains=f'"name": "{area["name"]}"',
-                ).first()
-                if interest_area:
-                    interest_area_data = json.loads(interest_area.value_as_string)
-                    area["observation_id"] = interest_area.observation_id
-                    area["marked_by"] = interest_area_data.get("marked_by", [])
-                else:
-                    area["observation_id"] = None
+        for i, area in enumerate(interest_areas):
+            interest_area = Observation.objects.filter(
+                person_id=person_id,
+                observation_concept=get_concept_by_code("INTEREST_AREA"),
+                value_as_string__regex=rf'"name":\s*"{re.escape(area["name"])}"',
+            ).first()
+            if interest_area:
+                interest_area_data = json.loads(interest_area.value_as_string)
+                interest_areas[i]["observation_id"] = interest_area.observation_id
+                interest_areas[i]["marked_by"] = interest_area_data.get("marked_by", [])
+            else:
+                interest_areas[i]["observation_id"] = None
+                interest_areas[i]["marked_by"] = []
         return interest_areas
 
 
