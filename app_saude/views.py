@@ -377,6 +377,14 @@ class ConceptClassViewSet(FlexibleViewSet):
             style="form",
             explode=False,
         ),
+        OpenApiParameter(
+            name="code",
+            description="concept_code list (ex: code=ACTIVE,RESOLVED)",
+            required=False,
+            type=str,
+            style="form",
+            explode=False,
+        ),
         OpenApiParameter(name="lang", description="Translation language (ex: pt)", required=False, type=str),
         OpenApiParameter(
             name="relationship",
@@ -394,12 +402,18 @@ class ConceptViewSet(FlexibleViewSet):
 
         lang = self.request.query_params.get("lang", "pt")
         class_ids = self.request.query_params.get("class")
+        codes = self.request.query_params.get("code")
         relationship_id = self.request.query_params.get("relationship")
 
         if class_ids:
             # Supports multiple separated by comma
             class_id_list = [s.strip() for s in class_ids.split(",")]
             queryset = queryset.filter(concept_class__concept_class_id__in=class_id_list)
+
+        if codes:
+            # Supports multiple separated by comma
+            code_list = [s.strip() for s in codes.split(",")]
+            queryset = queryset.filter(concept_code__in=code_list)
 
         # Prefetch only synonyms in the desired language
         queryset = queryset.prefetch_related(
