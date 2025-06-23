@@ -66,6 +66,7 @@ urlpatterns = [
     path("provider/by-link-code/", ProviderByLinkCodeView.as_view(), name="provider-by-link-code"),
     path("help/send/", SendHelpView.as_view(), name="send-help"),
     path("provider/help/", ReceivedHelpsView.as_view(), name="get-help"),
+    path("provider/help/<int:help_id>/resolve/", MarkHelpAsResolvedView.as_view(), name="resolve-help"),
     path("provider/help-count/", HelpCountView.as_view(), name="provider-help-count"),
     path("provider/next-visit/", NextScheduledVisitView.as_view(), name="next-scheduled-visit"),
     path("diaries/", DiaryView.as_view(), name="diary"),
