@@ -743,7 +743,7 @@ class InterestAreaUpdateSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         try:
             updated_interest_area = validated_data.get("interest_area", {})
-            instance.value_as_string = json.dumps(updated_interest_area)
+            instance.value_as_string = json.dumps(updated_interest_area, ensure_ascii=False)
             instance.observation_date = timezone.now()
             instance.save()
 
@@ -776,7 +776,7 @@ class DiaryCreateSerializer(serializers.Serializer):
         diary_entry = Observation.objects.create(
             person=person,
             observation_concept=get_concept_by_code("diary_entry"),
-            value_as_string=json.dumps(diary_payload),
+            value_as_string=json.dumps(diary_payload, ensure_ascii=False),
             observation_date=now,
             shared_with_provider=validated_data["diary_shared"],
             observation_type_concept=get_concept_by_code("diary_entry_type"),
