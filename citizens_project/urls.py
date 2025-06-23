@@ -49,6 +49,7 @@ urlpatterns = [
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("admin/", admin.site.urls),
     path("account/", include("allauth.urls")),
+    path("account/theme", SwitchDarkModeView.as_view(), name="switch-theme"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # API
     path("api/", include(router.urls)),
