@@ -1200,6 +1200,8 @@ class MarkAttentionPointView(APIView):
             observation = get_object_or_404(Observation, observation_id=data["area_id"])
             interest_data = json.loads(observation.value_as_string) if observation.value_as_string else {}
 
+            interest_data["marked_by"] = interest_data.get("marked_by", [])
+
             if data["is_attention_point"]:
                 if provider_name not in interest_data["marked_by"]:
                     interest_data["marked_by"].append(provider_name)
