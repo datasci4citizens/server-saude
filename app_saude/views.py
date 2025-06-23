@@ -1194,7 +1194,7 @@ class MarkAttentionPointView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            provider_name = get_provider_full_name(Provider, user=request.user)
+            provider_name = get_provider_full_name(user=request.user.provider.provider_id)
             data = serializer.validated_data
 
             observation = get_object_or_404(Observation, observation_id=data["area_id"])
