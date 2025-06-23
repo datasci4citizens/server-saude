@@ -57,7 +57,10 @@ class Command(BaseCommand):
 
             if pt_name:
                 ConceptSynonym.objects.update_or_create(
-                    concept=concept, concept_synonym_name=pt_name, language_concept_id=4180186  # pt
+                    concept_synonym_id=cid,
+                    concept=concept,
+                    concept_synonym_name=pt_name,
+                    language_concept_id=4180186,  # pt
                 )
 
         # Idioma pt

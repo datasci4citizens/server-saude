@@ -111,6 +111,7 @@ class ConceptRelationship(TimestampedModel):
 
 
 class ConceptSynonym(TimestampedModel):
+    concept_synonym_id = models.AutoField(primary_key=True, db_comment="Primary key of Concept Synonym")
     concept = models.ForeignKey(
         Concept,
         on_delete=models.CASCADE,
