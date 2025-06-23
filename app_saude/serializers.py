@@ -680,7 +680,6 @@ class InterestAreaTriggerSerializer(serializers.Serializer):
 
 class InterestAreaSerializer(serializers.Serializer):
     name = serializers.CharField(required=True)
-    is_attention_point = serializers.BooleanField(required=False, default=False)  # remove
     marked_by = serializers.ListField(child=serializers.CharField(), required=False, default=[])
     shared_with_provider = serializers.BooleanField(required=False, default=False)
     triggers = InterestAreaTriggerSerializer(many=True, required=False, allow_empty=True)
