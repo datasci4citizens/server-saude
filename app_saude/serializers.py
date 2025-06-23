@@ -356,7 +356,7 @@ class ConceptRetrieveSerializer(BaseRetrieveSerializer):
 class ConceptSynonymCreateSerializer(BaseCreateSerializer):
     class Meta:
         model = ConceptSynonym
-        exclude = ["id", "created_at", "updated_at"]
+        exclude = ["concept_synonym_id", "created_at", "updated_at"]
 
 
 class ConceptSynonymUpdateSerializer(BaseUpdateSerializer):
