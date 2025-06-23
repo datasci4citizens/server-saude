@@ -40,6 +40,10 @@ class AuthTokenResponseSerializer(serializers.Serializer):
         allow_blank=True,
         allow_null=True,
     )
+    use_dark_mode = serializers.BooleanField(
+        help_text="Indicates if the user prefers dark mode.",
+        default=False,
+    )
 
 
 class AdminLoginSerializer(serializers.Serializer):
@@ -860,7 +864,6 @@ class UserRetrieveSerializer(BaseRetrieveSerializer):
             "role",
             "is_staff",
             "date_joined",
-            "use_dark_mode",
         ]
         read_only_fields = fields
 

@@ -65,12 +65,14 @@ class GoogleLoginView(APIView):
         provider_id = None
         person_id = None
         social_name = None
+        use_dark_mode = False
         role = "none"
 
         # Check if user is already registered as a provider
         if Provider.objects.filter(user=user).exists():
             provider = Provider.objects.get(user=user)
             social_name = getattr(provider, "social_name", None)
+            use_dark_mode = provider.use_dark_mode
             profile_picture = user_data.get("picture")
             if profile_picture:
                 provider.profile_picture = profile_picture
@@ -82,6 +84,7 @@ class GoogleLoginView(APIView):
         if Person.objects.filter(user=user).exists():
             person = Person.objects.get(user=user)
             social_name = getattr(person, "social_name", None)
+            use_dark_mode = person.use_dark_mode
             profile_picture = user_data.get("picture")
             if profile_picture:
                 person.profile_picture = profile_picture
@@ -109,6 +112,7 @@ class GoogleLoginView(APIView):
             "full_name": name,
             "social_name": social_name,
             "profile_picture": user_data.get("picture", ""),
+            "use_dark_mode": use_dark_mode,
         }
 
         return Response(response, status=200)
@@ -290,9 +294,16 @@ class SwitchDarkModeView(APIView):
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        user.use_dark_mode = not user.use_dark_mode
-        user.save(update_fields=["use_dark_mode"])
-        return Response({"use_dark_mode": user.use_dark_mode}, status=status.HTTP_200_OK)
+        person: Person = Person.objects.filter(user=user).first()
+        if person:
+            person.use_dark_mode = not person.use_dark_mode
+            person.save(update_fields=["use_dark_mode"])
+        else:
+            provider: Provider = Provider.objects.filter(user=user).first()
+            if provider:
+                provider.use_dark_mode = not provider.use_dark_mode
+                provider.save(update_fields=["use_dark_mode"])
+        return Response(status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Person"])
