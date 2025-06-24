@@ -4,9 +4,21 @@ echo "Rodando migrations..."
 python manage.py makemigrations --noinput
 python manage.py migrate
 
-echo "Populando tabelas"
+echo "Populando domínios"
+python manage.py seed_domains
+
+echo "Populando classes de conceitos"
+python manage.py seed_concept_classes
+
+echo "Populando vocabulários"
+python manage.py seed_vocabularies
+
+echo "Populando conceitos"
 python manage.py seed_concepts
+
+echo "Populando interesses"
 python manage.py seed_interests
+
 
 # Criação automática do superusuário
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
