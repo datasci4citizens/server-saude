@@ -5,35 +5,8 @@ from app_saude.models import *
 
 
 class Command(BaseCommand):
-    help = "Popula os principais conceitos OMOP customizados e traduzidos"
 
     def handle(self, *args, **kwargs):
-        def domain(id, name, concept_id):
-            return Domain.objects.get_or_create(
-                domain_id=id,
-                defaults={
-                    "domain_name": name,
-                    "domain_concept": Concept.objects.get_or_create(concept_id=concept_id)[0],
-                },
-            )
-
-        def vocabulary(id, name, concept_id):
-            return Vocabulary.objects.get_or_create(
-                vocabulary_id=id,
-                defaults={
-                    "vocabulary_name": name,
-                    "vocabulary_concept": Concept.objects.get_or_create(concept_id=concept_id)[0],
-                },
-            )
-
-        def concept_class(id, name, concept_id):
-            return ConceptClass.objects.get_or_create(
-                concept_class_id=id,
-                defaults={
-                    "concept_class_name": name,
-                    "concept_class_concept": Concept.objects.get_or_create(concept_id=concept_id)[0],
-                },
-            )
 
         def add_concept(cid, name, class_id, code, domain_id, vocabulary_id, pt_name=None):
             defaults = {
@@ -58,148 +31,35 @@ class Command(BaseCommand):
             if pt_name:
                 ConceptSynonym.objects.update_or_create(
                     concept=concept,
-                    language_concept_id=4180186,
+                    language_concept_id=4181536,
                     defaults={
                         "concept_synonym_name": pt_name,
                     },
                 )
 
-        # Idioma pt
-        concept_class("Language", "Language", 11118)
-        domain("Language", "Language", 4180186)
-        Concept.objects.update_or_create(
-            concept_id=4180186,
-            defaults={
-                "concept_name": "Portuguese",
-                "concept_class_id": "Language",
-                "concept_code": "pt",
-                "domain": Domain.objects.get(domain_id="Language"),
-            },
-        )
+        # Portuguese concept
+        add_concept(4181536, "Portuguese language", "Qualifier Value", "297504001", "Language", "SNOMED", "Português")
 
-        # Vocabularies
-        vocabulary("OSM", "OpenStreetMap (OSM)", 32541)
-        vocabulary("Provider", "OMOP Provider", 32573)
-        vocabulary("Metadata", "OMOP Metadata", 32675)
-        vocabulary("None", "OMOP Standardized Vocabularies", 44819096)
-        vocabulary("Gender", "OMOP Gender", 44819108)
-        vocabulary("Race", "Race and Ethnicity Code Set (USBC)", 44819109)
-        vocabulary("Ethnicity", "OMOP Ethnicity", 44819134)
-        vocabulary("Vocabulary", "OMOP Vocabulary", 44819232)
-        vocabulary("BR_STATES", "Brazil States", 2000001)
-        vocabulary("Measurement", "OMOP Measurement", 2000003)
-        vocabulary("Observation", "OMOP Observation", 2000004)
-        vocabulary("Condition", "OMOP Condition", 2000005)
-        vocabulary("Drug", "OMOP Drug", 2000006)
-        vocabulary("Substance", "OMOP Substance", 2000007)
-        vocabulary("Observation Type", "OMOP Observation Type", 2000008)
-        vocabulary("Relationship", "OMOP Relationship", 2000009)
-        vocabulary("Domain", "OMOP Domain", 2000010)
+        # None concept (IMPORTED FROM ATHENA 03/05/2025)
+        add_concept(0, None, None, None, "Metadata", None, "Sem conceito correspondente")
 
-        # Domains
-        domain("Domain", "Domain", 1)
-        domain("Gender", "Gender", 2)
-        domain("Race", "Race", 3)
-        domain("Ethnicity", "Ethnicity", 4)
-        domain("Metadata", "Metadata", 7)
-        domain("Provider", "Provider", 33)
-        domain("Geography", "Geography", 32558)
-        domain("Measurement", "Measurement", 2000013)
-        domain("Observation", "Observation", 2000014)
-        domain("Condition", "Condition", 2000015)
-        domain("Drug", "Drug", 2000016)
-        domain("Substance", "Substance", 2000017)
-        domain("Type", "Type", 2000018)
-        domain("Relationship", "Relationship", 2000019)
-        domain("Domain", "Domain", 2000020)
-
-        # Concept Classes
-        concept_class("Vocabulary", "Vocabulary", 11111)
-        concept_class("Domain", "Domain", 11112)
-        concept_class("Gender", "Gender", 11113)
-        concept_class("Race", "Race", 11114)
-        concept_class("Ethnicity", "Ethnicity", 11115)
-        concept_class("Provider", "Provider", 11116)
-        concept_class("Physician Specialty", "Physician Specialty", 11117)
-        concept_class("Brazil States", "Brazil States", 2000042)
-        concept_class("Measurement", "Measurement", 2000043)
-        concept_class("Observation", "Observation", 2000044)
-        concept_class("Quality", "Quality", 2000045)
-        concept_class("Frequency", "Frequency", 2000046)
-        concept_class("Comorbidity", "Comorbidity", 2000047)
-        concept_class("Medication", "Medication", 2000048)
-        concept_class("Substance", "Substance", 2000049)
-        concept_class("Type", "Type", 2000041)
-        concept_class("Recurrence", "Recurrence", 2000050)
-        concept_class("Relationship", "Relationship", 2000051)
-        concept_class("Observation Type", "Observation Type", 2000052)
-        concept_class("Metadata", "Metadata", 2000053)
-        concept_class("Interest", "Interest", 2000011)
-        concept_class("Trigger", "Trigger", 2000012)
-
-        # Vocabularies concepts
-        add_concept(
-            32541,
-            "OpenStreetMap (OSMF)",
-            "Vocabulary",
-            "OMOP generated",
-            "Metadata",
-            "Vocabulary",
-            "OpenStreetMap (OSMF)",
-        )
-        add_concept(32573, "OMOP Provider", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Provedor OMOP")
-        add_concept(32675, "OMOP Metadata", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Metadata OMOP")
-        add_concept(
-            44819096,
-            "OMOP Standardized Vocabularies",
-            "Vocabulary",
-            "OMOP generated",
-            "Metadata",
-            "Vocabulary",
-            "Vocabulários Padronizados OMOP",
-        )
-        add_concept(44819108, "OMOP Gender", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Gênero OMOP")
-        add_concept(
-            44819109,
-            "Race and Ethnicity Code Set (USBC)",
-            "Vocabulary",
-            "OMOP generated",
-            "Metadata",
-            "Vocabulary",
-            "Conjunto de Códigos de Raça e Etnia (USBC)",
-        )
-        add_concept(44819134, "OMOP Ethnicity", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Etnia OMOP")
-        add_concept(
-            44819232, "OMOP Vocabulary", "Vocabulary", "OMOP generated", "Metadata", "Vocabulary", "Vocabulário OMOP"
-        )
-
-        # Domains concepts
-        add_concept(1, "Domain", "Domain", "OMOP generated", "Domain", "Metadata", "Domínio")
-        add_concept(2, "Gender", "Domain", "OMOP generated", "Domain", "Metadata", "Gênero")
-        add_concept(3, "Race", "Domain", "OMOP generated", "Domain", "Metadata", "Raça")
-        add_concept(4, "Ethnicity", "Domain", "OMOP generated", "Domain", "Metadata", "Etnia")
-        add_concept(7, "Metadata", "Domain", "OMOP generated", "Domain", "Metadata", "Metadados")
-        add_concept(33, "Provider", "Domain", "OMOP generated", "Domain", "Metadata", "Provedor")
-        add_concept(32558, "Geographical object", "Domain", "OMOP generated", "Domain", "Metadata", "Objeto Geográfico")
-
-        # Gender
+        # Gender (IMPORTED FROM ATHENA 02/05/2025)
         add_concept(8507, "MALE", "Gender", "M", "Gender", "Gender", "Masculino")
         add_concept(8532, "FEMALE", "Gender", "F", "Gender", "Gender", "Feminino")
         add_concept(8551, "UNKNOWN", "Gender", "U", "Gender", "Gender", "Desconhecido")
 
-        # Race
-        add_concept(8527, "WHITE", "Race", "W", "Race", "Race", "Branco")
-        add_concept(8516, "BLACK OR AFRICAN AMERICAN", "Race", "B", "Race", "Race", "Preto")
-        add_concept(8657, "ASIAN", "Race", "A", "Race", "Race", "Asiático")
+        # Race (IMPORTED FROM ATHENA 02/05/2025)Add commentMore actions
+        add_concept(8515, "Asian", "Race", "2", "Race", "Race", "Asiático")
+        add_concept(8527, "White", "Race", "5", "Race", "Race", "Branco")
+        add_concept(38003572, "American Indian", "Race", "1.01", "Race", "Race", "Indígena Americano")
+        add_concept(38003598, "Black", "Race", "3.01", "Race", "Race", "Preto")
 
-        # Specialities
-        add_concept(32577, "Physician", "Physician Specialty", "OMOP4822444", "Provider", "Provider", "Médico")
-        add_concept(32578, "Counselor", "Provider", "OMOP4822447", "Provider", "Provider", "Conselheiro")
+        # Speciality (IMPORTED FROM ATHENA 03/05/2025)Add commentMore actions
+        add_concept(32577, "Physician", "Physician Specialty", "OMOP4822444", "Provider", "Provider", "Médica(o)")
+        add_concept(32578, "Counselor", "Provider", "OMOP4822447", "Provider", "Provider", "Terapeuta")
         add_concept(32580, "Allied Health Professional", "Provider", "OMOP4822445", "Provider", "Provider", "ACS")
-        add_concept(32581, "Nurse", "Provider", "OMOP4822446", "Provider", "Provider", "Enfermeiro")
-        add_concept(
-            33003, "Service Provider", "Provider", "OMOP5117445", "Provider", "Provider", "Prestador de Serviço"
-        )
+        add_concept(32581, "Nurse", "Provider", "OMOP4822446", "Provider", "Provider", "Enfermeira(o)")
+        add_concept(33003, "Service Provider", "Provider", "OMOP5117445", "Provider", "Provider", "Provedor de Serviço")
         add_concept(
             33005,
             "Psychiatry or Neurology",
@@ -207,214 +67,87 @@ class Command(BaseCommand):
             "OMOP5117448",
             "Provider",
             "Provider",
-            "Psiquiatria ou Neurologia",
+            "Psiquiatra ou Neurologista",
         )
+
+        # ==========================
+        # Custom Concepts
+        # ==========================
 
         # States
-        add_concept(2000053, "SP", "Brazil States", "BR", "Geography", "BR_STATES", "SP")
-        add_concept(2000054, "RJ", "Brazil States", "BR", "Geography", "BR_STATES", "RJ")
-        add_concept(2000055, "MG", "Brazil States", "BR", "Geography", "BR_STATES", "MG")
-        add_concept(2000056, "BA", "Brazil States", "BR", "Geography", "BR_STATES", "BA")
-        add_concept(2000057, "PR", "Brazil States", "BR", "Geography", "BR_STATES", "PR")
-        add_concept(2000058, "RS", "Brazil States", "BR", "Geography", "BR_STATES", "RS")
-        add_concept(2000051, "GO", "Brazil States", "BR", "Geography", "BR_STATES", "GO")
-        add_concept(2000053, "CE", "Brazil States", "BR", "Geography", "BR_STATES", "CE")
-        add_concept(2000054, "AM", "Brazil States", "BR", "Geography", "BR_STATES", "AM")
+        add_concept(2000001000, "AC", "Brazil States", None, "Geography", None, "AC")
+        add_concept(2000001001, "AL", "Brazil States", None, "Geography", None, "AL")
+        add_concept(2000001002, "AP", "Brazil States", None, "Geography", None, "AP")
+        add_concept(2000001003, "AM", "Brazil States", None, "Geography", None, "AM")
+        add_concept(2000001004, "BA", "Brazil States", None, "Geography", None, "BA")
+        add_concept(2000001005, "CE", "Brazil States", None, "Geography", None, "CE")
+        add_concept(2000001006, "DF", "Brazil States", None, "Geography", None, "DF")
+        add_concept(2000001007, "ES", "Brazil States", None, "Geography", None, "ES")
+        add_concept(2000001008, "GO", "Brazil States", None, "Geography", None, "GO")
+        add_concept(2000001009, "MA", "Brazil States", None, "Geography", None, "MA")
+        add_concept(2000001010, "MT", "Brazil States", None, "Geography", None, "MT")
+        add_concept(2000001011, "MS", "Brazil States", None, "Geography", None, "MS")
+        add_concept(2000001012, "MG", "Brazil States", None, "Geography", None, "MG")
+        add_concept(2000001013, "PA", "Brazil States", None, "Geography", None, "PA")
+        add_concept(2000001014, "PB", "Brazil States", None, "Geography", None, "PB")
+        add_concept(2000001015, "PR", "Brazil States", None, "Geography", None, "PR")
+        add_concept(2000001016, "PE", "Brazil States", None, "Geography", None, "PE")
+        add_concept(2000001017, "PI", "Brazil States", None, "Geography", None, "PI")
+        add_concept(2000001018, "RJ", "Brazil States", None, "Geography", None, "RJ")
+        add_concept(2000001019, "RN", "Brazil States", None, "Geography", None, "RN")
+        add_concept(2000001020, "RS", "Brazil States", None, "Geography", None, "RS")
+        add_concept(2000001021, "RO", "Brazil States", None, "Geography", None, "RO")
+        add_concept(2000001022, "RR", "Brazil States", None, "Geography", None, "RR")
+        add_concept(2000001023, "SC", "Brazil States", None, "Geography", None, "SC")
+        add_concept(2000001024, "SP", "Brazil States", None, "Geography", None, "SP")
+        add_concept(2000001025, "SE", "Brazil States", None, "Geography", None, "SE")
+        add_concept(2000001026, "TO", "Brazil States", None, "Geography", None, "TO")
 
         # Measurements
-        add_concept(3025315, "Body Weight", "Measurement", "BW", "Measurement", "Measurement", "Peso corporal")
-        add_concept(3023540, "Body Height", "Measurement", "BH", "Measurement", "Measurement", "Altura corporal")
-
-        # Concept Types
-        add_concept(9000020, "Sleep Quality", "Type", "SLEEPQ", "Observation", "Observation", "Qualidade do sono")
-        add_concept(
-            9000025, "Exercise Frequency", "Type", "EXERFREQ", "Observation", "Observation", "Frequência de Exercício"
-        )
-        add_concept(9000026, "Eating Habits", "Type", "EATHAB", "Observation", "Observation", "Hábitos Alimentares")
-        add_concept(9000027, "Comorbity", "Type", "COMORB", "Condition", "Condition", "Comorbidade")
-        add_concept(9000028, "Medication", "Type", "MED", "Drug", "Drug", "Medicação")
-        add_concept(9000029, "Substance Use", "Type", "SUBUSE", "Substance", "Substance", "Uso de Substâncias")
-
-        # Quality
-        add_concept(9000001, "Good", "Quality", "GOOD", "Observation", "Observation", "Bom")
-        add_concept(9000002, "Bad", "Quality", "BAD", "Observation", "Observation", "Ruim")
-        add_concept(9000003, "Ok", "Quality", "OK", "Observation", "Observation", "Razoável")
-
-        # Frequency
-        add_concept(9000010, "Regularly", "Frequency", "REG", "Observation", "Observation", "Regularmente")
-        add_concept(9000011, "Occasionally", "Frequency", "OCC", "Observation", "Observation", "Ocasionalmente")
-        add_concept(9000012, "Rarely", "Frequency", "RARE", "Observation", "Observation", "Raramente")
-        add_concept(9000013, "Never", "Frequency", "NEVER", "Observation", "Observation", "Nunca")
-
-        # Comorbidities
-
-        # Medications
-        add_concept(9000040, "Fluoxetine", "Medication", "FLX", "Drug", "Drug", "Fluoxetina")
-        add_concept(9000041, "Ibuprofen", "Medication", "IBU", "Drug", "Drug", "Ibuprofeno")
-
-        # SubstanceUse
-        add_concept(9000050, "Alcohol", "Substance", "ALC", "Substance", "Substance", "Álcool")
-        add_concept(9000051, "Tobacco", "Substance", "TOB", "Substance", "Substance", "Tabaco")
+        add_concept(2000002000, "Body Weight", "Measurement", "BW", None, None, "Peso corporal")
+        add_concept(2000002001, "Body Height", "Measurement", "BH", None, None, "Altura corporal")
 
         # Observation Type
-        add_concept(38000280, "Self Reported", "Observation", "SR", "Observation", "Observation", "Auto-relatado")
-
-        # Recurrence
-        add_concept(9000100, "Daily", "Recurrence", "DAILY", "Observation", "Observation", "Diariamente")
-        add_concept(9000101, "Weekly", "Recurrence", "WEEKLY", "Observation", "Observation", "Semanalmente")
-        add_concept(9000102, "Monthly", "Recurrence", "MONTHLY", "Observation", "Observation", "Mensalmente")
-        add_concept(9000103, "Yearly", "Recurrence", "YEARLY", "Observation", "Observation", "Anualmente")
-        add_concept(9000104, "Hourly", "Recurrence", "HOURLY", "Observation", "Observation", "A cada hora")
-        add_concept(9000105, "Once", "Recurrence", "ONCE", "Observation", "Observation", "Apenas uma vez")
+        add_concept(2000003000, "Self Reported", "Observation", "SR", None, None, "Auto-relatado")
 
         # Relationship
         add_concept(
-            9200010,
-            "Provider Link Code",
-            "Observation",
-            "PROVIDER_LINK_CODE",
-            "Observation",
-            "Observation",
-            "Código de vínculo entre pessoa e profissional",
+            2000004000, "Provider Link Code", "Observation", "PROVIDER_LINK_CODE", None, None, "Código de vínculo"
         )
         add_concept(
-            9200011,
+            2000004001,
             "Clinician Generated",
-            "Observation Type",
+            None,
             "CLINICIAN_GENERATED",
-            "Type",
+            None,
             "Observation Type",
-            "Gerado pelo profissional de saúde",
+            "Gerado pelo profissional",
         )
-        add_concept(
-            9200001,
-            "Person to Provider",
-            "Relationship",
-            "PERSON_PROVIDER",
-            "Relationship",
-            "Relationship",
-            "Pessoa associada ao profissional de saúde",
-        )
+        add_concept(2000004002, "Person to Provider", None, "PERSON_PROVIDER", None, "Relationship", "Pessoa associada")
 
-        add_concept(
-            9201, "Provider", "Metadata", "PROVIDER", "Domain", "Domain", "Profissional de saúde (domínio provider)"
-        )
-        add_concept(9202, "Person", "Metadata", "PERSON", "Domain", "Domain", "Indivíduo (domínio pessoa)")
+        # User Role
+        add_concept(2000005001, "Provider", None, "PERSON", None, None, "Profissional de saúde")
+        add_concept(2000005002, "Person", None, "PROVIDER", None, None, "Indivíduo")
 
-        # Tipos principais
-        vocabulary("Value", "Value", 999900)
-        domain("Diary", "Diary", 999901)
-        domain("Value", "Value", 999902)
-        concept_class("Diary", "Diary", 999903)
-
-        add_concept(999001, "Diary Entry", "Diary", "diary_entry", "Observation", "Observation", "Entrada de diário")
-        add_concept(999002, "Diary Text", "Diary", "diary_text", "Observation", "Observation", "Texto livre do diário")
-        add_concept(999003, "Diary Scope", "Diary", "diary_scope", "Observation", "Observation", "Alcance do diário")
-        add_concept(
-            999004, "Diary Entry Type", "Diary", "diary_entry_type", "Observation", "Observation", "Tipo de entrada"
-        )
-        add_concept(999005, "Diary interest", "Diary", "diary_interest", None, None, "Alcance do diário")
+        # Diary
+        add_concept(2000006000, "Diary Entry", None, "diary_entry", None, None, "Entrada de diário")
+        add_concept(2000006001, "Diary Text", None, "diary_text", None, None, "Texto livre do diário")
+        add_concept(2000006002, "Diary Scope", None, "diary_scope", None, None, "Alcance do diário")
+        add_concept(2000006003, "Diary Entry Type", None, "diary_entry_type", None, None, "Tipo de entrada")
+        add_concept(2000006004, "Diary interest", None, "diary_interest", None, None, "Alcance do diário")
 
         # Help
-        add_concept(2000100000, "Help", None, "HELP", None, None, "Ajuda")
-        add_concept(2000101000, "Active", None, "ACTIVE", None, None, "Ativo")
-        add_concept(2000102000, "Resolved", None, "RESOLVED", None, None, "Resolvido")
+        add_concept(2000007000, "Help", None, "HELP", None, None, "Ajuda")
+        add_concept(2000007001, "Active", None, "ACTIVE", None, None, "Ativo")
+        add_concept(2000007002, "Resolved", None, "RESOLVED", None, None, "Resolvido")
 
         # Area of Interest
-        add_concept(2000000200, "Interest Area", "Interest", "INTEREST_AREA", None, None, "Área de Interesse")
-        add_concept(2000000300, "Trigger", "Trigger", "TRIGGER", None, None, "Gatilho")
+        add_concept(2000008000, "Interest Area", None, "INTEREST_AREA", None, None, "Área de Interesse")
+        add_concept(2000008001, "Trigger", None, "TRIGGER", None, None, "Gatilho")
 
         # Fact Relationships
-        add_concept(2000000400, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
-        add_concept(2000000401, "AOI_Diary", None, "AOI_DIARY", None, None, "Diario area de interesse")
-        add_concept(2000000402, "Text_Diary", None, "TEXT_DIARY", None, None, "Diario area de interesse")
+        add_concept(2000009000, "AOI_Trigger", None, "AOI_TRIGGER", None, None, "Gatilho de Área de Interesse")
+        add_concept(2000009001, "AOI_Diary", None, "AOI_DIARY", None, None, "Diario area de interesse")
+        add_concept(2000009002, "Text_Diary", None, "TEXT_DIARY", None, None, "Diario area de interesse")
 
-        User = get_user_model()
-        user, _ = User.objects.get_or_create(
-            email="mock-provider@email.com",
-            defaults={"username": "mockprovider", "first_name": "Dr. Mock", "last_name": "Provider"},
-        )
-
-        Provider.objects.get_or_create(user=user, defaults={"professional_registration": "1111111"})
-
-        provider, _ = Provider.objects.get_or_create(user=user)
-
-        user, _ = User.objects.get_or_create(
-            email="mock-person@email.com",
-            defaults={"username": "mockperson", "first_name": "Mock", "last_name": "Person"},
-        )
-
-        person, _ = Person.objects.get_or_create(user=user)
-
-        FactRelationship.objects.get_or_create(
-            fact_id_1=person.person_id,
-            domain_concept_1_id=9202,  # Person
-            fact_id_2=provider.provider_id,
-            domain_concept_2_id=9201,  # Provider
-            relationship_concept_id=9200001,
-        )
-
-        # Sintomas predefinidos
-        concept_class("Wellness", "Wellness", 999100)
-
-        # Tipos de valores
-        concept_class("Value Type", "Value Type", 999200)
-
-        add_concept(999201, "Yes/No", "Value Type", "yes_no", "Value", "Value", "Sim/Não")
-        add_concept(999202, "Free Text", "Value Type", "free_text", "Value", "Value", "Texto livre")
-        add_concept(999203, "Scale", "Value Type", "scale", "Value", "Value", "Escala")
-        add_concept(999204, "Hours", "Value Type", "hours", "Value", "Value", "Horas")
-        add_concept(999205, "Times", "Value Type", "times", "Value", "Value", "Vezes")
-
-        concept_class("Yes/No", "Yes/No", 999201)
-        concept_class("Free Text", "Free Text", 999202)
-        concept_class("Scale", "Scale", 999203)
-        concept_class("Hours", "Hours", 999204)
-        concept_class("Times", "Times", 999205)
-
-        # Valores possíveis
-        add_concept(999501, "Yes", "Yes/No", "value_yes", "Value", "Value", "Sim")
-
-        add_concept(999502, "No", "Yes/No", "value_no", "Value", "Value", "Não")
-
-        WELLBEING = [
-            ("sleep", "Qualidade do sono", "scale"),
-            ("medicine", "Tomar medicamentos", "yesno"),
-            ("medication_effects", "Efeitos da medicação", "scale"),
-            ("side_effects", "Efeitos colaterais da medicação", "yesno"),
-            ("physical_symptoms", "Sintomas físicos", "yesno"),
-            ("thoughts", "Pensamentos", "scale"),
-            ("triggers", "Exposição a gatilhos", "times"),
-            ("work", "Trabalho", "scale"),
-            ("chores", "Tarefas domésticas", "scale"),
-            ("food", "Alimentação", "scale"),
-            ("hobbies", "Hobbies", "scale"),
-            ("exercise", "Exercício físico", "hours"),
-            ("water", "Consumo de água", "scale"),
-            ("social", "Socialização", "scale"),
-            ("self_harm", "Auto mutilação", "times"),
-            ("intrusive_thoughts", "Pensamentos intrusivos", "scale"),
-            ("suicidal_ideation", "Ideação suicida", "yesno"),
-            ("dissociation", "Disassociação", "scale"),
-            ("paranoia", "Paranóia", "scale"),
-        ]
-
-        VALUE_TYPE_CODE_TO_ID = {
-            "scale": 999203,
-            "yesno": 999201,
-            "freetext": 999202,
-            "times": 999205,
-            "hours": 999204,
-        }
-
-        for i, (code, pt_name, value_type_code) in enumerate(WELLBEING):
-            concept_id = 999300 + i
-            add_concept(concept_id, pt_name, "Wellness", code, "Observation", "Observation", pt_name)
-
-            # Cria a relação has_value_type
-            value_type_concept_id = VALUE_TYPE_CODE_TO_ID[value_type_code]
-            ConceptRelationship.objects.update_or_create(
-                concept_1_id=concept_id, concept_2_id=value_type_concept_id, relationship_id="has_value_type"
-            )
-
-        self.stdout.write(self.style.SUCCESS("✔️  Conceitos populados com sucesso."))
+        self.stdout.write(self.style.SUCCESS("✔️  Concepts populated successfully."))

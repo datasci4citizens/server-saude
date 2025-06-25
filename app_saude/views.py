@@ -411,7 +411,7 @@ class ConceptViewSet(FlexibleViewSet):
     def get_queryset(self):
         queryset = Concept.objects.all()
 
-        lang = self.request.query_params.get("lang", "pt")
+        lang = self.request.query_params.get("lang", "297504001")  # Default to Portuguese (297504001)
         class_ids = self.request.query_params.get("class")
         codes = self.request.query_params.get("code")
         relationship_id = self.request.query_params.get("relationship")

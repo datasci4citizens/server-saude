@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from app_saude.models import Observation
+from app_saude.utils.concept import get_concept_by_code
 
 
 class Command(BaseCommand):
@@ -96,9 +97,9 @@ class Command(BaseCommand):
             }
 
             Observation.objects.update_or_create(
-                observation_concept_id=2000000200,  # Interest Area concept ID
+                observation_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
                 value_as_string=json.dumps(interest_area_data, ensure_ascii=False),
                 defaults={"observation_date": timezone.now()},
             )
 
-        self.stdout.write(self.style.SUCCESS("Áreas de Interesse populadas com sucesso."))
+        self.stdout.write(self.style.SUCCESS("✔️  Interest areas and triggers seeded successfully."))
