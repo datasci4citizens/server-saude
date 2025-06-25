@@ -36,7 +36,7 @@ O projeto foi desenvolvido considerando para alinhamento do banco de dados a ver
 "As of April 2025, the most recent CDM is at version 6.0, while version 5.4 is the stable version used by most tools in the OMOP ecosystem."  
 — [Wikipedia](https://en.wikipedia.org/wiki/Observational_Health_Data_Sciences_and_Informatics)
 
-Em relação aos conceitos (ou *concepts*), uma das partes centrais do modelo, foram baixados todos os vocabulários disponíveis na plataforma ATHENA no mês de maio. Como a proposta do projeto se expande para além de um prontuário médico, conceitos novos foram adicionados para alcançar nosso objetivo. Tais conceitos, domínios, classes e vocabulários foram adicionados no arquivo app_saude/commands/seed_concepts.py. Conceitos padrão escolhidos estão no mesmo arquivo. 
+Em relação aos conceitos (ou *concepts*), uma das partes centrais do modelo, foram baixados todos os vocabulários disponíveis na plataforma ATHENA no mês de maio. Como a proposta do projeto se expande para além de um prontuário médico, conceitos novos foram adicionados para alcançar nosso objetivo. Tais conceitos, domínios, classes e vocabulários foram adicionados no arquivos arquivos da pasta app_saude/commands/. O nome dos arquivos é seed_, sendo realizada uma divisão de áreas para facilitar as buscas. Uma descrição mais detalhada sobre os conceitos escolhidos pode ser encontrada na seção Vocabulário deste documento. 
 
 ### 1.3 Links importantes
 
@@ -84,6 +84,10 @@ O [*frequently asked questions*](https://ohdsi.github.io/CommonDataModel/faq.htm
 #### 2.1.6 Standardized metadata
 
 ## 3 Vocabulários
+
+Os conceitos do OMOP CDM talvez sejam um dos principais elementos do modelo e podem gerar algumas dúvidas em um primeiro momento. Uma sugestão de leitura para ajudar a entender melhor os vocabulários é o [capítulo 5](https://ohdsi.github.io/TheBookOfOhdsi/StandardizedVocabularies.html) do livro disponibilizado pelo OHDSI. Nele são apresentados as principais definições que e agrupamentos utilizados quando se define um conceito. Aqui, em particular, nos preocuparemos mais em apresentar definições importantes, mas de maneira superficial, e escolhas do grupo que estão (ou não) alinhadas ao modelo. 
+
+Uma questão fundamental de entender é que conceitos não existem sozinhos. Eles são agrupados em *domains*, *concept classes* e *vocabularies* (o que cada um desses grupos significa está na referência acima). Ou seja, toda as vezes s
 
 ## 4 Modelo SAÚDE!
 
