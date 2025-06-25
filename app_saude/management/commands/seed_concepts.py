@@ -37,6 +37,7 @@ class Command(BaseCommand):
                     },
                 )
 
+        # Portuguese concept
         add_concept(4181536, "Portuguese language", "Qualifier Value", "297504001", "Language", "SNOMED", "Português")
 
         # None concept (IMPORTED FROM ATHENA 03/05/2025)
