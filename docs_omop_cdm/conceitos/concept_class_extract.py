@@ -1,3 +1,4 @@
+from pathlib import Path
 import csv
 
 def generate_concept_class_script(input_csv_path, output_txt_path):
@@ -24,7 +25,7 @@ def generate_concept_class_script(input_csv_path, output_txt_path):
     except Exception as e:
         print(f"❌ Error: {e}")
 
-# Example usage
-input_csv_path = "/home/guilherme/Documents/MC854/Server/server-saude/docs_omop_cdm/Conceitos/CONCEPT_CLASS.csv"  # Replace with the path to your input .csv file
-output_txt_path = "/home/guilherme/Documents/MC854/Server/server-saude/docs_omop_cdm/Conceitos/CONCEPT_CLASS.txt"  # Replace with the desired output .txt file path
+current_dir = Path(__file__).parent
+input_csv_path = current_dir / "CONCEPT_CLASS.csv"
+output_txt_path = current_dir / "CONCEPT_CLASS.txt"
 generate_concept_class_script(input_csv_path, output_txt_path)

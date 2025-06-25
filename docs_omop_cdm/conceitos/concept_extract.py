@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 
 def generate_add_concept_script(input_csv_path, output_txt_path):
     try:
@@ -19,7 +20,8 @@ def generate_add_concept_script(input_csv_path, output_txt_path):
     except Exception as e:
         print(f"❌ Error: {e}")
 
-# Example usage:
-input_csv_path = "/home/guilherme/Documents/MC854/Server/server-saude/docs_omop_cdm/Conceitos/language_concept_id.csv"  # Replace with the path to your input .csv file
-output_txt_path = "/home/guilherme/Documents/MC854/Server/server-saude/docs_omop_cdm/Conceitos/language_concept_id.txt"  # Replace with the desired output .txt file path
+# Use current directory for input and output files
+current_dir = Path(__file__).parent
+input_csv_path = current_dir / "language_concept_id.csv"
+output_txt_path = current_dir / "language_concept_id.txt"
 generate_add_concept_script(input_csv_path, output_txt_path)
