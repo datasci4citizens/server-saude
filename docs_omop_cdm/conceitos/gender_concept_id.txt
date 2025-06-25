@@ -1,0 +1,2 @@
+add_concept(8507, "MALE", "Gender", "M", "Gender", "Gender", )
+add_concept(8532, "FEMALE", "Gender", "F", "Gender", "Gender", )

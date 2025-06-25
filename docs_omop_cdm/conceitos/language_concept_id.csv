@@ -1,0 +1,840 @@
+Id	Code	Name	Standard Class	Domain	Vocab	Validity	Concept
+1075778	1332074008	Anuak language	Qualifier Value	Language	SNOMED	Valid	Standard
+1075779	1332075009	Dan language	Qualifier Value	Language	SNOMED	Valid	Standard
+1075780	1332076005	Mandingo language	Qualifier Value	Language	SNOMED	Valid	Standard
+1075781	1332077001	Mandinka language	Qualifier Value	Language	SNOMED	Valid	Standard
+4052346	161143006	Hindi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4052347	161144000	Pashtu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4052786	161141008	Bengali language	Qualifier Value	Language	SNOMED	Valid	Standard
+4059174	161142001	Gujarati language	Qualifier Value	Language	SNOMED	Valid	Standard
+4059175	161145004	Punjabi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4059788	161146003	Urdu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4076495	224628009	Hinko language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175727	297293002	Riffian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175728	297295009	Shluh language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175729	297296005	Tamazight language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175730	297297001	Tuareg language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175731	297309007	Coptic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175732	297313000	Syriac language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175733	297320007	Harari language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175734	297326001	South Arabic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175735	297327005	Maltese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175736	297330003	Buryat language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175737	297332006	Tungusic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175738	297341001	Chuvash language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175739	297342008	Northeastern Turkic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175740	297346006	Northwestern Turkic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175741	297350004	Karachai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175742	297356005	Southeastern Turkic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175743	297360008	Uzbek language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175744	297363005	Turkish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175745	297366002	Artificial language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175746	297368001	Interlingua	Qualifier Value	Language	SNOMED	Valid	Standard
+4175747	297370005	Australian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175748	297375000	Avar language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175749	297376004	Dargin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175750	297378003	Lezgin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175751	297394005	Arawak language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175752	297397003	Jivaro language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175753	297398008	Quechua language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175754	297404003	Panoan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175755	297407005	Bribri language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175756	297414007	Central Sudanic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175757	297416009	Madi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175758	297421007	Eastern Nilotic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175759	297425003	Masai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175760	297436005	Luo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175761	297437001	Nuer language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175762	297438006	Shilluk language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175763	297439003	Nubian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175764	297440001	Djerma language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175765	297442009	Brahui language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175766	297446007	Kurukh language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175767	297449000	Telugu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175768	297452008	Aleut language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175769	297457002	Barushaski language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175770	297459004	Basque language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175771	297461008	Korean language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175772	297469005	Lithuanian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175773	297472003	Breton language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175774	297473008	Welsh language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175775	297478004	Northern Germanic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175776	297481009	Icelandic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175777	297483007	Swedish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175902	297497004	Romance language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175903	297511002	Slavic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175904	297515006	Ukrainian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175905	297518008	Macedonian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175906	297529007	Bhili language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175907	297534006	Konkani language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175908	297537004	Nepali language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175909	297550003	Kurdish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175910	297551004	Mazanderani language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175912	297567005	Batak language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175913	297574000	Jarai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175914	297575004	Javanese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175915	297581007	Palau language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175916	297590000	Marshallese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175917	297592008	Ponapean language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175918	297597002	Motu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175919	297598007	Tolai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175920	297599004	Yabim language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175921	297607003	Tahitian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175922	297613007	Khasi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175923	297615000	Mon language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175924	297617008	Palaung language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175925	297620000	Munda language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175926	297622008	Korku language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175927	297625005	Savara language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175928	297634000	Zande language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175929	297638002	Bubi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175930	297643009	Duala language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175931	297656002	Luba language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175932	297662007	Makua language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175933	297664008	Meru language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175934	297665009	Mongo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175935	297673000	Ruanda language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175936	297675007	Shona language	Qualifier Value	Language	SNOMED	Valid	Standard
+4175937	297677004	Sukuma language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177291	297681004	Toro language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177292	297682006	Tsonga language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177293	297684007	Tumbuka language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177294	297687000	Yao language - Bantu	Qualifier Value	Language	SNOMED	Valid	Standard
+4177295	297690006	Efik language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177296	297692003	Tiv language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177297	297695001	Gur language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177298	297697009	Dagomba language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177299	297700008	Mossi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177300	297701007	Senufo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177301	297703005	Adangme language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177302	297708001	Ewe language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177304	297712007	Ga language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177305	297717001	Kru language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177306	297718006	Nupe language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177307	297728002	Mende language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177308	297733003	Balante language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177309	297736006	Gola language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177310	297737002	Kissi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177311	297739004	Temne language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177312	297740002	Wolof language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177313	297741003	Native North American language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177314	297745007	Cheyenne language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177433	297749001	Micmac language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177434	297761009	Caddo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177435	297763007	Haida language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177436	297771006	Mayan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177437	297772004	Cakchiquel language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177438	297773009	Chol language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177439	297785001	Creek language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177440	297786000	Seminole language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177441	297790003	Mazatec language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177442	297798005	Yakima language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177443	297802006	Okanagan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177444	297803001	Shuswap language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177445	297807000	Crow language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177446	297808005	Omaha language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177447	297809002	Osage language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177448	297813009	Tewa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177449	297817005	Tlingit language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177450	297819008	Uto-Aztecan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177451	297830006	Ute language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177452	297832003	Kwakiutl language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177453	297838004	Mixe language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177454	297839007	Zoque language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177455	297841008	Zunian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177456	297842001	Zuni language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177457	297849005	Yukagir language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177458	297850005	Papuan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177459	297852002	Chimbu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177460	297853007	Enga language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177461	297861002	Kituba language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177462	297863004	Papiamento language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177463	297877001	Cantonese Chinese dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4177464	297879003	Northern Fukienese dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4177465	297885005	Tai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177466	297886006	Chuang language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177467	297890008	Shan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177468	297902007	Lepcha language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177469	297907001	Nakhi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177470	297909003	Tibetan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177471	297914004	Finnic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177472	297920003	Mordvin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177473	297924007	Ostyak language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177474	297925008	Vogul language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177475	297926009	Samoyed language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177476	297927000	Enets language	Qualifier Value	Language	SNOMED	Valid	Standard
+4177477	297933009	Yao language - Sino-Tibet	Qualifier Value	Language	SNOMED	Valid	Standard
+4177478	297934003	Swiss German dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4178554	297291000	Berber language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178555	297294008	Shawia language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178556	297299003	Hausa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178557	297300006	Cushitic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178558	297302003	Beja language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178559	297304002	Saho language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178560	297305001	Sidamo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178561	297328000	Altaic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178562	297333001	Northern Tungusic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178563	297334007	Evenki language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178564	297335008	Even language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178565	297337000	Manchu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178566	297340000	Turkic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178567	297343003	Altai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178568	297344009	Khakass language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178569	297347002	Balkar language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178570	297349004	Kara-Kalpak language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178571	297354008	Nogai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178572	297355009	Tatar language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178573	297359003	Uigur language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178685	297365003	Yakut language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178686	297367006	Esperanto	Qualifier Value	Language	SNOMED	Valid	Standard
+4178687	297381008	Chechen language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178688	297383006	Southern Caucasian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178689	297385004	Western Caucasian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178690	297386003	Abazinian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178691	297387007	Abkhazian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4178692	297388002	Adygei language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180041	297290004	Afro-Asiatic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180042	297292007	Kabyle language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180043	297301005	Afar language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180044	297310002	Semitic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180045	297311003	Aramaic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180046	297312005	Assyrian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180047	297315007	Hebrew language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180048	297389005	Circassian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180049	297399000	Tupi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180050	297403009	Ge language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180051	297412006	Miskito language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180052	297415008	Lugbara language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180053	297422000	Bari language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180054	297428001	Southern Nilotic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180055	297431000	Western Nilotic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180056	297443004	Gondi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180057	297445006	Kui language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180058	297447003	Malayalam language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180059	297450000	Tulu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180060	297451001	Eskimo-Aleut language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180061	297455005	Independent language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180063	297466003	Armenian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180064	297468002	Latvian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180182	297475001	Irish Gaelic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180183	297479007	Danish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180184	297480005	Faroese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180185	297485000	Afrikaans language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180186	297487008	English language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180187	297488003	Flemish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180188	297489006	Frisian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180189	297494006	Greek language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180190	297499001	French language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180191	297501009	Swiss French dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4180192	297507008	Rhaeto-Romanic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180193	297509006	Sardinian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180194	297513004	Belorussian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180195	297516007	Southern Slavic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180196	297519000	Serbo-Croatian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180197	297522003	Czech language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180198	297525001	Sorbian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180199	297526000	Indo-Iranian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180200	297531003	Bihari language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180201	297532005	Hindustani language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180202	297535007	Maldivian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180203	297539001	Pakistani punjabi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180204	297541000	Sikh punjabi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180205	297547001	Iranian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180206	297552006	Ossetian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180207	297555008	Khoisan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180208	297557000	Hatsa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180209	297561006	Maban language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180210	297565002	Achinese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180211	297566001	Balinese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180212	297571008	Chamorro language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180213	297573006	Igorot language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180214	297576003	Madurese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180215	297577007	Malagasy language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180216	297586002	Tagalog language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180217	297587006	Visayan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180218	297589009	Gilbertese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180219	297593003	Trukese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180220	297594009	Yapese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180221	297595005	Melanesian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180222	297600001	Polynesian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180223	297602009	Māori language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180224	297604005	Niuean language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180225	297609000	Tuamotu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180226	297612002	Bahnar language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180227	297619006	Wa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180228	297633006	Sango language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180229	297637007	Bemba language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180230	297639005	Bulu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180231	297642004	Chokwe language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180232	297645002	Ganda language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180233	297649008	Kamba language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180349	297654004	Lomwe language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180350	297658001	Lunda language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180351	297663002	Mbundu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180352	297666005	Ndebele language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180353	297670002	Nyanja language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180354	297685008	Venda language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180355	297686009	Xhosa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180356	297688005	Yaunde language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180357	297691005	Ibibio language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180358	297694002	Western Sudanic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180359	297723006	Bambara language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180360	297724000	Dyula language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180361	297725004	Kpelle language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180362	297732008	West Atlantic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180363	297735005	Fulani language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180364	297738007	Serer language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180365	297743000	Arapaho language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180366	297744006	Blackfoot language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180367	297746008	Cree language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180368	297747004	Delaware language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180369	297748009	Fox language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180370	297754005	Athapascan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180371	297757003	Chilcotin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180372	297762002	Pawnee language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180373	297766004	Cherokee language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180374	297768003	Oneida language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180375	297777005	Mam language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180376	297781005	Tzotzil language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180377	297783008	Chickasaw language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180378	297789007	Mazahua language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180379	297794007	Penutian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180380	297795008	Klamath language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180381	297800003	Flathead language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180382	297801004	Lillooet language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180383	297810007	Sioux language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180384	297816001	Tarasco language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180385	297820002	Comanche language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180386	297821003	Hopi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180387	297828009	Shoshone language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180388	297829001	Tarahumara language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180389	297831005	Wakashan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180390	297834002	Yuman language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180391	297843006	Paleo-Asiatic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4180392	297844000	Chukchi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181370	297316008	Ethiopic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181371	297318009	Geez language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181372	297321006	Tigre language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181373	297323009	North Arabic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181374	297324003	Arabic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181375	297325002	Classical Arabic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181376	297336009	Southern Tungusic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181377	297338005	Nanai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181378	297339002	Sibo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181379	297352007	Kirgiz language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181381	297358006	Salar language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181382	297361007	Southwestern Turkic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181383	297362000	Azerbaijani language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181384	297369009	Occidental	Qualifier Value	Language	SNOMED	Valid	Standard
+4181385	297372002	Murngin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181386	297374001	Dagestan Caucasian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181387	297377008	Lak language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181388	297380009	Eastern Caucasian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181389	297390001	Kabardian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181390	297391002	Central and South American Indian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181391	297395006	Aymara language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181392	297401006	Carib language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181393	297405002	Tacana language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181394	297406001	Macro-Chibchan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181395	297408000	Cabecar language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181396	297409008	Cuna language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181397	297410003	Guaymi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181398	297411004	Lenca language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181399	297413001	Chari-Nile language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181400	297418005	Sara language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181401	297419002	Eastern Sudanic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181402	297423005	Karamojong language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181517	297424004	Lotuko language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181518	297429009	Kalenjin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181519	297432007	Acholi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181520	297435009	Lango language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181521	297448008	Tamil language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181522	297453003	Eskimo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181523	297454009	Fur language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181524	297460009	Japanese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181525	297462001	Muong language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181526	297463006	Vietnamese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181527	297464000	Indo-European language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181528	297474002	Goidelic Celtic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181529	297476000	Scottish Gaelic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181530	297482002	Norwegian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181531	297492005	Yiddish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181532	297493000	Hellenic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181533	297495007	Italic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181534	297496008	Latin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181535	297498009	Catalan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181536	297504001	Portuguese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181537	297508003	Rumanian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181538	297512009	Eastern Slavic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181539	297514005	Russian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181540	297524002	Slovak language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181541	297530002	Sylhety	Qualifier Value	Language	SNOMED	Valid	Standard
+4181542	297538009	Oriya language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181543	297542007	Rajasthani language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181544	297543002	Romany language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181545	297545009	Sindhi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181546	297548006	Baluchi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181547	297554007	Tajik language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181548	297556009	Bushman language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181549	297559002	Sandawe language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181550	297568000	Bikol language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181551	297572001	Hocano language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181552	297579005	Maranao language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181553	297583005	Pangasinan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181554	297585003	Sundanese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181555	297591001	Nauruan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181556	297596006	Fijian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181557	297601002	Hawaiian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181558	297606007	Samoan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181559	297608008	Tongan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181560	297610005	Uvea language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181561	297611009	Mon-Khmer language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181562	297618003	Sedang language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181563	297626006	Niger-Congo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181564	297629004	Mbum language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181565	297632001	Gbaya language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181566	297640007	Chagga language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181567	297641006	Chiga language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181568	297644003	Fang language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181686	297646001	Gisu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181687	297647005	Hehe language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181688	297650008	Kikuyu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181689	297651007	Kisii language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181690	297653005	Lingala language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181691	297655003	Lozi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181693	297667001	Ngala language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181694	297669003	Nyamwezi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181695	297671003	Nyoro language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181696	297672005	Pedi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181697	297674006	Rundi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181698	297678009	Swahili language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181699	297689002	Zulu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181700	297693008	Ijo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181701	297699007	Kabre language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181702	297704004	Agni language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181703	297710004	Fanti language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181704	297711000	Fon language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181706	297714008	Grebo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181707	297715009	Ibo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181708	297716005	Idoma language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181709	297722001	Mande language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181710	297726003	Loma language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181711	297727007	Malinke language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181712	297729005	Soninke language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181713	297730000	Susu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181714	297734009	Dyola language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181716	297752009	Ojibwa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181717	297848002	Nivkh language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181718	297854001	Hagen language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181719	297858003	Pidgin and Créole language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181720	297862009	Krio language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181721	297870004	Kanuri language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181722	297875009	Sinitic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181723	297881001	Hakka dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4181724	297883003	Mandarin dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4181725	297888007	Nung language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181726	297893005	Tibeto-Burman language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181727	297895003	Burmese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181728	297901000	Lahu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181729	297912000	Uralic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181730	297916002	Finnish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181731	297917006	Komi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181732	297919009	Mari language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181733	297928005	Nenets language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181734	297929002	Nganasan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4181735	297931006	Language commonly spoken in Europe	Qualifier Value	Language	SNOMED	Valid	Standard
+4182347	297289008	World languages	Qualifier Value	Language	SNOMED	Valid	Standard
+4182348	297298006	Chadic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182349	297303008	Oromo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182350	297306000	Somali language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182352	297308004	Egyptian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182353	297314006	Canaanitic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182354	297317004	Amharic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182355	297319001	Gurage language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182356	297322004	Tigrinya language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182357	297329008	Mongolian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182358	297331004	Kalmyk language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182359	297345005	Tuvinian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182473	297348007	Bashkir language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182474	297351000	Kazakh language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182475	297353002	Kumyk language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182476	297364004	Turkmen language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182477	297371009	Aranda language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182478	297373007	Caucasian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182479	297379006	Tabasaran language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182480	297382001	Ingush language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182481	297384000	Georgian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182482	297392009	Andean equatorial language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182483	297393004	Araucanian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182484	297396007	Guarani language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182485	297400007	Ge-Pano-Carib language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182486	297402004	Chiquito language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182487	297417000	Mangbetu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182488	297420008	Nilotic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182489	297426002	Teso language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182490	297427006	Turkana language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182491	297430004	Suk language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182492	297433002	Alur language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182493	297434008	Dinka language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182494	297441002	Dravidian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182495	297444005	Kanarese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182496	297456006	Ainu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182497	297465004	Albanian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182498	297467007	Baltic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182499	297470006	Celtic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182500	297471005	Brythonic Celtic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182501	297477009	Germanic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182502	297484001	Western Germanic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182503	297486004	Dutch language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182504	297490002	German language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182505	297491003	Luxembourgian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182507	297502002	Italian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182508	297503007	Moldavian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182509	297505000	Galician Portuguese dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4182510	297506004	Provencal language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182511	297510001	Spanish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182512	297517003	Bulgarian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182513	297520006	Slovenian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182514	297521005	Western Slavic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182515	297523008	Polish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182516	297527009	Indic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182517	297528004	Assamese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182518	297533000	Kashmiri language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182519	297536008	Marathi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182520	297540004	Lehnda punjabi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182807	297758008	Chipewyan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182808	297759000	Navajo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182809	297760005	Caddoan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182811	297765000	Iroquoian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182812	297769006	Seneca language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182813	297770007	Keresan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182814	297774003	Chontal language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182815	297776001	Kekchi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182816	297779008	Quiche language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182817	297780006	Tzeltal language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182818	297782003	Muskogean language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182819	297788004	Chinantec language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182820	297792006	Otomi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182821	297793001	Zapotec language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182822	297797000	Tsimshian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182823	297799002	Salishan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182824	297805008	Siouan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182825	297806009	Assiniboin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182826	297811006	Winnebago language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182827	297812004	Tanoan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182828	297814003	Tiwa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182829	297822005	Kiowa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182830	297824006	Nahuatl language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182831	297825007	Paiute language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182832	297826008	Papago language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182935	297833008	Nootka language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182936	297835001	Mohave language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182937	297836000	Yuma language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182938	297837009	Zoquean language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182940	297845004	Itelmen language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182941	297847007	Koryak language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182942	297851009	Baining language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182943	297857008	Nimboran language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182944	297860001	French Créole language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182945	297865006	Police Motu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182946	297873002	Miao-Yao language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182947	297874008	Miao language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182948	297876005	Chinese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182949	297880000	Southern Fukienese dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4182950	297882008	Hsiang dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4182951	297884009	Wu dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4182952	297887002	Lao language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182953	297889004	Puyi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182954	297894004	Bodo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182955	297897006	Garo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182956	297899009	Kachin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182957	297905009	Meithei language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182958	297910008	Yi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182959	297911007	Songhai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182960	297913005	Finno-Ugric language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182961	297918001	Lappish language	Qualifier Value	Language	SNOMED	Valid	Standard
+4182962	297922006	Ugric language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183091	298018001	Kashubian Polish dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4183656	297544008	Sanskrit language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183657	297546005	Sinhalese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183658	297549003	Gilaki language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183659	297553001	Persian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183661	297562004	Maba language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183662	297563009	Malayo-Polynesian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183663	297564003	Indonesian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183664	297569008	Buginese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183665	297570009	Cham language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183666	297578002	Malay language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183667	297580008	Minangkabau language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183668	297582000	Pampangan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183669	297584004	Rhade language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183670	297588001	Micronesian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183671	297603004	Marquesan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183769	297605006	Rarotongan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183770	297614001	Khmer language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183771	297616004	Nicobarese language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183772	297621001	Ho language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183773	297623003	Mundari language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183774	297624009	Santali language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183775	297627002	Adamawa-Eastern language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183776	297628007	Adamawa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183777	297630009	Eastern language (Niger-Congo)	Qualifier Value	Language	SNOMED	Valid	Standard
+4183778	297631008	Banda language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183779	297635004	Benue-Congo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183780	297636003	Ambo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183781	297648000	Herero language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183782	297652000	Kongo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183783	297657006	Luhya language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183784	297659009	Lwea language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183785	297661000	Makonde language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183786	297668006	Nkole language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183787	297676008	Sotho language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183788	297679001	Swazi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183789	297683001	Tswana language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183790	297696000	Bariba language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183791	297698004	Gurma language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183792	297702000	Kwa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183793	297705003	Bassa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183794	297706002	Baule language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183795	297707006	Edo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183796	297719003	Twi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183797	297720009	Urhobo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183798	297721008	Yoruba language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183799	297731001	Vai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183800	297742005	Algonkian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183801	297750001	Naskapi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183802	297753004	Passamaquoddy language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183803	297755006	Apache language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183804	297756007	Carrier language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183805	297767008	Mohawk language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183806	297775002	Huastec language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183807	297778000	Maya language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183808	297784002	Choctaw language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183809	297787009	Oto-Manguean language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183810	297791004	Mixtec language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183811	297796009	Nez Perce language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183812	297804007	Thompson language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183813	297815002	Towa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183814	297818000	Totonac language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183815	297823000	Mayo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183816	297827004	Pima language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183817	297846003	Ket language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183818	297855000	Kate language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183819	297856004	Marind language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183820	297859006	Fanakalo language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183821	297864005	Pidgin English language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183928	297867003	Saramacca language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183929	297868008	Taki-Taki language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183930	297869000	Saharan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183931	297871000	Teda language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183932	297872007	Sino-Tibetan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183933	297878006	Fukienese dialect	Qualifier Value	Language	SNOMED	Valid	Standard
+4183934	297891007	Thai language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183935	297892000	Tung language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183936	297896002	Chin language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183937	297898001	Jonkha language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183938	297900004	Karen language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183939	297903002	Lisu language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183940	297904008	Lushei language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183941	297906005	Murmi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183942	297908006	Newari language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183943	297915003	Estonian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183944	297921004	Udmurt language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183945	297923001	Hungarian language	Qualifier Value	Language	SNOMED	Valid	Standard
+4183946	297930007	Selkup language	Qualifier Value	Language	SNOMED	Valid	Standard
+4193700	313421002	Créole language	Qualifier Value	Language	SNOMED	Valid	Standard
+4206233	439813003	Gaelic language	Qualifier Value	Language	SNOMED	Valid	Standard
+4209117	313422009	Mirpuri language	Qualifier Value	Language	SNOMED	Valid	Standard
+4229842	438566004	Occitan language	Qualifier Value	Language	SNOMED	Valid	Standard
+4230717	439222005	Kalaallisut language	Qualifier Value	Language	SNOMED	Valid	Standard
+4231509	439317008	Inuktitut language	Qualifier Value	Language	SNOMED	Valid	Standard
+4232095	439265006	Corsican language	Qualifier Value	Language	SNOMED	Valid	Standard
+4232100	439314001	Central Khmer language	Qualifier Value	Language	SNOMED	Valid	Standard
+4233020	438893008	Inupiaq language	Qualifier Value	Language	SNOMED	Valid	Standard
+4233169	439766008	Kutchi language	Qualifier Value	Language	SNOMED	Valid	Standard
+4233570	440162008	Bislama language	Qualifier Value	Language	SNOMED	Valid	Standard
+4234319	439316004	Iban language	Qualifier Value	Language	SNOMED	Valid	Standard
+4234468	439399007	Southern Sotho language	Qualifier Value	Language	SNOMED	Valid	Standard
+4235378	440684009	Brawa language	Qualifier Value	Language	SNOMED	Valid	Standard
+4259983	439997000	Romansh language	Qualifier Value	Language	SNOMED	Valid	Standard
+4261080	440703007	Galician language	Qualifier Value	Language	SNOMED	Valid	Standard
+37116367	733052007	Oji-Cree language	Qualifier Value	Language	SNOMED	Valid	Standard
+37116382	733076004	Cayuga language	Qualifier Value	Language	SNOMED	Valid	Standard
+37116383	733077008	Odawa language	Qualifier Value	Language	SNOMED	Valid	Standard
+37116400	733098008	Menominee language	Qualifier Value	Language	SNOMED	Valid	Standard
+37116401	733099000	Tuscarora language	Qualifier Value	Language	SNOMED	Valid	Standard
+37167414	1264278006	Iranian Persian language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481069	444799005	Manx language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481123	444847000	Fulah language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481129	444852005	Norwegian Nynorsk language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481130	444853000	Western Frisian language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481150	444871007	Norwegian Bokmål language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481151	444872000	South Ndebele language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481563	444947004	Bosnian language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481577	444960005	Walloon language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481973	445016000	Croatian language	Qualifier Value	Language	SNOMED	Valid	Standard
+40481997	445038003	Kuanyama language	Qualifier Value	Language	SNOMED	Valid	Standard
+40482032	445070003	Northern Sami language	Qualifier Value	Language	SNOMED	Valid	Standard
+40482419	445134004	Akan language	Qualifier Value	Language	SNOMED	Valid	Standard
+40482476	445186008	Bamun language	Qualifier Value	Language	SNOMED	Valid	Standard
+40482479	445189001	Nousu language	Qualifier Value	Language	SNOMED	Valid	Standard
+40483152	442389001	Sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+40483318	445356005	Aragonese language	Qualifier Value	Language	SNOMED	Valid	Standard
+40483319	445357001	Limburgan language	Qualifier Value	Language	SNOMED	Valid	Standard
+40483377	445409008	Cornish language	Qualifier Value	Language	SNOMED	Valid	Standard
+40483759	445446007	Ndonga language	Qualifier Value	Language	SNOMED	Valid	Standard
+40483799	445482002	Serbian language	Qualifier Value	Language	SNOMED	Valid	Standard
+40483830	445510001	Braille language	Qualifier Value	Language	SNOMED	Valid	Standard
+40483852	445530002	North Ndebele language	Qualifier Value	Language	SNOMED	Valid	Standard
+40486431	446094006	Tetum language	Qualifier Value	Language	SNOMED	Valid	Standard
+40490381	446973006	Dari language	Qualifier Value	Language	SNOMED	Valid	Standard
+44802876	517791000000106	Haitian language	Qualifier Value	Language	SNOMED	Valid	Standard
+45766737	703963007	Makaton vocabulary	Qualifier Value	Language	SNOMED	Valid	Standard
+45767175	704505003	European sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767176	704506002	Middle Eastern sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767177	704507006	Asian and Pacific sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767178	704509009	Algerian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767179	704510004	Bamako sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767180	704511000	Bura sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767181	704512007	Chadian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767182	704513002	Congolese sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767183	704514008	Egyptian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767184	704515009	Ethiopian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767185	704516005	Franco-American sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767186	704518006	Adamorobe sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767187	704519003	Guinean sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767188	704520009	Hausa sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767189	704521008	Kenyan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767190	704522001	Libyan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767191	704524000	Moroccan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767192	704525004	Mozambican sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767193	704526003	Mbour sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767194	704528002	Nigerian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767195	704529005	Sierra Leone sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767196	704531001	South African sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767197	704532008	Tanzanian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767198	704533003	Tunisian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767199	704534009	Ugandan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767200	704535005	Zambian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767201	704537002	Albanian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767202	704538007	Armenian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767203	704539004	Austrian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767204	704540002	Belgian-French sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767205	704541003	British sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767206	704542005	Catalan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767207	704544006	Czech sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767208	704545007	Danish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767209	704546008	Dutch sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767210	704547004	Estonian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767211	704548009	Finnish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767212	704549001	Finland-Swedish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767213	704551002	French sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767214	704552009	Swiss-French sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767215	704553004	Lyons sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767216	704554005	German sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767217	704555006	Swiss-German sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767218	704556007	Greek sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767219	704557003	Hungarian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767220	704559000	Irish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767221	704560005	Italian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767222	704561009	Latvian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767223	704562002	Lithuanian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767224	704563007	Maltese sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767225	704566004	Polish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767226	704567008	Portuguese sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767227	704568003	Romanian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767228	704570007	Slovakian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767229	704571006	Spanish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767230	704574003	Turkish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767231	704575002	Ukrainian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767232	704576001	Yugoslavian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767233	704577005	Slovenian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767234	704580006	Israeli sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767235	704581005	Yiddish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767236	704584002	Palestinian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767237	704585001	Persian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767238	704586000	Saudi Arabian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767239	704587009	Lebanese sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767240	704589007	Qatari sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767241	704590003	United Arab Emirates sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767242	704591004	Australian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767243	704593001	Bengali sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767244	704594007	Chinese sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767245	704595008	Philippine sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767246	704597000	Hong Kong sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767247	704599002	Indonesian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767248	704600004	Japanese sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767249	704601000	Laos sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767250	704602007	Korean sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767251	704603002	Macao sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767252	704606005	Penang sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767253	704607001	Mongolian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767254	704608006	Nepalese sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767255	704610008	Pakistan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767256	704611007	Samoa sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767257	704613005	Sri Lankan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767258	704614004	Taiwanese sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767259	704616002	Thai sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767260	704617006	Ban Khor sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767261	704618001	Chiangmai sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767262	704619009	American Sign Language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767263	704620003	Argentine sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767264	704621004	Bolivian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767265	704623001	Urubú-Kaapor sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767266	704624007	Chilean sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767267	704625008	Colombian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767268	704626009	Costa Rican sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767269	704627000	Cuba sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767270	704628005	Dominican sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767271	704630007	French Canadian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767272	704631006	Guatemalan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767273	704632004	Honduran sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767274	704633009	Inuit sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767275	704634003	Jamaican Country sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767276	704636001	Mayan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767277	704637005	Mexican sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767278	704638000	Nicaraguan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767279	704639008	Panamanian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767280	704640005	Peruvian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767281	704643007	Puerto Rican sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767282	704644001	Salvadoran sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767283	704645000	Uruguayan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45767284	704646004	Venezuelan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45769391	708032007	Volapuk language	Qualifier Value	Language	SNOMED	Valid	Standard
+45769392	708033002	Pali language	Qualifier Value	Language	SNOMED	Valid	Standard
+45769393	708036005	Ido language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771044	708034008	Church Slavic language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771441	704504004	African sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771442	704508001	Sign language of the Americas	Qualifier Value	Language	SNOMED	Valid	Standard
+45771443	704565000	Norwegian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771444	704569006	Russian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771445	704573009	Swedish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771446	704578000	Al-Sayyid Bedouin sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771447	704583008	Kuwaiti sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771448	704588004	Omani sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771449	704592006	Bali sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771450	704596009	Hawaii Pidgin sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771451	704604008	Malaysian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771452	704609003	New Zealand sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45771453	704612000	Singapore sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772734	704517001	Ghanian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772735	704523006	Malagasy sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772736	704530000	Somali sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772737	704536006	Zimbabwe sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772738	704543000	Croatian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772739	704550001	Flemish sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772740	704558008	Icelandic sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772741	704564001	Moldova sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772742	704572004	Valencian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772743	704582003	Jordanian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772744	704598005	Indian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772745	704605009	Selangor sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772746	704615003	Tibetan sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772747	704622006	Brazilian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772748	704629002	Ecuadorian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772749	704635002	Maritime sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772750	704642002	Providencia sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45772997	708035009	Avestan language	Qualifier Value	Language	SNOMED	Valid	Standard
+45773543	704527007	Namibian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+45773544	704641009	Plains Indian sign language	Qualifier Value	Language	SNOMED	Valid	Standard
+46270898	708892009	Hmong language	Qualifier Value	Language	SNOMED	Valid	Standard

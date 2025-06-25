@@ -1,0 +1,7 @@
+Id	Code	Name	Standard Class	Domain	Vocab	Validity	Concept
+32577	OMOP4822444	Physician	Physician Specialty	Provider	Provider	Valid	Standard
+32578	OMOP4822447	Counselor	Provider	Provider	Provider	Valid	Standard
+32580	OMOP4822445	Allied Health Professional	Provider	Provider	Provider	Valid	Standard
+32581	OMOP4822446	Nurse	Provider	Provider	Provider	Valid	Standard
+33003	OMOP5117445	Service Provider	Provider	Provider	Provider	Valid	Standard
+33005	OMOP5117448	Psychiatry or Neurology	Physician Specialty	Provider	Provider	Valid	Standard

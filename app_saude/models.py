@@ -15,6 +15,16 @@ class MyAbstractUser(TimestampedModel):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=False, null=False)
     social_name = models.CharField(max_length=255, blank=True, null=True)
     birth_datetime = models.DateTimeField(blank=True, null=True, db_comment="Date and time of birth")
+    profile_picture = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        db_comment="URL of the profile picture",
+    )
+    use_dark_mode = models.BooleanField(
+        default=False,
+        db_comment="Indicates if the user prefers dark mode",
+    )
 
     class Meta:
         abstract = True
@@ -101,6 +111,7 @@ class ConceptRelationship(TimestampedModel):
 
 
 class ConceptSynonym(TimestampedModel):
+    concept_synonym_id = models.AutoField(primary_key=True, db_comment="Primary key of Concept Synonym")
     concept = models.ForeignKey(
         Concept,
         on_delete=models.CASCADE,
@@ -326,7 +337,7 @@ class Observation(TimestampedModel):
     observation_id = models.AutoField(primary_key=True, db_comment="Primary key of Observation")
     person = models.ForeignKey(
         Person,
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         db_comment="Patient linked to the observation",
@@ -354,7 +365,7 @@ class Observation(TimestampedModel):
         related_name="observation_value_as_concept_set",
         db_comment="Value as Concept",
     )
-    value_as_string = models.CharField(max_length=60, blank=True, null=True, db_comment="Free-text value")
+    value_as_string = models.TextField(blank=True, null=True, db_comment="Free-text value")
     observation_date = models.DateTimeField(blank=True, null=True, db_comment="Date and time of observation")
     observation_type_concept = models.ForeignKey(
         Concept,
@@ -364,8 +375,7 @@ class Observation(TimestampedModel):
         related_name="observation_type_concept_set",
         db_comment="Observation Type Concept",
     )
-    observation_source_value = models.CharField(
-        max_length=50,
+    observation_source_value = models.TextField(
         blank=True,
         null=True,
         db_comment="Source value of the observation",
@@ -435,7 +445,7 @@ class Measurement(TimestampedModel):
     measurement_id = models.AutoField(primary_key=True, db_comment="Primary key of Measurement")
     person = models.ForeignKey(
         Person,
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         db_comment="Patient linked to the measurement",
@@ -467,21 +477,21 @@ class FactRelationship(TimestampedModel):
     domain_concept_1 = models.ForeignKey(
         Concept,
         related_name="factrel_domain_concept_1_set",
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         db_comment="Domain Concept of first fact",
     )
     fact_id_1 = models.IntegerField(db_comment="ID of first fact")
     domain_concept_2 = models.ForeignKey(
         Concept,
         related_name="factrel_domain_concept_2_set",
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         db_comment="Domain Concept of second fact",
     )
     fact_id_2 = models.IntegerField(db_comment="ID of second fact")
     relationship_concept = models.ForeignKey(
         Concept,
         related_name="factrel_relationship_concept_set",
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         db_comment="Type of relationship Concept",
     )
 

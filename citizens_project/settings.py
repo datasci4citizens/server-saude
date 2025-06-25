@@ -187,12 +187,11 @@ SAUDE_WEB_URL = os.environ.get("SAUDE_WEB_URL", "http://localhost:5173")
 SAUDE_MOBILE_URL = os.environ.get("SAUDE_MOBILE_URL", "capacitor://localhost")  # padrão Capacitor
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [SAUDE_WEB_URL, SAUDE_MOBILE_URL, "https://server-saude.onrender.com", "https://localhost"]
+CORS_ALLOWED_ORIGINS = [SAUDE_WEB_URL, SAUDE_MOBILE_URL, "https://localhost"]
 
 CSRF_TRUSTED_ORIGINS = [
-    SAUDE_WEB_URL.replace("http://", "http://*.").replace("https://", "https://*."),
+    SAUDE_WEB_URL,
     SAUDE_MOBILE_URL,
-    "https://server-saude.onrender.com",
     "https://localhost",
 ]
 
@@ -227,4 +226,32 @@ SWAGGER_SETTINGS = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "app_saude": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+    },
 }

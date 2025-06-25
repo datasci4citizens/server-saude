@@ -3,22 +3,23 @@ from django.shortcuts import get_object_or_404
 
 from app_saude.models import FactRelationship, Person, Provider  # ajuste conforme necessário
 
+from .concept import get_concept_by_code
+
 
 def get_provider_and_linked_persons(request_user):
     """
     Retorna o provider logado e os IDs das pessoas vinculadas a ele.
     """
     provider = get_object_or_404(Provider, user=request_user)
-    provider_id = provider.provider_id
 
-    linked_person_ids = FactRelationship.objects.filter(
-        fact_id_2=provider_id,
-        domain_concept_1_id=9202,  # Person
-        domain_concept_2_id=9201,  # Provider
-        relationship_concept_id=9200001,  # Person linked to Provider
+    linked_persons_ids = FactRelationship.objects.filter(
+        fact_id_2=provider.provider_id,
+        domain_concept_1_id=get_concept_by_code("PERSON"),
+        domain_concept_2_id=get_concept_by_code("PROVIDER"),
+        relationship_concept_id=get_concept_by_code("PERSON_PROVIDER"),
     ).values_list("fact_id_1", flat=True)
 
-    return provider, set(linked_person_ids)
+    return provider, set(linked_persons_ids)
 
 
 def get_provider_and_linked_person_or_404(request_user, person_id):
@@ -29,3 +30,14 @@ def get_provider_and_linked_person_or_404(request_user, person_id):
     if int(person_id) not in linked_ids:
         raise Http404("Esta pessoa não está vinculada a este profissional.")
     return provider, Person.objects.get(pk=person_id)
+
+
+def get_provider_full_name(provider_id):
+    """
+    Retorna o nome completo do provider.
+    """
+    print("get_provider_full_name", provider_id)
+    provider = Provider.objects.filter(provider_id=provider_id).first()
+    if provider:
+        return provider.social_name if provider.social_name else provider.user.get_full_name()
+    return None
