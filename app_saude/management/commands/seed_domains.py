@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.db import connection
 
 from app_saude.models import *
 
@@ -16,6 +17,30 @@ class Command(BaseCommand):
                     "domain_concept": Concept.objects.get_or_create(concept_id=concept_id)[0],
                 },
             )
+
+        self.stdout.write("🧹 Truncating all tables...")
+        with connection.cursor() as cursor:
+            # Disable triggers temporarily to avoid constraint violations
+            cursor.execute("SET session_replication_role = 'replica';")
+
+            # Get all table names (excluding Django migrations)
+            cursor.execute(
+                """
+                SELECT tablename 
+                FROM pg_tables 
+                WHERE schemaname = 'public'
+                AND tablename NOT LIKE 'django_migrations'
+            """
+            )
+            tables = [row[0] for row in cursor.fetchall()]
+
+            # Truncate each table
+            for table in tables:
+                self.stdout.write(f"  → Clearing {table}")
+                cursor.execute(f'TRUNCATE TABLE "{table}" CASCADE;')
+
+            # Re-enable triggers
+            cursor.execute("SET session_replication_role = 'origin';")
 
         # domains (IMPORTED FROM ATHENA 14/05/2025)
         domain("Gender", "Gender", 2)
