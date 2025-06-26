@@ -28,7 +28,7 @@ jobs:
       - name: Fetch history
         run: git fetch --unshallow || true
 
-      - name: Lint commits
+      - name: Lint only commits from this PR
         run: |
           git fetch origin ${{ github.base_ref || 'main' }}
           BASE=$(git merge-base origin/${{ github.base_ref || 'main' }} HEAD)
