@@ -109,6 +109,7 @@ class GoogleLoginView(APIView):
             "role": role,
             "user_id": user.pk,
             "full_name": name,
+            "email": user_data.email,
             "social_name": social_name,
             "profile_picture": profile_picture,
             "use_dark_mode": use_dark_mode,
