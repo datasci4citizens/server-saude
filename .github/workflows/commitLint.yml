@@ -28,18 +28,9 @@ jobs:
       - name: Fetch history
         run: git fetch --unshallow || true
 
-      - name: Get commits (PR or push)
-        id: commits
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            RANGE="origin/${{ github.base_ref }}..HEAD"
-            git fetch origin ${{ github.base_ref }}
-          else
-            RANGE="${{ github.event.before }}..HEAD"
-          fi
-          echo "range=$RANGE" >> $GITHUB_OUTPUT
-
       - name: Lint commits
         run: |
-          COMMITS=$(git log ${{ steps.commits.outputs.range }} --pretty=format:%s)
-          echo "$COMMITS" | npx commitlint
+          git fetch origin ${{ github.base_ref || 'main' }}
+          BASE=$(git merge-base origin/${{ github.base_ref || 'main' }} HEAD)
+          echo "Linting commits from $BASE to HEAD"
+          npx commitlint --from=$BASE --to=HEAD
