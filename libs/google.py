@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import requests
 from django.conf import settings
 from google.auth.transport import requests as google_requests
@@ -9,17 +11,18 @@ GOOGLE_ACCESS_TOKEN_OBTAIN_URL = "https://accounts.google.com/o/oauth2/token"
 GOOGLE_USER_INFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
+@dataclass
 class GoogleUserData:
     """
     Represents the user data returned by Google OAuth.
     """
 
-    email: str
-    name: str
-    picture: str
-    locale: str
-    given_name: str
-    family_name: str
+    email: str = ""
+    name: str = ""
+    picture: str = ""
+    locale: str = ""
+    given_name: str = ""
+    family_name: str = ""
 
 
 def google_get_user_data(validated_data) -> GoogleUserData:
