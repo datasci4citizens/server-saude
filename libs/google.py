@@ -45,10 +45,10 @@ def google_get_user_data_mobile(token) -> GoogleUserData:
         )
 
         return GoogleUserData(
-            email=idinfo["email"],
-            name=idinfo["name"],
-            picture=idinfo["picture"],
-            locale=idinfo["locale"],
+            email=idinfo.get("email", ""),
+            name=idinfo.get("name", ""),
+            picture=idinfo.get("picture", ""),
+            locale=idinfo.get("locale", ""),
             given_name=idinfo.get("given_name", ""),
             family_name=idinfo.get("family_name", ""),
         )
@@ -89,10 +89,10 @@ def google_get_user_info(access_token: str) -> GoogleUserData:
 
     user_info = response.json()
     return GoogleUserData(
-        email=user_info["email"],
-        name=user_info["name"],
-        picture=user_info["picture"],
-        locale=user_info["locale"],
+        email=user_info.get("email", ""),
+        name=user_info.get("name", ""),
+        picture=user_info.get("picture", ""),
+        locale=user_info.get("locale", ""),
         given_name=user_info.get("given_name", ""),
         family_name=user_info.get("family_name", ""),
     )
