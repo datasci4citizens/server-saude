@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import requests
 from django.conf import settings
 from google.auth.transport import requests as google_requests
@@ -7,9 +9,6 @@ from rest_framework.exceptions import APIException
 GOOGLE_ID_TOKEN_INFO_URL = "https://www.googleapis.com/oauth2/v3/tokeninfo"
 GOOGLE_ACCESS_TOKEN_OBTAIN_URL = "https://accounts.google.com/o/oauth2/token"
 GOOGLE_USER_INFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
-
-
-from dataclasses import dataclass
 
 
 @dataclass
