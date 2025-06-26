@@ -1,5 +1,3 @@
-from typing import Any, Dict
-
 import requests
 from django.conf import settings
 from google.auth.transport import requests as google_requests
@@ -11,7 +9,20 @@ GOOGLE_ACCESS_TOKEN_OBTAIN_URL = "https://accounts.google.com/o/oauth2/token"
 GOOGLE_USER_INFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
-def google_get_user_data(validated_data):
+class GoogleUserData:
+    """
+    Represents the user data returned by Google OAuth.
+    """
+
+    email: str
+    name: str
+    picture: str
+    locale: str
+    given_name: str
+    family_name: str
+
+
+def google_get_user_data(validated_data) -> GoogleUserData:
     if validated_data.get("code"):
         return google_get_user_data_web(code=validated_data["code"])
     else:
@@ -25,7 +36,7 @@ def google_get_user_data_web(code):
     return google_get_user_info(access_token=access_token)
 
 
-def google_get_user_data_mobile(token):
+def google_get_user_data_mobile(token) -> GoogleUserData:
     try:
         idinfo = id_token.verify_oauth2_token(
             token,
@@ -33,12 +44,14 @@ def google_get_user_data_mobile(token):
             audience=[settings.GOOGLE_OAUTH2_CLIENT_ID],
         )
 
-        return {
-            "email": idinfo["email"],
-            "given_name": idinfo.get("given_name", ""),
-            "family_name": idinfo.get("family_name", ""),
-            "sub": idinfo["sub"],
-        }
+        return GoogleUserData(
+            email=idinfo["email"],
+            name=idinfo["name"],
+            picture=idinfo["picture"],
+            locale=idinfo["locale"],
+            given_name=idinfo.get("given_name", ""),
+            family_name=idinfo.get("family_name", ""),
+        )
     except ValueError:
         raise Exception("ID token inválido")
 
@@ -65,7 +78,7 @@ def google_get_access_token(code: str, redirect_uri: str) -> str:
 
 # Get user info from google
 # https://developers.google.com/identity/protocols/oauth2/web-server#callinganapi
-def google_get_user_info(access_token: str) -> Dict[str, Any]:
+def google_get_user_info(access_token: str) -> GoogleUserData:
     response = requests.get(
         GOOGLE_USER_INFO_URL,
         params={"access_token": access_token},
@@ -74,4 +87,12 @@ def google_get_user_info(access_token: str) -> Dict[str, Any]:
     if not response.ok:
         raise APIException("Could not get user info from Google: {response.json()}")
 
-    return response.json()
+    user_info = response.json()
+    return GoogleUserData(
+        email=user_info["email"],
+        name=user_info["name"],
+        picture=user_info["picture"],
+        locale=user_info["locale"],
+        given_name=user_info.get("given_name", ""),
+        family_name=user_info.get("family_name", ""),
+    )
