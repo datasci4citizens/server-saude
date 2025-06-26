@@ -791,6 +791,7 @@ class ProviderPersonsView(APIView):
                     person=person,
                     provider_id=provider_id,
                     observation_concept_id=get_concept_by_code("HELP"),
+                    value_as_concept_id=get_concept_by_code("ACTIVE"),
                     observation_date__isnull=False,
                 )
                 .order_by("-observation_date")
