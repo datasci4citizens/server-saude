@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from app_saude.serializers import AuthSerializer
-from libs.google import google_get_user_data
+from libs.google import GoogleUserData, google_get_user_data
 
 from .models import *
 from .serializers import *
@@ -44,21 +44,21 @@ class GoogleLoginView(APIView):
         validated_data = auth_serializer.validated_data
 
         # Get user data from google
-        user_data = google_get_user_data(validated_data)
+        user_data: GoogleUserData = google_get_user_data(validated_data)
 
         # Creates user in DB if first time login
         user, created = User.objects.get_or_create(
-            email=user_data.get("email"),
-            username=user_data.get("email"),
+            email=user_data.email,
+            username=user_data.email,
             defaults={
-                "first_name": user_data.get("given_name", ""),
-                "last_name": user_data.get("family_name", ""),
+                "first_name": user_data.given_name,
+                "last_name": user_data.family_name,
             },
         )
 
         if not created:
-            user.first_name = user_data.get("given_name", "")
-            user.last_name = user_data.get("family_name", "")
+            user.first_name = user_data.given_name
+            user.last_name = user_data.family_name
             user.save()
 
         # Check if user is already registered as a provider or person
@@ -66,6 +66,7 @@ class GoogleLoginView(APIView):
         person_id = None
         social_name = None
         use_dark_mode = False
+        profile_picture = user_data.picture
         role = "none"
 
         # Check if user is already registered as a provider
@@ -73,7 +74,6 @@ class GoogleLoginView(APIView):
             provider = Provider.objects.get(user=user)
             social_name = getattr(provider, "social_name", None)
             use_dark_mode = provider.use_dark_mode
-            profile_picture = user_data.get("picture")
             if profile_picture:
                 provider.profile_picture = profile_picture
                 provider.save(update_fields=["profile_picture"])
@@ -85,7 +85,6 @@ class GoogleLoginView(APIView):
             person = Person.objects.get(user=user)
             social_name = getattr(person, "social_name", None)
             use_dark_mode = person.use_dark_mode
-            profile_picture = user_data.get("picture")
             if profile_picture:
                 person.profile_picture = profile_picture
                 person.save(update_fields=["profile_picture"])
@@ -110,8 +109,9 @@ class GoogleLoginView(APIView):
             "role": role,
             "user_id": user.pk,
             "full_name": name,
+            "email": user_data.email,
             "social_name": social_name,
-            "profile_picture": user_data.get("picture", ""),
+            "profile_picture": profile_picture,
             "use_dark_mode": use_dark_mode,
         }
 
@@ -276,8 +276,8 @@ class AccountView(APIView):
             FactRelationship.objects.filter(fact_id_2=id).delete()
 
             # Soft delete
-            user.email = f"deleted_{user.email}"
-            user.username = f"deleted_{user.username}"
+            user.email = f"deleted_{id}_{user.email}"
+            user.username = f"deleted_{id}_{user.username}"
             user.is_active = False
             user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -791,6 +791,7 @@ class ProviderPersonsView(APIView):
                     person=person,
                     provider_id=provider_id,
                     observation_concept_id=get_concept_by_code("HELP"),
+                    value_as_concept_id=get_concept_by_code("ACTIVE"),
                     observation_date__isnull=False,
                 )
                 .order_by("-observation_date")
