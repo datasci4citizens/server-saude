@@ -19,12 +19,12 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from app_saude.serializers import AuthSerializer
-from libs.google import google_get_user_data
+from libs.google import GoogleUserData, google_get_user_data
 
 from .models import *
 from .serializers import *
-from .utils.interest_area import get_interest_areas_and_triggers
-from .utils.person import get_person_or_404
+
+# from .utils.interest_area import get_interest_areas_and_triggers
 from .utils.provider import *
 
 User = get_user_model()
@@ -44,34 +44,36 @@ class GoogleLoginView(APIView):
         validated_data = auth_serializer.validated_data
 
         # Get user data from google
-        user_data = google_get_user_data(validated_data)
+        user_data: GoogleUserData = google_get_user_data(validated_data)
 
         # Creates user in DB if first time login
         user, created = User.objects.get_or_create(
-            email=user_data.get("email"),
-            username=user_data.get("email"),
+            email=user_data.email,
+            username=user_data.email,
             defaults={
-                "first_name": user_data.get("given_name", ""),
-                "last_name": user_data.get("family_name", ""),
+                "first_name": user_data.given_name,
+                "last_name": user_data.family_name,
             },
         )
 
         if not created:
-            user.first_name = user_data.get("given_name", "")
-            user.last_name = user_data.get("family_name", "")
+            user.first_name = user_data.given_name
+            user.last_name = user_data.family_name
             user.save()
 
         # Check if user is already registered as a provider or person
         provider_id = None
         person_id = None
         social_name = None
+        use_dark_mode = False
+        profile_picture = user_data.picture
         role = "none"
 
         # Check if user is already registered as a provider
         if Provider.objects.filter(user=user).exists():
             provider = Provider.objects.get(user=user)
             social_name = getattr(provider, "social_name", None)
-            profile_picture = user_data.get("picture")
+            use_dark_mode = provider.use_dark_mode
             if profile_picture:
                 provider.profile_picture = profile_picture
                 provider.save(update_fields=["profile_picture"])
@@ -82,7 +84,7 @@ class GoogleLoginView(APIView):
         if Person.objects.filter(user=user).exists():
             person = Person.objects.get(user=user)
             social_name = getattr(person, "social_name", None)
-            profile_picture = user_data.get("picture")
+            use_dark_mode = person.use_dark_mode
             if profile_picture:
                 person.profile_picture = profile_picture
                 person.save(update_fields=["profile_picture"])
@@ -107,7 +109,10 @@ class GoogleLoginView(APIView):
             "role": role,
             "user_id": user.pk,
             "full_name": name,
-            "profile_picture": user_data.get("picture", ""),
+            "email": user_data.email,
+            "social_name": social_name,
+            "profile_picture": profile_picture,
+            "use_dark_mode": use_dark_mode,
         }
 
         return Response(response, status=200)
@@ -271,11 +276,34 @@ class AccountView(APIView):
             FactRelationship.objects.filter(fact_id_2=id).delete()
 
             # Soft delete
-            user.email = f"deleted_{user.email}"
-            user.username = f"deleted_{user.username}"
+            user.email = f"deleted_{id}_{user.email}"
+            user.username = f"deleted_{id}_{user.username}"
             user.is_active = False
             user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Account"])
+class SwitchDarkModeView(APIView):
+    """
+    ViewSet to switch dark mode for the user.
+    Allowed HTTP methods: POST.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        person: Person = Person.objects.filter(user=user).first()
+        if person:
+            person.use_dark_mode = not person.use_dark_mode
+            person.save(update_fields=["use_dark_mode"])
+        else:
+            provider: Provider = Provider.objects.filter(user=user).first()
+            if provider:
+                provider.use_dark_mode = not provider.use_dark_mode
+                provider.save(update_fields=["use_dark_mode"])
+        return Response(status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Person"])
@@ -360,6 +388,14 @@ class ConceptClassViewSet(FlexibleViewSet):
             style="form",
             explode=False,
         ),
+        OpenApiParameter(
+            name="code",
+            description="concept_code list (ex: code=ACTIVE,RESOLVED)",
+            required=False,
+            type=str,
+            style="form",
+            explode=False,
+        ),
         OpenApiParameter(name="lang", description="Translation language (ex: pt)", required=False, type=str),
         OpenApiParameter(
             name="relationship",
@@ -375,14 +411,20 @@ class ConceptViewSet(FlexibleViewSet):
     def get_queryset(self):
         queryset = Concept.objects.all()
 
-        lang = self.request.query_params.get("lang", "pt")
+        lang = self.request.query_params.get("lang", "297504001")  # Default to Portuguese (297504001)
         class_ids = self.request.query_params.get("class")
+        codes = self.request.query_params.get("code")
         relationship_id = self.request.query_params.get("relationship")
 
         if class_ids:
             # Supports multiple separated by comma
             class_id_list = [s.strip() for s in class_ids.split(",")]
             queryset = queryset.filter(concept_class__concept_class_id__in=class_id_list)
+
+        if codes:
+            # Supports multiple separated by comma
+            code_list = [s.strip() for s in codes.split(",")]
+            queryset = queryset.filter(concept_code__in=code_list)
 
         # Prefetch only synonyms in the desired language
         queryset = queryset.prefetch_related(
@@ -747,7 +789,9 @@ class ProviderPersonsView(APIView):
             help = (
                 Observation.objects.filter(
                     person=person,
+                    provider_id=provider_id,
                     observation_concept_id=get_concept_by_code("HELP"),
+                    value_as_concept_id=get_concept_by_code("ACTIVE"),
                     observation_date__isnull=False,
                 )
                 .order_by("-observation_date")
@@ -936,9 +980,39 @@ class ReceivedHelpsView(APIView):
         helps = Observation.objects.filter(
             provider_id=provider.provider_id, observation_concept_id=get_concept_by_code("HELP")  # Ajuda
         ).order_by("-observation_date")
-        print(helps)
         serializer = ObservationRetrieveSerializer(helps, many=True)
+        logger.info(f"Retrieved {len(helps)} helps for provider {provider.provider_id}")
         return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Help"],
+    responses=ObservationRetrieveSerializer(many=True),
+)
+class MarkHelpAsResolvedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, help_id):
+        """
+        Marks a help as resolved by updating its value_as_concept_id to the RESOLVED concept.
+        """
+        try:
+            help_observation = get_object_or_404(
+                Observation,
+                observation_id=help_id,
+                observation_concept_id=get_concept_by_code("HELP").concept_id,
+            )
+
+            # Update the help observation to mark it as resolved
+            help_observation.value_as_concept_id = get_concept_by_code("RESOLVED").concept_id
+            help_observation.save(update_fields=["value_as_concept_id"])
+
+            serializer = ObservationRetrieveSerializer(help_observation)
+            logger.info(f"Help {help_id} marked as resolved successfully.")
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error marking help {help_id} as resolved: {str(e)}", e)
+            return Response({"error": "Failed to mark help as resolved"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -1072,74 +1146,63 @@ class ProviderPersonDiaryDetailView(APIView):
             observation_concept_id=get_concept_by_code("diary_entry").concept_id,
         )
 
-        serializer = DiaryRetrieveSerializer(diary)
+        serializer = DiaryRetrieveSerializer(diary, context={"person_id": person.person_id})
         return Response(serializer.data)
 
 
-@extend_schema(tags=["Interest_Areas"], responses={200: InterestAreaSerializer(many=True)})
-class PersonInterestAreaView(APIView):
-    permission_classes = [IsAuthenticated]
+@extend_schema(
+    tags=["Interest_Areas"],
+    request=InterestAreaSerializer,
+    responses={201: InterestAreaRetrieveSerializer},
+    parameters=[
+        OpenApiParameter(name="person_id", description="Filter interest areas by person ID", required=False, type=int)
+    ],
+)
+class InterestAreaViewSet(FlexibleViewSet):
+
+    def get_queryset(self):
+        queryset = Observation.objects.filter(observation_concept_id=get_concept_by_code("INTEREST_AREA").concept_id)
+
+        person_id = self.request.query_params.get("person_id", None)
+        if person_id:
+            queryset = queryset.filter(person_id=person_id)
+
+        return queryset
 
     @extend_schema(
-        summary="Get interest areas for the authenticated user",
-        description="Retrieve the interest areas for the authenticated user. Optionally, can return crowd-sourced interest areas.",
-        parameters=[
-            OpenApiParameter(
-                name="crowd_source",
-                description="If true, returns interest areas that are crowd-sourced (not linked to a specific person).",
-                required=False,
-                type=bool,
-            )
-        ],
+        request=InterestAreaCreateSerializer,
     )
-    def get(self, request):
-        person = get_person_or_404(request.user)
-        crowd_source = request.query_params.get("crowd_source", "false").lower() == "true"
-        if crowd_source:
-            logger.info("Fetching crowd-sourced interest areas")
-            interest_areas = (
-                Observation.objects.filter(
-                    person_id=None,  # All interest areas that the user wants other people to see, we create a new Observation with personId=None
-                    observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                )
-                .select_related("observation_concept")
-                .all()
+    def create(self, request):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            instance = serializer.save()
+
+            retrieve_serializer = InterestAreaRetrieveSerializer(instance)
+            return Response(retrieve_serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {
+                    "error": "An error occurred while creating the interest area",
+                    "details": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-            logger.info(f"Found {interest_areas.count()} crowd-sourced interest areas")
-        else:
-            logger.info("Fetching personal interest areas")
-            interest_areas = (
-                Observation.objects.filter(
-                    person=person, observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id
-                )
-                .select_related("observation_concept")
-                .all()
-            )
-            logger.info(f"Found {interest_areas.count()} interest areas for person {person.person_id}")
-
-        results = get_interest_areas_and_triggers(interest_areas)
-
-        return Response(results)
-
-    @extend_schema(tags=["Interest_Areas"], request=InterestAreaSerializer, responses={201: InterestAreaSerializer})
-    def post(self, request):
-
-        serializer = InterestAreaSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        interest_area = serializer.save()
-
-        return Response(InterestAreaSerializer(interest_area).data, status=status.HTTP_201_CREATED)
 
     @extend_schema(
-        request=InterestAreaBulkUpdateSerializer,
-        responses={200: OpenApiTypes.OBJECT},
+        request=InterestAreaUpdateSerializer,
     )
-    def patch(self, request):
-        serializer = InterestAreaBulkUpdateSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        result = serializer.save()
+    def update(self, request, pk=None):
+        interest_area = get_object_or_404(
+            Observation, observation_id=pk, observation_concept=get_concept_by_code("INTEREST_AREA")
+        )
 
-        return Response(result, status=status.HTTP_200_OK)
+        serializer = self.get_serializer(interest_area, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        updated_instance = serializer.save()
+
+        return Response(InterestAreaRetrieveSerializer(updated_instance).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(
@@ -1157,82 +1220,29 @@ class MarkAttentionPointView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            provider = get_object_or_404(Provider, user=request.user)
+            provider_name = get_provider_full_name(request.user.provider.provider_id)
             data = serializer.validated_data
 
             observation = get_object_or_404(Observation, observation_id=data["area_id"])
-            if data["is_attention_point"]:
-                observation.value_as_concept = get_concept_by_code("value_yes")
-                observation.provider = provider
-            else:
-                observation.value_as_concept = get_concept_by_code("value_no")
-                observation.provider = None
+            interest_data = json.loads(observation.value_as_string) if observation.value_as_string else {}
 
+            interest_data["marked_by"] = interest_data.get("marked_by", [])
+
+            if data["is_attention_point"]:
+                if provider_name not in interest_data["marked_by"]:
+                    interest_data["marked_by"].append(provider_name)
+            else:
+                if provider_name in interest_data["marked_by"]:
+                    interest_data["marked_by"].remove(provider_name)
+
+            # Update the observation with the new interest data
+            observation.value_as_string = json.dumps(interest_data, ensure_ascii=False)
             observation.save()
 
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"provider_name": provider_name, "is_marked": data["is_attention_point"]}, status=status.HTTP_200_OK
+            )
+
         except Exception as e:
-            logger.error(f"Error marking attention point: {str(e)}", e)
+            logger.error(f"Error marking attention point: {str(e)}")
             return Response({"error": "Failed to mark attention point"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@extend_schema(tags=["Interest_Areas"])
-class PersonInterestAreaDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(responses={200: InterestAreaSerializer})
-    def get(self, request, interest_area_id):
-        person = get_object_or_404(Person, user=request.user)
-
-        interest_area = get_object_or_404(
-            Observation,
-            observation_id=interest_area_id,
-            person=person,
-            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
-        )
-
-        interest_data = InterestAreaSerializer(interest_area).data
-
-        relationships = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-            fact_id_1=interest_area.observation_id,
-            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-        )
-
-        trigger_ids = relationships.values_list("fact_id_2", flat=True)
-        triggers = Observation.objects.filter(observation_id__in=trigger_ids).select_related("observation_concept")
-
-        interest_data["triggers"] = InterestAreaTriggerSerializer(triggers, many=True).data
-
-        return Response(interest_data)
-
-    @extend_schema(responses={204: None})
-    def delete(self, request, interest_area_id):
-        person = get_object_or_404(Person, user=request.user)
-
-        interest_area = get_object_or_404(
-            Observation,
-            observation_id=interest_area_id,
-            person=person,
-            observation_type_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
-        )
-
-        relationships = FactRelationship.objects.filter(
-            domain_concept_1_id=get_concept_by_code("INTEREST_AREA").concept_id,
-            fact_id_1=interest_area.observation_id,
-            relationship_concept_id=get_concept_by_code("AOI_TRIGGER").concept_id,
-        )
-
-        trigger_ids = list(relationships.values_list("fact_id_2", flat=True))
-
-        relationships.delete()
-
-        for trigger_id in trigger_ids:
-            if not FactRelationship.objects.filter(
-                domain_concept_2_id=get_concept_by_code("TRIGGER").concept_id, fact_id_2=trigger_id
-            ).exists():
-                Observation.objects.filter(observation_id=trigger_id).delete()
-
-        interest_area.delete()
-
-        return Response(status=status.HTTP_204_NO_CONTENT)

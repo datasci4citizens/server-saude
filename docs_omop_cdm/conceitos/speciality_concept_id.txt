@@ -1,0 +1,6 @@
+add_concept(32577, "Physician", "Physician Specialty", "OMOP4822444", "Provider", "Provider", )
+add_concept(32578, "Counselor", "Provider", "OMOP4822447", "Provider", "Provider", )
+add_concept(32580, "Allied Health Professional", "Provider", "OMOP4822445", "Provider", "Provider", )
+add_concept(32581, "Nurse", "Provider", "OMOP4822446", "Provider", "Provider", )
+add_concept(33003, "Service Provider", "Provider", "OMOP5117445", "Provider", "Provider", )
+add_concept(33005, "Psychiatry or Neurology", "Physician Specialty", "OMOP5117448", "Provider", "Provider", )

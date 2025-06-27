@@ -21,6 +21,10 @@ class MyAbstractUser(TimestampedModel):
         null=True,
         db_comment="URL of the profile picture",
     )
+    use_dark_mode = models.BooleanField(
+        default=False,
+        db_comment="Indicates if the user prefers dark mode",
+    )
 
     class Meta:
         abstract = True
@@ -107,6 +111,7 @@ class ConceptRelationship(TimestampedModel):
 
 
 class ConceptSynonym(TimestampedModel):
+    concept_synonym_id = models.AutoField(primary_key=True, db_comment="Primary key of Concept Synonym")
     concept = models.ForeignKey(
         Concept,
         on_delete=models.CASCADE,
