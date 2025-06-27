@@ -276,8 +276,8 @@ class AccountView(APIView):
             FactRelationship.objects.filter(fact_id_2=id).delete()
 
             # Soft delete
-            user.email = f"deleted_{user.email}"
-            user.username = f"deleted_{user.username}"
+            user.email = f"deleted_{id}_{user.email}"
+            user.username = f"deleted_{id}_{user.username}"
             user.is_active = False
             user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
