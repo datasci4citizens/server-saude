@@ -845,7 +845,6 @@ class DiaryRetrieveSerializer(serializers.Serializer):
             else:
                 interest_areas[i]["observation_id"] = None
                 interest_areas[i]["marked_by"] = []
-        print(f"Interest Areas: {interest_areas}")
         return interest_areas
 
 
