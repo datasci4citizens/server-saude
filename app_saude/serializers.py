@@ -681,7 +681,7 @@ class NextVisitSerializer(serializers.Serializer):
 class InterestAreaTriggerSerializer(serializers.Serializer):
     name = serializers.CharField()
     type = serializers.ChoiceField(choices=["boolean", "text", "int", "scale"], default="boolean")
-    response = serializers.CharField(allow_null=True)
+    response = serializers.CharField(allow_null=True, allow_blank=True)
 
 
 class InterestAreaSerializer(serializers.Serializer):
@@ -845,6 +845,7 @@ class DiaryRetrieveSerializer(serializers.Serializer):
             else:
                 interest_areas[i]["observation_id"] = None
                 interest_areas[i]["marked_by"] = []
+        print(f"Interest Areas: {interest_areas}")
         return interest_areas
 
 
