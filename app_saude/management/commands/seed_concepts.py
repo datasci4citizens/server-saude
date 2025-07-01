@@ -46,7 +46,7 @@ class Command(BaseCommand):
         # Gender (IMPORTED FROM ATHENA 02/05/2025)
         add_concept(8507, "MALE", "Gender", "M", "Gender", "Gender", "Masculino")
         add_concept(8532, "FEMALE", "Gender", "F", "Gender", "Gender", "Feminino")
-        add_concept(8551, "UNKNOWN", "Gender", "U", "Gender", "Gender", "Desconhecido")
+        add_concept(8551, "UNKNOWN", "Gender", "U", "Gender", "Gender", "Outro")
 
         # Race (IMPORTED FROM ATHENA 02/05/2025)Add commentMore actions
         add_concept(8515, "Asian", "Race", "2", "Race", "Race", "Asiático")
