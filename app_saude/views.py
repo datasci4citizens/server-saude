@@ -1133,7 +1133,7 @@ class PersonLinkProviderView(APIView):
             .first()
         )
 
-        if not obs or not obs.provider_id:
+        if not obs or not obs.provider.provider_id:
             logger.warning(
                 "Person-Provider linking failed - invalid or expired code",
                 extra={
@@ -1141,14 +1141,14 @@ class PersonLinkProviderView(APIView):
                     "person_id": person.person_id,
                     "code": code,
                     "code_found": obs is not None,
-                    "provider_id_exists": obs.provider_id if obs else None,
+                    "provider_id_exists": obs.provider.provider_id if obs.provider else None,
                     "action": "person_provider_linking_invalid_code",
                 },
             )
             return Response({"error": "Invalid or expired code."}, status=400)
 
         # Get provider details for logging
-        provider = get_object_or_404(Provider, provider_id=obs.provider_id)
+        provider = get_object_or_404(Provider, provider_id=obs.provider.provider_id)
 
         # Check if relationship already exists
         existing_relationship = FactRelationship.objects.filter(
@@ -1178,12 +1178,12 @@ class PersonLinkProviderView(APIView):
                 "user_id": user.id,
                 "person_id": person.person_id,
                 "person_name": person.social_name,
-                "provider_id": obs.provider_id,
+                "provider_id": obs.provider.provider_id,
                 "provider_name": provider.social_name,
                 "code": code,
                 "relationship_created": created,
                 "relationship_existed": existing_relationship,
-                "observation_id": obs.id,
+                "observation_id": obs.observation_id,
                 "action": "person_provider_linking_success",
             },
         )
@@ -1225,20 +1225,20 @@ class ProviderByLinkCodeView(APIView):
             .first()
         )
 
-        if not obs or not obs.provider_id:
+        if not obs or not obs.provider:
             logger.warning(
                 "Provider lookup failed - invalid or expired code",
                 extra={
                     "user_id": user.id,
                     "code": code,
                     "observation_found": obs is not None,
-                    "provider_id_exists": obs.provider_id if obs else None,
+                    "provider_id_exists": obs.provider.provider_id if obs.provider else None,
                     "action": "provider_lookup_invalid_code",
                 },
             )
             return Response({"error": "Invalid or expired code."}, status=400)
 
-        provider = get_object_or_404(Provider, provider_id=obs.provider_id)
+        provider = get_object_or_404(Provider, provider_id=obs.provider.provider_id)
         serializer = ProviderRetrieveSerializer(provider)
 
         logger.info(
@@ -1249,7 +1249,7 @@ class ProviderByLinkCodeView(APIView):
                 "provider_id": provider.provider_id,
                 "provider_name": provider.social_name,
                 "professional_registration": getattr(provider, "professional_registration", None),
-                "observation_id": obs.id,
+                "observation_id": obs.observation_id,
                 "action": "provider_lookup_success",
             },
         )
