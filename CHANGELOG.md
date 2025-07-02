@@ -1,6 +1,242 @@
 # CHANGELOG
 
 
+## v1.4.0 (2025-06-27)
+
+### Bug Fixes
+
+- Add shared field
+  ([`1c416f4`](https://github.com/datasci4citizens/server-saude/commit/1c416f40c853a142201b54a1c57966c07ce270a5))
+
+- Add trigger response to serializer
+  ([`2262770`](https://github.com/datasci4citizens/server-saude/commit/2262770d5d70f205e0c4e09cb5422bd69089c0cd))
+
+- Cant create interest area with same name
+  ([`9209c98`](https://github.com/datasci4citizens/server-saude/commit/9209c9883caf0a4d3aeeef509ce98d29d3d08892))
+
+- Ensure ascii to false
+  ([`6d86868`](https://github.com/datasci4citizens/server-saude/commit/6d8686841cc6b1d7ab8210215159af18d1005cc8))
+
+- **nojira**: Fix concept and ui mode
+  ([`b423ad0`](https://github.com/datasci4citizens/server-saude/commit/b423ad0f3bb475253bc2f0f4823358a0fe1c5521))
+
+- **nojira**: Fix concept and ui mode
+  ([#114](https://github.com/datasci4citizens/server-saude/pull/114),
+  [`f0dddf0`](https://github.com/datasci4citizens/server-saude/commit/f0dddf085f11aecec79780cfd6ee513bd8cbd502))
+
+- **nojira**: Fix concepts ([#103](https://github.com/datasci4citizens/server-saude/pull/103),
+  [`c95caaa`](https://github.com/datasci4citizens/server-saude/commit/c95caaa2ab5345c02e0e8ca3606f421c206417fd))
+
+- **nojira**: Fix diary retrieve marked_by
+  ([`55dc6df`](https://github.com/datasci4citizens/server-saude/commit/55dc6dfcd92f80b8da874a9ffa04260d88be39e1))
+
+- **nojira**: Fix diary retrieve marked_by
+  ([#106](https://github.com/datasci4citizens/server-saude/pull/106),
+  [`18823f4`](https://github.com/datasci4citizens/server-saude/commit/18823f4277062362cb37081f56d97fc119d89db3))
+
+- **nojira**: Fix issue with concept
+  ([`a65e5fa`](https://github.com/datasci4citizens/server-saude/commit/a65e5fa7c5acef199a004c82c525e303b84ebd85))
+
+- **nojira**: Fix issue with concept
+  ([#110](https://github.com/datasci4citizens/server-saude/pull/110),
+  [`c789754`](https://github.com/datasci4citizens/server-saude/commit/c78975463c1ae1f9b44b549ab3e6113d1d7c12be))
+
+- **nojira**: Fix mark attention
+  ([`4372bfa`](https://github.com/datasci4citizens/server-saude/commit/4372bfa43197b2f598a62c98c65479b32964c616))
+
+- **nojira**: Fix mark attention ([#107](https://github.com/datasci4citizens/server-saude/pull/107),
+  [`ca5aa50`](https://github.com/datasci4citizens/server-saude/commit/ca5aa5038b3e2cf51b56cb3b2f9fcd867942ae50))
+
+- **nojira**: Fix seed concepts
+  ([`39d7a08`](https://github.com/datasci4citizens/server-saude/commit/39d7a08f5c7b7f4cf57df22ec3c694fa798d18f0))
+
+- **nojira**: Fix seed concepts
+  ([`e69b1ea`](https://github.com/datasci4citizens/server-saude/commit/e69b1ea9eef84fd6ede7f304082494e18788cbef))
+
+- **nojira**: Fix seed concepts
+  ([`1424768`](https://github.com/datasci4citizens/server-saude/commit/14247680fe0f2caf798d4571215c60a53ef7cec3))
+
+- **nojira**: Fix seed concepts ([#104](https://github.com/datasci4citizens/server-saude/pull/104),
+  [`6986d42`](https://github.com/datasci4citizens/server-saude/commit/6986d42e7ff97c0e4c95f353c7654d6182ab6399))
+
+- **nojira**: Fix seed concepts ([#105](https://github.com/datasci4citizens/server-saude/pull/105),
+  [`9fac382`](https://github.com/datasci4citizens/server-saude/commit/9fac3826c8865d67ea6658f285de952f7e09f9ee))
+
+- **nojira**: Fix switch dark mod
+  ([#113](https://github.com/datasci4citizens/server-saude/pull/113),
+  [`346fa15`](https://github.com/datasci4citizens/server-saude/commit/346fa15ab773829c93a7acab6c2371665c591b4c))
+
+- **nojira**: Fix switch dark mode
+  ([`66ecdf6`](https://github.com/datasci4citizens/server-saude/commit/66ecdf6b403f88a45f0609cc2517b8dc273402d0))
+
+- **nojira**: Quick fix
+  ([`37b8b2a`](https://github.com/datasci4citizens/server-saude/commit/37b8b2a01a229aeb924002b9001b5e540a5b62be))
+
+- **SAU**: Comment
+  ([`368036a`](https://github.com/datasci4citizens/server-saude/commit/368036a6748cd2e909b374c64d8d580e5a1fe3a3))
+
+- **SAU**: Commit lint
+  ([`1eaed1f`](https://github.com/datasci4citizens/server-saude/commit/1eaed1f3224268a540d6eca1f288aef73ab27f76))
+
+- **SAU**: Correct import sorting in seed scripts
+  ([`f6dcb87`](https://github.com/datasci4citizens/server-saude/commit/f6dcb8792797adec976e4c54cb39489dcdeea68d))
+
+- **SAU**: Portuguese concept code
+  ([`ac63099`](https://github.com/datasci4citizens/server-saude/commit/ac63099eda6458b4684e2ac9f609114da64fc11c))
+
+- **sau-108**: Expose resolve help endpoint
+  ([`ea16291`](https://github.com/datasci4citizens/server-saude/commit/ea162915f0efdcfef7e63adb9025a4dbce212ca1))
+
+- **sau-108**: Expose resolve help endpoint
+  ([#109](https://github.com/datasci4citizens/server-saude/pull/109),
+  [`2374c3a`](https://github.com/datasci4citizens/server-saude/commit/2374c3ac735a0c92971dd1956eef45a2e0705958))
+
+- **sau-124**: Dataclass google data
+  ([`80f82fd`](https://github.com/datasci4citizens/server-saude/commit/80f82fd71bbd909071ca10cb6a5ac850cc7d461b))
+
+- **sau-124**: Dataclass google data
+  ([`414cee5`](https://github.com/datasci4citizens/server-saude/commit/414cee5038214891ebce15df35a7d8a3a623e883))
+
+- **sau-124**: Dataclass google data
+  ([#127](https://github.com/datasci4citizens/server-saude/pull/127),
+  [`44c5554`](https://github.com/datasci4citizens/server-saude/commit/44c55549bc627aa7ab5e638a435d372b8b1d7961))
+
+- **sau-124**: Key error at fields
+  ([`da8d30d`](https://github.com/datasci4citizens/server-saude/commit/da8d30dbaddd1a7c65b8c9155165853c50666949))
+
+- **sau-124**: Key error at fields
+  ([`59fa656`](https://github.com/datasci4citizens/server-saude/commit/59fa656f1d49b04a8e73c7c7410664e1e7f77605))
+
+- **sau-124**: Key error at fields
+  ([#126](https://github.com/datasci4citizens/server-saude/pull/126),
+  [`63f525f`](https://github.com/datasci4citizens/server-saude/commit/63f525ff811c282849158a63602846350809e8e8))
+
+- **sau-124**: Return all fields from google mobile login
+  ([`c6ce28d`](https://github.com/datasci4citizens/server-saude/commit/c6ce28da35ce746f14ae392e2dee904170037485))
+
+- **sau-124**: Return all fields from google mobile login
+  ([`d36a2c4`](https://github.com/datasci4citizens/server-saude/commit/d36a2c4a0881b7d6505112ce8aeb3cc524d18a1e))
+
+- **sau-124**: Return all fields from google mobile login
+  ([`af272fa`](https://github.com/datasci4citizens/server-saude/commit/af272fa9be17034050e3b274a01a41fd628dbe62))
+
+- **sau-124**: Return all fields from google mobile login
+  ([`5acf2e2`](https://github.com/datasci4citizens/server-saude/commit/5acf2e24b4d590157860798cd7834ede9e935709))
+
+- **sau-124**: Return all fields from google mobile login
+  ([`be0c25d`](https://github.com/datasci4citizens/server-saude/commit/be0c25d376fb36657e6f9c5dbd959e6243a3b05f))
+
+- **sau-124**: Return all fields from google mobile login
+  ([#125](https://github.com/datasci4citizens/server-saude/pull/125),
+  [`8e3ca15`](https://github.com/datasci4citizens/server-saude/commit/8e3ca156c962350f7c1ff1e013a5f6409a3b3b50))
+
+- **sau-130**: Lasthelp on providerPersonsView
+  ([`c1363fa`](https://github.com/datasci4citizens/server-saude/commit/c1363fa380d015319d81b744559e941a83c21a86))
+
+- **sau-130**: Lasthelp on providerPersonsView
+  ([`7d36c50`](https://github.com/datasci4citizens/server-saude/commit/7d36c50e4cf16e358f606387cb5006cee22babf4))
+
+- **sau-133**: Delete account for second time
+  ([`8e65c5f`](https://github.com/datasci4citizens/server-saude/commit/8e65c5f03780120b4d2a736f44b47c81d3a53b68))
+
+- **sau-133**: Delete account for second time
+  ([#134](https://github.com/datasci4citizens/server-saude/pull/134),
+  [`882977c`](https://github.com/datasci4citizens/server-saude/commit/882977c5ed619b0c995aa1732b1d4e0bd6b3b0fc))
+
+- **sau-99**: Quick fix ([#102](https://github.com/datasci4citizens/server-saude/pull/102),
+  [`91806a7`](https://github.com/datasci4citizens/server-saude/commit/91806a796805b345a45786f4ea0726834dc1ed61))
+
+### Chores
+
+- **SAU**: Remove reset database code
+  ([`d9ad521`](https://github.com/datasci4citizens/server-saude/commit/d9ad521c8ec8983f82e00ea0b572b49d5f5be162))
+
+- **SAU**: Remove reset database code
+  ([#123](https://github.com/datasci4citizens/server-saude/pull/123),
+  [`aeb3f30`](https://github.com/datasci4citizens/server-saude/commit/aeb3f30c2286aa05f5893467fa1e3a10b3450168))
+
+- **SAU**: Try to reset database
+  ([`0f62db8`](https://github.com/datasci4citizens/server-saude/commit/0f62db8795fc89bb7baec59d9a5671ac58f74bcb))
+
+- **SAU**: Try to reset database ([#122](https://github.com/datasci4citizens/server-saude/pull/122),
+  [`12481eb`](https://github.com/datasci4citizens/server-saude/commit/12481eb49dc2952cb4eecf543a4f7fd3c1c6d03d))
+
+### Features
+
+- Add interest area validation error handling
+  ([`c0ae9c1`](https://github.com/datasci4citizens/server-saude/commit/c0ae9c14fb19605bc7c6e8390723274e4a197f17))
+
+- **auth**: Temporary add social name to authentication token
+  ([`d271899`](https://github.com/datasci4citizens/server-saude/commit/d271899f84368d9bc834e2465dc2b927cd239625))
+
+- **NOJIRA**: Script conceitos abs path
+  ([`3d218d1`](https://github.com/datasci4citizens/server-saude/commit/3d218d1035f936220f692d440badacef49828c6e))
+
+- **NOJIRA**: Script concepts (issue #119)
+  ([#120](https://github.com/datasci4citizens/server-saude/pull/120),
+  [`edbcc9a`](https://github.com/datasci4citizens/server-saude/commit/edbcc9a3351283521c8d2ef9406e37015ae755e7))
+
+- **NOJIRA**: Script extrair conceitos
+  ([`7ed5e10`](https://github.com/datasci4citizens/server-saude/commit/7ed5e10d00342536b22a5b9548acc17197412dab))
+
+- **sau-111**: Fetch concepts by code
+  ([`bec9418`](https://github.com/datasci4citizens/server-saude/commit/bec94183aa61aa1f0e06564ea2b07dac201c7289))
+
+- **sau-111**: Fetch concepts by code
+  ([#112](https://github.com/datasci4citizens/server-saude/pull/112),
+  [`a22547d`](https://github.com/datasci4citizens/server-saude/commit/a22547d9fb860fac2886feec59901247d7e64a04))
+
+- **sau-128**: Add email on login response
+  ([`2914807`](https://github.com/datasci4citizens/server-saude/commit/2914807299e6a29a11087844d3a1ae78a9b02af1))
+
+- **sau-128**: Add email on login response
+  ([#129](https://github.com/datasci4citizens/server-saude/pull/129),
+  [`a6ac70e`](https://github.com/datasci4citizens/server-saude/commit/a6ac70e62849b8073721760aefb23fb60f6c7167))
+
+- **sau-94**: Dark mode, resolve help, view your helps
+  ([#98](https://github.com/datasci4citizens/server-saude/pull/98),
+  [`23abb0e`](https://github.com/datasci4citizens/server-saude/commit/23abb0e0cfe1517005c1ddacd1f02776438d8175))
+
+- **sau-94**: Dark mode, resolve help, view yours
+  ([`810c2a1`](https://github.com/datasci4citizens/server-saude/commit/810c2a1cf9cc2c58ce4555596844b221f5b6e76e))
+
+- **sau-94**: Dark mode, resolve help, view yours
+  ([`e2f29fb`](https://github.com/datasci4citizens/server-saude/commit/e2f29fb76606e87897068619abde5093d59a4bc5))
+
+- **sau-99**: Types for default attentions and fix mark attention
+  ([`b0ea2f3`](https://github.com/datasci4citizens/server-saude/commit/b0ea2f330914df02cf2fd0d2f270829258b2d022))
+
+- **sau-99**: Types for default attentions and fix mark attention
+  ([#101](https://github.com/datasci4citizens/server-saude/pull/101),
+  [`ae45b51`](https://github.com/datasci4citizens/server-saude/commit/ae45b51bb37ff17a512745d797562b92b85c2381))
+
+### Refactoring
+
+- Attention point
+  ([`a152ccf`](https://github.com/datasci4citizens/server-saude/commit/a152ccf48dfc5d57820d9f39509194b8e8273e4e))
+
+- Attention point uses provider social name
+  ([`b3c0747`](https://github.com/datasci4citizens/server-saude/commit/b3c0747fc350983716a764b4d0ed5bf38717ba29))
+
+- Initial interest area json
+  ([`b636890`](https://github.com/datasci4citizens/server-saude/commit/b6368902ffe30884cbd1059347dcb530de142fb0))
+
+- Separated seed file for interests
+  ([`bf08f81`](https://github.com/datasci4citizens/server-saude/commit/bf08f81f3d2bf583f2e5731c8b0876d3ad7638ef))
+
+- Separated seed file for interests
+  ([`afe135b`](https://github.com/datasci4citizens/server-saude/commit/afe135bfdb63973069c58ddcda0a2d21f8b0dc52))
+
+- **SAU**: Omop concepts align
+  ([`ee6e96d`](https://github.com/datasci4citizens/server-saude/commit/ee6e96d104442bc1bd6f483189ee1f0e5d1050b7))
+
+- **SAU**: Omop concepts align ([#118](https://github.com/datasci4citizens/server-saude/pull/118),
+  [`5978714`](https://github.com/datasci4citizens/server-saude/commit/5978714c39c55133744ca15173f4cd5ca9093f40))
+
+- **SAU**: Remove unused code
+  ([`c0510c3`](https://github.com/datasci4citizens/server-saude/commit/c0510c38030cb3112894a663ba1b307ab8db79db))
+
+
 ## v1.3.0 (2025-06-13)
 
 ### Bug Fixes
