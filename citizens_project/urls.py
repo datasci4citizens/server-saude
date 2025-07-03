@@ -8,7 +8,15 @@ from rest_framework import permissions
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from app_saude.views import *
+from app_saude.views.account_management_views import *
+from app_saude.views.auth_views import *
+from app_saude.views.diary_views import *
+from app_saude.views.help_views import *
+from app_saude.views.linking_views import *
+from app_saude.views.onboarding_views import *
+from app_saude.views.simple_dto_views import *
+from app_saude.views.visit_views import *
+from app_saude.views.vocabulary_views import *
 
 router = DefaultRouter()
 router.register(r"person", PersonViewSet)
@@ -79,12 +87,6 @@ urlpatterns = [
         ProviderPersonDiaryDetailView.as_view(),
         name="acs-diary-detail",
     ),
-    # path(
-    #     "person/interest-areas/<int:interest_area_id>/",
-    #     PersonInterestAreaDetailView.as_view(),
-    #     name="person-interest-area-detail",
-    # ),
-    # path("person/interest-areas/", PersonInterestAreaView.as_view(), name="person-interest-areas"),
     path("person/interest-areas/mark-attention-point/", MarkAttentionPointView.as_view()),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
