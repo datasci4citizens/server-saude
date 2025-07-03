@@ -533,6 +533,8 @@ class PersonLinkProviderView(APIView):
                     "provider_id": provider.provider_id,
                     "provider_name": provider.social_name,
                     "relationship_created": created,
+                    "person_id": person.person_id,
+                    "relationships_removed": 0,
                 }
             )
 
