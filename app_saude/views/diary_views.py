@@ -1,7 +1,9 @@
+import json
 import logging
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
@@ -21,16 +23,16 @@ logger = logging.getLogger("app_saude")
 
 
 @extend_schema(
-    tags=["Diary System"],
-    summary="Manage Diary Entries",
+    tags=["Personal Diary"],
+    summary="Manage Personal Diary Entries",
     description="""
-    Comprehensive diary management system for personal journal entries and provider sharing.
+    Personal diary management system for authenticated users.
     
-    **GET - Retrieve Diary Entries:**
-    - Returns all diary entries in the system (admin/global view)
+    **GET - Retrieve Personal Diary Entries:**
+    - Returns ONLY diary entries belonging to the authenticated user
     - Supports optional limit parameter for pagination
     - Ordered by most recent entries first
-    - Includes complete diary entry details
+    - Complete access to personal diary content
     
     **POST - Create New Diary Entry:**
     - Creates personal diary entry for authenticated user
@@ -38,23 +40,16 @@ logger = logging.getLogger("app_saude")
     - Automatically timestamps entries
     - Optional sharing with linked providers
     
-    **Diary Entry Features:**
-    - **Personal Journaling**: Private diary entries for self-reflection
-    - **Provider Sharing**: Optional sharing with healthcare providers
-    - **Mood Tracking**: Integration with emotional state monitoring
-    - **Rich Content**: Support for text, emotions, and structured data
+    **Security:**
+    - Users can only see their own diary entries
+    - Private by default with optional provider sharing
+    - Complete access control per user
     
-    **Use Cases:**
-    - **Personal Wellness**: Daily mood and activity tracking
-    - **Clinical Monitoring**: Share relevant entries with providers
-    - **Progress Tracking**: Monitor personal development over time
-    - **Communication Tool**: Enhanced provider-patient communication
-    
-    **Privacy and Sharing:**
+    **Privacy Controls:**
     - Entries are private by default
-    - Optional sharing with specific providers
-    - User controls sharing preferences per entry
-    - Providers only see explicitly shared entries
+    - User explicitly chooses which entries to share
+    - Shared entries visible to linked providers only
+    - User maintains full control over personal data
     """,
     parameters=[
         OpenApiParameter(
@@ -72,9 +67,9 @@ logger = logging.getLogger("app_saude")
 )
 class DiaryView(APIView):
     """
-    Global Diary Management
+    Personal Diary Management
 
-    Handles global diary operations including listing and creation of diary entries.
+    Handles personal diary operations for the authenticated user only.
     """
 
     permission_classes = [IsAuthenticated]
@@ -82,6 +77,7 @@ class DiaryView(APIView):
     @extend_schema(
         responses={
             200: DiaryRetrieveSerializer(many=True),
+            404: {"description": "Person profile not found"},
             500: {"description": "Internal server error"},
         },
     )
@@ -91,20 +87,36 @@ class DiaryView(APIView):
         limit = request.query_params.get("limit")
 
         logger.info(
-            "Diary retrieval requested",
+            "Personal diary retrieval requested",
             extra={
                 "user_id": user.id,
                 "limit": limit,
                 "ip_address": ip_address,
-                "action": "diary_retrieval_requested",
+                "action": "personal_diary_retrieval_requested",
             },
         )
 
         try:
-            # Search for all diary entries
+            # Verify user has Person profile - SECURITY: Only Person users can access diaries
+            person = get_object_or_404(Person, user=user)
+
+            logger.debug(
+                "Person verified for personal diary access",
+                extra={
+                    "user_id": user.id,
+                    "person_id": person.person_id,
+                    "person_name": person.social_name,
+                    "action": "personal_diary_person_verified",
+                },
+            )
+
+            # SECURITY: Filter by person to ensure user only sees their own diaries
             diary_entries_query = (
-                Observation.objects.filter(observation_concept_id=get_concept_by_code("diary_entry").concept_id)
-                .select_related("observation_concept", "person__user")
+                Observation.objects.filter(
+                    observation_concept_id=get_concept_by_code("diary_entry").concept_id,
+                    person=person,  # CRITICAL: Only this person's diaries
+                )
+                .select_related("observation_concept")
                 .order_by("-observation_date")
             )
 
@@ -114,8 +126,12 @@ class DiaryView(APIView):
                 if limit_int > 0:
                     diary_entries_query = diary_entries_query[:limit_int]
                     logger.debug(
-                        "Limit applied to diary query",
-                        extra={"user_id": user.id, "limit_applied": limit_int, "action": "diary_limit_applied"},
+                        "Limit applied to personal diary query",
+                        extra={
+                            "user_id": user.id,
+                            "limit_applied": limit_int,
+                            "action": "personal_diary_limit_applied",
+                        },
                     )
 
             diary_entries = list(diary_entries_query)
@@ -127,30 +143,42 @@ class DiaryView(APIView):
             serializer = DiaryRetrieveSerializer(diary_entries, many=True)
 
             logger.info(
-                "Diary retrieval completed successfully",
+                "Personal diary retrieval completed successfully",
                 extra={
                     "user_id": user.id,
+                    "person_id": person.person_id,
                     "diary_entries_count": total_entries,
                     "shared_entries_count": shared_entries,
+                    "private_entries_count": total_entries - shared_entries,
                     "limit_applied": limit,
-                    "query_performance": "optimized_with_select_related",
                     "ip_address": ip_address,
-                    "action": "diary_retrieval_success",
+                    "action": "personal_diary_retrieval_success",
                 },
             )
 
             return Response(serializer.data)
 
+        except Http404:
+            logger.warning(
+                "Personal diary retrieval failed - person profile not found",
+                extra={
+                    "user_id": user.id,
+                    "email": user.email,
+                    "ip_address": ip_address,
+                    "action": "personal_diary_no_person_profile",
+                },
+            )
+            return Response({"error": "Person profile not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(
-                "Error retrieving diaries",
+                "Error retrieving personal diaries",
                 extra={
                     "user_id": user.id,
                     "limit": limit,
                     "error": str(e),
                     "error_type": type(e).__name__,
                     "ip_address": ip_address,
-                    "action": "diary_retrieval_error",
+                    "action": "personal_diary_retrieval_error",
                 },
                 exc_info=True,
             )
@@ -160,28 +188,21 @@ class DiaryView(APIView):
             )
 
     @extend_schema(
-        summary="Create New Diary Entry",
+        summary="Create New Personal Diary Entry",
         description="""
         Creates a new personal diary entry for the authenticated user.
+        
+        **Security Requirements:**
+        - User must have valid Person profile
+        - Entry is automatically linked to authenticated user
+        - Cannot create entries for other users
         
         **Entry Creation Process:**
         1. **User Verification**: Confirms user has valid Person profile
         2. **Content Validation**: Validates diary content and metadata
-        3. **Timestamp Assignment**: Automatically sets creation timestamp
-        4. **Sharing Configuration**: Sets provider sharing preferences
-        5. **Storage**: Saves entry as Observation with diary_entry concept
-        
-        **Diary Entry Components:**
-        - **Content**: Main text content of the diary entry
-        - **Mood/Emotion**: Optional emotional state tracking
-        - **Sharing Settings**: Whether to share with providers
-        - **Metadata**: Tags, categories, or additional structured data
-        
-        **Privacy Controls:**
-        - Entries are private by default
-        - User explicitly chooses which entries to share
-        - Shared entries visible to all linked providers
-        - User can modify sharing settings later
+        3. **Auto-Association**: Links entry to authenticated user's Person profile
+        4. **Timestamp Assignment**: Automatically sets creation timestamp
+        5. **Privacy Configuration**: Sets sharing preferences
         """,
         request=DiaryCreateSerializer,
         responses={
@@ -196,32 +217,18 @@ class DiaryView(APIView):
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
 
         logger.info(
-            "Diary creation requested",
+            "Personal diary creation requested",
             extra={
                 "user_id": user.id,
                 "request_data_size": len(str(request.data)),
                 "ip_address": ip_address,
-                "action": "diary_creation_requested",
+                "action": "personal_diary_creation_requested",
             },
         )
 
         try:
-            # Verify user has Person profile
-            if not hasattr(user, "person") or not user.person:
-                logger.warning(
-                    "Diary creation failed - no person profile",
-                    extra={
-                        "user_id": user.id,
-                        "email": user.email,
-                        "ip_address": ip_address,
-                        "action": "diary_creation_no_person_profile",
-                    },
-                )
-                return Response(
-                    {"error": "Person profile required to create diary entries."}, status=status.HTTP_404_NOT_FOUND
-                )
-
-            person = user.person
+            # SECURITY: Verify user has Person profile
+            person = get_object_or_404(Person, user=user)
 
             logger.debug(
                 "Person verified for diary creation",
@@ -229,7 +236,7 @@ class DiaryView(APIView):
                     "user_id": user.id,
                     "person_id": person.person_id,
                     "person_name": person.social_name,
-                    "action": "diary_creation_person_verified",
+                    "action": "personal_diary_creation_person_verified",
                 },
             )
 
@@ -237,13 +244,13 @@ class DiaryView(APIView):
 
             if not serializer.is_valid():
                 logger.warning(
-                    "Diary creation validation failed",
+                    "Personal diary creation validation failed",
                     extra={
                         "user_id": user.id,
                         "person_id": person.person_id,
                         "validation_errors": json.dumps(serializer.errors, ensure_ascii=False),
                         "ip_address": ip_address,
-                        "action": "diary_creation_validation_failed",
+                        "action": "personal_diary_creation_validation_failed",
                     },
                 )
                 return Response(
@@ -255,7 +262,7 @@ class DiaryView(APIView):
                 result = serializer.save()
 
                 logger.info(
-                    "Diary creation completed successfully",
+                    "Personal diary creation completed successfully",
                     extra={
                         "user_id": user.id,
                         "person_id": person.person_id,
@@ -264,33 +271,44 @@ class DiaryView(APIView):
                         "entry_shared": result.get("shared_with_provider", False) if isinstance(result, dict) else None,
                         "creation_timestamp": timezone.now().isoformat(),
                         "ip_address": ip_address,
-                        "action": "diary_creation_success",
+                        "action": "personal_diary_creation_success",
                     },
                 )
 
                 return Response(result, status=status.HTTP_201_CREATED)
 
+        except Http404:
+            logger.warning(
+                "Personal diary creation failed - person profile not found",
+                extra={
+                    "user_id": user.id,
+                    "email": user.email,
+                    "ip_address": ip_address,
+                    "action": "personal_diary_creation_no_person_profile",
+                },
+            )
+            return Response({"error": "Person profile not found."}, status=status.HTTP_404_NOT_FOUND)
         except ValidationError as ve:
             logger.warning(
-                "Diary creation validation error",
+                "Personal diary creation validation error",
                 extra={
                     "user_id": user.id,
                     "validation_error": str(ve),
                     "ip_address": ip_address,
-                    "action": "diary_creation_validation_error",
+                    "action": "personal_diary_creation_validation_error",
                 },
             )
             return Response({"error": str(ve)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(
-                "Error creating diary",
+                "Error creating personal diary",
                 extra={
                     "user_id": user.id,
                     "error": str(e),
                     "error_type": type(e).__name__,
                     "request_data": request.data,
                     "ip_address": ip_address,
-                    "action": "diary_creation_error",
+                    "action": "personal_diary_creation_error",
                 },
                 exc_info=True,
             )
@@ -301,44 +319,39 @@ class DiaryView(APIView):
 
 
 @extend_schema(
-    tags=["Diary System"],
-    summary="Diary Entry Details and Management",
+    tags=["Personal Diary"],
+    summary="Personal Diary Entry Details and Management",
     description="""
-    Individual diary entry operations including viewing and deletion.
+    Individual diary entry operations with strict ownership validation.
     
-    **GET - View Diary Entry:**
-    - Retrieves complete details of a specific diary entry
+    **GET - View Personal Diary Entry:**
+    - Retrieves complete details of user's own diary entry
+    - Validates entry belongs to authenticated user
     - Includes all metadata, content, and sharing status
-    - Validates diary entry exists and is accessible
     
-    **DELETE - Remove Diary Entry:**
-    - Permanently deletes a diary entry
-    - Validates user permissions for deletion
-    - Cannot be undone once completed
-    - Logs deletion for audit purposes
+    **DELETE - Remove Personal Diary Entry:**
+    - Permanently deletes user's own diary entry
+    - Validates ownership before deletion
+    - Cannot delete other users' entries
+    - Audit logging for deletion tracking
     
-    **Authorization:**
-    - User must be authenticated
-    - Entry must exist in the system
-    - Deletion requires appropriate permissions
-    
-    **Use Cases:**
-    - **Entry Review**: View complete diary entry details
-    - **Content Management**: Delete unwanted or outdated entries
-    - **Privacy Management**: Remove sensitive information
-    - **Data Cleanup**: Remove test or accidental entries
+    **Security Requirements:**
+    - User must own the diary entry
+    - Entry must exist and be accessible to user
+    - Cannot access other users' diary entries
     """,
     responses={
         200: DiaryRetrieveSerializer,
+        403: {"description": "Access denied - not your diary entry"},
         404: {"description": "Diary entry not found"},
         401: {"description": "Authentication required"},
     },
 )
 class DiaryDetailView(APIView):
     """
-    Individual Diary Entry Management
+    Personal Diary Entry Management with Ownership Validation
 
-    Handles operations on specific diary entries including viewing and deletion.
+    Handles operations on user's own diary entries with strict access control.
     """
 
     permission_classes = [IsAuthenticated]
@@ -348,46 +361,51 @@ class DiaryDetailView(APIView):
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
 
         logger.info(
-            "Diary detail retrieval requested",
+            "Personal diary detail retrieval requested",
             extra={
                 "user_id": user.id,
                 "diary_id": diary_id,
                 "ip_address": ip_address,
-                "action": "diary_detail_requested",
+                "action": "personal_diary_detail_requested",
             },
         )
 
         try:
+            # SECURITY: Verify user has Person profile
+            person = get_object_or_404(Person, user=user)
+
+            # SECURITY: Get diary entry and verify ownership
             diary = get_object_or_404(
                 Observation,
                 observation_id=diary_id,
                 observation_concept_id=get_concept_by_code("diary_entry").concept_id,
+                person=person,  # CRITICAL: Must belong to this person
             )
 
             logger.debug(
-                "Diary entry found for detail view",
+                "Personal diary entry found and ownership verified",
                 extra={
                     "user_id": user.id,
+                    "person_id": person.person_id,
                     "diary_id": diary_id,
-                    "diary_person_id": diary.person_id,
                     "diary_date": diary.observation_date.isoformat() if diary.observation_date else None,
                     "shared_with_provider": getattr(diary, "shared_with_provider", False),
-                    "action": "diary_detail_found",
+                    "action": "personal_diary_detail_found",
                 },
             )
 
             serializer = DiaryRetrieveSerializer(diary)
 
             logger.info(
-                "Diary detail retrieval completed successfully",
+                "Personal diary detail retrieval completed successfully",
                 extra={
                     "user_id": user.id,
+                    "person_id": person.person_id,
                     "diary_id": diary_id,
-                    "person_id": diary.person_id,
                     "diary_date": diary.observation_date.isoformat() if diary.observation_date else None,
                     "content_length": len(diary.value_as_string) if diary.value_as_string else 0,
                     "ip_address": ip_address,
-                    "action": "diary_detail_success",
+                    "action": "personal_diary_detail_success",
                 },
             )
 
@@ -395,25 +413,28 @@ class DiaryDetailView(APIView):
 
         except Http404:
             logger.warning(
-                "Diary detail retrieval failed - diary not found",
+                "Personal diary detail access denied - not found or not owned by user",
                 extra={
                     "user_id": user.id,
                     "diary_id": diary_id,
                     "ip_address": ip_address,
-                    "action": "diary_detail_not_found",
+                    "action": "personal_diary_detail_access_denied",
                 },
             )
-            return Response({"error": "Diary entry not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Diary entry not found or you don't have permission to access it."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         except Exception as e:
             logger.error(
-                "Error retrieving diary detail",
+                "Error retrieving personal diary detail",
                 extra={
                     "user_id": user.id,
                     "diary_id": diary_id,
                     "error": str(e),
                     "error_type": type(e).__name__,
                     "ip_address": ip_address,
-                    "action": "diary_detail_error",
+                    "action": "personal_diary_detail_error",
                 },
                 exc_info=True,
             )
@@ -423,42 +444,31 @@ class DiaryDetailView(APIView):
             )
 
     @extend_schema(
-        summary="Delete Diary Entry",
+        summary="Delete Personal Diary Entry",
         description="""
-        Permanently deletes a diary entry from the system.
+        Permanently deletes user's own diary entry with ownership validation.
         
         **⚠️ PERMANENT ACTION - CANNOT BE UNDONE ⚠️**
         
-        **Deletion Process:**
-        1. **Entry Verification**: Confirms diary entry exists
-        2. **Permission Check**: Validates user has deletion rights
-        3. **Dependency Check**: Verifies safe deletion
+        **Security Process:**
+        1. **User Verification**: Confirms user has Person profile
+        2. **Ownership Validation**: Verifies diary belongs to user
+        3. **Permission Check**: Ensures user can delete this entry
         4. **Permanent Removal**: Deletes entry from database
         5. **Audit Logging**: Records deletion for compliance
-        
-        **Authorization Requirements:**
-        - User must be authenticated
-        - Entry must exist in the system
-        - User must have appropriate permissions
-        
-        **Use Cases:**
-        - **Privacy Protection**: Remove sensitive personal information
-        - **Content Management**: Clean up unwanted entries
-        - **Data Compliance**: Remove data per user requests
-        - **Error Correction**: Remove accidentally created entries
         """,
         responses={
             200: {"description": "Diary entry deleted successfully"},
+            403: {"description": "Access denied - not your diary entry"},
             404: {"description": "Diary entry not found"},
             401: {"description": "Authentication required"},
-            403: {"description": "Insufficient permissions for deletion"},
         },
         parameters=[
             OpenApiParameter(
                 name="diary_id",
                 type=int,
                 location=OpenApiParameter.PATH,
-                description="Unique identifier of the diary entry to delete",
+                description="Unique identifier of your diary entry to delete",
                 examples=[OpenApiExample(name="Valid diary ID", value=12345)],
             )
         ],
@@ -469,27 +479,30 @@ class DiaryDetailView(APIView):
         user_agent = request.META.get("HTTP_USER_AGENT", "Unknown")
 
         logger.warning(
-            "Diary deletion requested - PERMANENT ACTION",
+            "Personal diary deletion requested - PERMANENT ACTION",
             extra={
                 "user_id": user.id,
                 "diary_id": diary_id,
                 "ip_address": ip_address,
                 "user_agent": user_agent,
                 "timestamp": timezone.now().isoformat(),
-                "action": "diary_deletion_requested",
+                "action": "personal_diary_deletion_requested",
             },
         )
 
         try:
-            # Verify diary exists before deletion
+            # SECURITY: Verify user has Person profile
+            person = get_object_or_404(Person, user=user)
+
+            # SECURITY: Verify diary exists and belongs to user
             diary = get_object_or_404(
                 Observation,
                 observation_id=diary_id,
                 observation_concept_id=get_concept_by_code("diary_entry").concept_id,
+                person=person,  # CRITICAL: Must belong to this person
             )
 
             # Store details for logging before deletion
-            diary_person_id = diary.person_id
             diary_date = diary.observation_date
             content_preview = (
                 (diary.value_as_string[:100] + "...")
@@ -498,14 +511,14 @@ class DiaryDetailView(APIView):
             )
 
             logger.info(
-                "Diary entry identified for deletion",
+                "Personal diary entry identified for deletion with ownership verified",
                 extra={
                     "user_id": user.id,
+                    "person_id": person.person_id,
                     "diary_id": diary_id,
-                    "diary_person_id": diary_person_id,
                     "diary_date": diary_date.isoformat() if diary_date else None,
                     "content_preview": content_preview,
-                    "action": "diary_deletion_identified",
+                    "action": "personal_diary_deletion_identified",
                 },
             )
 
@@ -514,16 +527,16 @@ class DiaryDetailView(APIView):
             result = serializer.delete({"diary_id": diary_id})
 
             logger.critical(
-                "Diary deletion completed successfully",
+                "Personal diary deletion completed successfully",
                 extra={
                     "user_id": user.id,
+                    "person_id": person.person_id,
                     "diary_id": diary_id,
-                    "deleted_person_id": diary_person_id,
                     "deleted_diary_date": diary_date.isoformat() if diary_date else None,
                     "deletion_timestamp": timezone.now().isoformat(),
                     "ip_address": ip_address,
                     "user_agent": user_agent,
-                    "action": "diary_deletion_success",
+                    "action": "personal_diary_deletion_success",
                 },
             )
 
@@ -531,25 +544,28 @@ class DiaryDetailView(APIView):
 
         except Http404:
             logger.warning(
-                "Diary deletion failed - diary not found",
+                "Personal diary deletion failed - not found or access denied",
                 extra={
                     "user_id": user.id,
                     "diary_id": diary_id,
                     "ip_address": ip_address,
-                    "action": "diary_deletion_not_found",
+                    "action": "personal_diary_deletion_access_denied",
                 },
             )
-            return Response({"error": "Diary entry not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Diary entry not found or you don't have permission to delete it."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         except Exception as e:
             logger.error(
-                "Error deleting diary",
+                "Error deleting personal diary",
                 extra={
                     "user_id": user.id,
                     "diary_id": diary_id,
                     "error": str(e),
                     "error_type": type(e).__name__,
                     "ip_address": ip_address,
-                    "action": "diary_deletion_error",
+                    "action": "personal_diary_deletion_error",
                 },
                 exc_info=True,
             )
@@ -561,44 +577,32 @@ class DiaryDetailView(APIView):
 
 @extend_schema(
     tags=["Personal Diary"],
-    summary="Get Personal Diary Entries",
+    summary="Get Personal Diary Entries (Alternative Endpoint)",
     description="""
-    Retrieves all diary entries for the authenticated Person.
+    Alternative endpoint for retrieving personal diary entries.
     
-    **Personal Diary View:**
-    - Returns only diary entries belonging to the authenticated user
+    **Functionality:**
+    - Returns only diary entries belonging to the authenticated Person
     - Includes both private and shared entries
     - Ordered chronologically (most recent first)
     - Complete access to all personal diary content
     
-    **Entry Information:**
-    - **Content**: Full text content of diary entries
-    - **Metadata**: Creation dates, mood tracking, tags
-    - **Sharing Status**: Whether entries are shared with providers
-    - **Privacy Settings**: Personal vs shared content indicators
-    
-    **Use Cases:**
-    - **Personal Journal**: View personal diary history
-    - **Mood Tracking**: Review emotional patterns over time
-    - **Progress Monitoring**: Track personal development
-    - **Memory Aid**: Reference past thoughts and experiences
-    
-    **Privacy Features:**
-    - User sees all their own entries regardless of sharing status
-    - Sharing indicators help manage provider visibility
-    - Complete control over personal diary content
+    **Security:**
+    - Strict ownership validation
+    - Cannot access other users' diaries
+    - Person profile required
     """,
     responses={
-        200: DiaryRetrieveSerializer,
+        200: DiaryRetrieveSerializer(many=True),
         401: {"description": "Authentication required"},
         404: {"description": "Person profile not found"},
     },
 )
 class PersonDiariesView(APIView):
     """
-    Personal Diary Entries
+    Personal Diary Entries (Alternative Endpoint)
 
-    Manages diary entries for the authenticated person.
+    Manages diary entries for the authenticated person with strict access control.
     """
 
     permission_classes = [IsAuthenticated]
@@ -613,6 +617,7 @@ class PersonDiariesView(APIView):
         )
 
         try:
+            # SECURITY: Verify user has Person profile
             person = get_object_or_404(Person, user=request.user)
 
             logger.debug(
@@ -625,10 +630,11 @@ class PersonDiariesView(APIView):
                 },
             )
 
-            # Get all diary entries for this person
+            # SECURITY: Get only this person's diary entries
             diaries = (
                 Observation.objects.filter(
-                    person=person, observation_concept_id=get_concept_by_code("diary_entry").concept_id
+                    person=person,  # CRITICAL: Only this person's diaries
+                    observation_concept_id=get_concept_by_code("diary_entry").concept_id,
                 )
                 .select_related("observation_concept")
                 .order_by("-observation_date")
@@ -703,47 +709,30 @@ class PersonDiariesView(APIView):
     description="""
     Retrieves diary entries shared by a specific Person with the authenticated Provider.
     
-    **Provider Access to Person Diaries:**
-    - Returns only entries explicitly shared with providers
+    **Security Requirements:**
+    - Provider must be authenticated and have valid Provider profile
+    - Provider must be linked to the specified Person
+    - Only entries explicitly shared with providers are returned
+    - Strict validation of Provider-Person relationship
+    
+    **Access Control:**
     - Validates Provider-Person relationship exists
     - Filters out private/unshared diary entries
-    - Enables clinical monitoring and communication
-    
-    **Relationship Validation:**
-    - Confirms Provider is linked to the specified Person
-    - Verifies active Provider-Person relationship
+    - Cannot access entries from non-linked Persons
     - Ensures proper authorization for diary access
-    
-    **Shared Entry Features:**
-    - **Clinical Insights**: Person shares relevant health/mood information
-    - **Communication Tool**: Enhanced provider-patient interaction
-    - **Progress Monitoring**: Track patient wellbeing over time
-    - **Care Coordination**: Inform treatment decisions
-    
-    **Privacy Protection:**
-    - Only shared entries are visible to providers
-    - Person controls which entries to share
-    - Private entries remain completely hidden
-    - Sharing status is clearly indicated
-    
-    **Use Cases:**
-    - **Clinical Assessment**: Review patient self-reported data
-    - **Treatment Planning**: Inform care decisions with diary insights
-    - **Progress Monitoring**: Track patient wellbeing trends
-    - **Communication**: Understand patient perspective and concerns
     """,
     responses={
         200: DiaryRetrieveSerializer(many=True),
         401: {"description": "Authentication required"},
-        404: {"description": "Provider profile or Person not found"},
         403: {"description": "Provider not linked to specified Person"},
+        404: {"description": "Provider profile or Person not found"},
     },
 )
 class ProviderPersonDiariesView(APIView):
     """
     Provider Access to Person's Shared Diaries
 
-    Allows providers to view diary entries shared by linked persons.
+    Allows providers to view diary entries shared by linked persons only.
     """
 
     permission_classes = [IsAuthenticated]
@@ -763,7 +752,7 @@ class ProviderPersonDiariesView(APIView):
         )
 
         try:
-            # Validate provider and person relationship
+            # SECURITY: Validate provider and person relationship
             provider, person = get_provider_and_linked_person_or_404(request.user, person_id)
 
             logger.debug(
@@ -778,12 +767,12 @@ class ProviderPersonDiariesView(APIView):
                 },
             )
 
-            # Get only shared diary entries
+            # SECURITY: Get only shared diary entries from this specific person
             diaries = (
                 Observation.objects.filter(
-                    person=person,
+                    person=person,  # CRITICAL: Only this specific person's diaries
                     observation_concept_id=get_concept_by_code("diary_entry").concept_id,
-                    shared_with_provider=True,
+                    shared_with_provider=True,  # CRITICAL: Only shared entries
                 )
                 .select_related("observation_concept", "person__user")
                 .order_by("-observation_date")
@@ -862,43 +851,32 @@ class ProviderPersonDiariesView(APIView):
     description="""
     Retrieves details of a specific diary entry shared by a Person with the Provider.
     
-    **Detailed Entry Access:**
-    - Returns complete details of a specific shared diary entry
-    - Validates Provider has access to this particular entry
-    - Includes all metadata and content information
-    - Ensures entry is explicitly shared with providers
+    **Multi-Layer Security Validation:**
+    1. **Provider Authentication**: User must be authenticated Provider
+    2. **Person Existence**: Specified Person must exist
+    3. **Relationship Validation**: Provider must be linked to Person
+    4. **Entry Ownership**: Diary must belong to specified Person
+    5. **Sharing Permission**: Entry must be marked as shared with providers
     
-    **Authorization Validation:**
-    - Confirms Provider-Person relationship exists
-    - Verifies entry belongs to the specified Person
-    - Ensures entry is marked as shared with providers
-    - Validates Provider has legitimate access
-    
-    **Entry Details Include:**
-    - **Complete Content**: Full text of the diary entry
-    - **Timestamps**: Creation and modification dates
-    - **Mood Data**: Emotional state information if included
-    - **Metadata**: Tags, categories, and structured data
-    - **Sharing Context**: Why entry was shared with provider
-    
-    **Clinical Applications:**
-    - **Treatment Planning**: Detailed patient insights for care decisions
-    - **Progress Assessment**: Evaluate patient wellbeing changes
-    - **Communication**: Understand patient concerns and experiences
-    - **Documentation**: Clinical records and care coordination
+    **Access Control Flow:**
+    - Validates Provider has valid profile
+    - Confirms Person exists in system
+    - Verifies active Provider-Person relationship
+    - Ensures diary belongs to specified Person
+    - Checks entry is explicitly shared with providers
     """,
     responses={
         200: DiaryRetrieveSerializer,
         401: {"description": "Authentication required"},
-        404: {"description": "Diary entry not found or not shared"},
         403: {"description": "Provider not authorized to view this entry"},
+        404: {"description": "Diary entry not found or not shared"},
     },
 )
 class ProviderPersonDiaryDetailView(APIView):
     """
     Provider Access to Specific Shared Diary Entry
 
-    Provides detailed view of individual shared diary entries for providers.
+    Provides detailed view of individual shared diary entries with strict validation.
     """
 
     permission_classes = [IsAuthenticated]
@@ -919,7 +897,7 @@ class ProviderPersonDiaryDetailView(APIView):
         )
 
         try:
-            # Verify provider has valid profile
+            # SECURITY: Verify provider has valid profile
             provider = get_object_or_404(Provider, user=request.user)
 
             logger.debug(
@@ -934,10 +912,10 @@ class ProviderPersonDiaryDetailView(APIView):
                 },
             )
 
-            # Get the person and validate they exist
+            # SECURITY: Get the person and validate they exist
             person = get_object_or_404(Person, person_id=person_id)
 
-            # Validate Provider-Person relationship exists
+            # SECURITY: Validate Provider-Person relationship exists
             relationship_exists = FactRelationship.objects.filter(
                 fact_id_1=person.person_id,
                 domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
@@ -959,22 +937,23 @@ class ProviderPersonDiaryDetailView(APIView):
                 )
                 return Response({"error": "Provider is not linked to this person."}, status=status.HTTP_403_FORBIDDEN)
 
-            # Get the specific diary entry (must be shared)
+            # SECURITY: Get the specific diary entry with all validations
             diary = get_object_or_404(
                 Observation,
                 observation_id=diary_id,
-                person=person,
+                person=person,  # CRITICAL: Must belong to specified person
                 observation_concept_id=get_concept_by_code("diary_entry").concept_id,
-                shared_with_provider=True,  # Only shared entries accessible
+                shared_with_provider=True,  # CRITICAL: Only shared entries accessible
             )
 
             logger.debug(
-                "Shared diary entry found for provider access",
+                "Shared diary entry found for provider access with all validations passed",
                 extra={
                     "user_id": user.id,
                     "provider_id": provider.provider_id,
                     "person_id": person_id,
                     "diary_id": diary_id,
+                    "diary_person_id": diary.person_id,
                     "diary_date": diary.observation_date.isoformat() if diary.observation_date else None,
                     "content_length": len(diary.value_as_string) if diary.value_as_string else 0,
                     "action": "provider_person_diary_detail_found",
@@ -993,7 +972,7 @@ class ProviderPersonDiaryDetailView(APIView):
                     "person_name": person.social_name,
                     "diary_id": diary_id,
                     "diary_date": diary.observation_date.isoformat() if diary.observation_date else None,
-                    "access_type": "shared_entry",
+                    "access_type": "shared_entry_validated",
                     "ip_address": ip_address,
                     "action": "provider_person_diary_detail_success",
                 },
@@ -1003,7 +982,7 @@ class ProviderPersonDiaryDetailView(APIView):
 
         except Http404 as e:
             logger.warning(
-                "Provider person diary detail not found",
+                "Provider person diary detail not found or access denied",
                 extra={
                     "user_id": user.id,
                     "person_id": person_id,
@@ -1014,7 +993,7 @@ class ProviderPersonDiaryDetailView(APIView):
                 },
             )
             return Response(
-                {"error": "Diary entry not found, not shared, or you don't have access."},
+                {"error": "Diary entry not found, not shared, person not found, or you don't have access."},
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
@@ -1041,84 +1020,91 @@ class ProviderPersonDiaryDetailView(APIView):
     tags=["Interest Areas"],
     summary="Interest Area Management",
     description="""
-    Comprehensive management of user interest areas and preferences.
+    Personal interest area management with strict access control.
     
-    **Interest Area System:**
-    - Tracks user interests, hobbies, and areas of focus
-    - Supports categorization and tagging
-    - Enables provider attention point marking
-    - Facilitates personalized care and communication
+    **Security Requirements:**
+    - User must have valid Person profile to manage interest areas
+    - Users can only access their own interest areas
+    - Filtering by person_id restricts to authenticated user's data
     
-    **CRUD Operations:**
-    - **Create**: Add new interest areas for users
-    - **Read**: View interest areas with filtering
-    - **Update**: Modify existing interest area details
-    - **List**: Browse interest areas with optional filtering
-    
-    **Provider Integration:**
-    - Providers can mark areas as attention points
-    - Clinical relevance tracking for care planning
-    - Communication enhancement between provider and person
-    
-    **Filtering Options:**
-    - By person_id: View interest areas for specific person
-    - By category: Filter by interest type or category
-    - By attention status: Show marked vs unmarked areas
-    
-    **Use Cases:**
-    - **Personalized Care**: Tailor services to user interests
-    - **Communication**: Find common topics for engagement
-    - **Progress Tracking**: Monitor changes in interests over time
-    - **Care Planning**: Incorporate interests into treatment plans
+    **Access Control:**
+    - Person profile validation required
+    - Interest areas filtered by authenticated user
+    - Cannot access other users' interest areas
     """,
     parameters=[
         OpenApiParameter(
             name="person_id",
-            description="Filter interest areas by specific person ID",
+            description="Filter interest areas by person ID (restricted to your own)",
             required=False,
             type=int,
             examples=[
-                OpenApiExample(name="Specific person", value=12345),
-                OpenApiExample(name="All persons", value=None),
+                OpenApiExample(name="Your person ID", value=12345),
             ],
         )
     ],
 )
 class InterestAreaViewSet(FlexibleViewSet):
     """
-    Interest Area Management ViewSet
+    Interest Area Management ViewSet with Security
 
-    Handles CRUD operations for user interest areas and preferences.
+    Handles CRUD operations for user interest areas with strict access control.
     """
 
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """
-        Build filtered queryset for interest areas.
+        Build securely filtered queryset for interest areas.
         """
         try:
+            # SECURITY: Verify user has Person profile
+            person = get_object_or_404(Person, user=self.request.user)
+
+            # SECURITY: Base queryset filtered by authenticated user's person
             queryset = (
-                Observation.objects.filter(observation_concept_id=get_concept_by_code("INTEREST_AREA").concept_id)
+                Observation.objects.filter(
+                    observation_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+                    person=person,  # CRITICAL: Only this person's interest areas
+                )
                 .select_related("person__user", "observation_concept")
                 .order_by("-observation_date")
             )
 
+            # Additional filtering by person_id (redundant but explicit)
             person_id = self.request.query_params.get("person_id", None)
             if person_id:
-                queryset = queryset.filter(person_id=person_id)
+                # SECURITY: Ensure person_id matches authenticated user's person
+                if str(person.person_id) != str(person_id):
+                    logger.warning(
+                        "Interest area access denied - person_id mismatch",
+                        extra={
+                            "user_id": self.request.user.id,
+                            "user_person_id": person.person_id,
+                            "requested_person_id": person_id,
+                            "action": "interest_area_person_id_mismatch",
+                        },
+                    )
+                    return Observation.objects.none()  # Return empty queryset
+
                 logger.debug(
-                    "Interest area queryset filtered by person",
+                    "Interest area queryset confirmed for authenticated user",
                     extra={
-                        "user_id": getattr(self.request.user, "id", None),
+                        "user_id": self.request.user.id,
                         "person_id": person_id,
                         "filtered_count": queryset.count(),
-                        "action": "interest_area_person_filter_applied",
+                        "action": "interest_area_person_filter_validated",
                     },
                 )
 
             return queryset
 
+        except Http404:
+            logger.warning(
+                "Interest area access denied - no person profile",
+                extra={"user_id": getattr(self.request.user, "id", None), "action": "interest_area_no_person_profile"},
+            )
+            return Observation.objects.none()
         except Exception as e:
             logger.error(
                 "Error building interest area queryset",
@@ -1133,28 +1119,21 @@ class InterestAreaViewSet(FlexibleViewSet):
             return Observation.objects.none()
 
     @extend_schema(
-        summary="Create New Interest Area",
+        summary="Create New Personal Interest Area",
         description="""
-        Creates a new interest area for the authenticated user.
+        Creates a new interest area for the authenticated user only.
         
-        **Interest Area Creation:**
-        - Associates interest with user's Person profile
-        - Supports rich metadata and categorization
-        - Sets up provider attention tracking
-        - Enables personalized care features
-        
-        **Interest Data:**
-        - **Name/Title**: Primary identifier for the interest
-        - **Description**: Detailed information about the interest
-        - **Category**: Type or classification of interest
-        - **Importance Level**: Priority or significance rating
-        - **Provider Relevance**: Clinical significance indicators
+        **Security Features:**
+        - Automatically associates with authenticated user's Person profile
+        - Cannot create interest areas for other users
+        - Person profile validation required
         """,
         request=InterestAreaCreateSerializer,
         responses={
-            201: {"description": "Interest area created successfully"},
+            201: InterestAreaRetrieveSerializer,
             400: {"description": "Validation error in interest area data"},
             401: {"description": "Authentication required"},
+            404: {"description": "Person profile not found"},
         },
     )
     def create(self, request):
@@ -1162,32 +1141,18 @@ class InterestAreaViewSet(FlexibleViewSet):
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
 
         logger.info(
-            "Interest area creation requested",
+            "Personal interest area creation requested",
             extra={
                 "user_id": user.id,
                 "request_data_size": len(str(request.data)),
                 "ip_address": ip_address,
-                "action": "interest_area_creation_requested",
+                "action": "personal_interest_area_creation_requested",
             },
         )
 
         try:
-            # Verify user has Person profile
-            if not hasattr(user, "person") or not user.person:
-                logger.warning(
-                    "Interest area creation failed - no person profile",
-                    extra={
-                        "user_id": user.id,
-                        "email": user.email,
-                        "ip_address": ip_address,
-                        "action": "interest_area_creation_no_person_profile",
-                    },
-                )
-                return Response(
-                    {"error": "Person profile required to create interest areas."}, status=status.HTTP_404_NOT_FOUND
-                )
-
-            person = user.person
+            # SECURITY: Verify user has Person profile
+            person = get_object_or_404(Person, user=user)
 
             logger.debug(
                 "Person verified for interest area creation",
@@ -1195,7 +1160,7 @@ class InterestAreaViewSet(FlexibleViewSet):
                     "user_id": user.id,
                     "person_id": person.person_id,
                     "person_name": person.social_name,
-                    "action": "interest_area_creation_person_verified",
+                    "action": "personal_interest_area_creation_person_verified",
                 },
             )
 
@@ -1203,13 +1168,13 @@ class InterestAreaViewSet(FlexibleViewSet):
 
             if not serializer.is_valid():
                 logger.warning(
-                    "Interest area creation validation failed",
+                    "Personal interest area creation validation failed",
                     extra={
                         "user_id": user.id,
                         "person_id": person.person_id,
                         "validation_errors": json.dumps(serializer.errors, ensure_ascii=False),
                         "ip_address": ip_address,
-                        "action": "interest_area_creation_validation_failed",
+                        "action": "personal_interest_area_creation_validation_failed",
                     },
                 )
                 return Response(
@@ -1222,7 +1187,7 @@ class InterestAreaViewSet(FlexibleViewSet):
                 retrieve_serializer = InterestAreaRetrieveSerializer(instance)
 
                 logger.info(
-                    "Interest area creation completed successfully",
+                    "Personal interest area creation completed successfully",
                     extra={
                         "user_id": user.id,
                         "person_id": person.person_id,
@@ -1231,22 +1196,33 @@ class InterestAreaViewSet(FlexibleViewSet):
                         "interest_content": instance.value_as_string[:100] if instance.value_as_string else None,
                         "creation_timestamp": timezone.now().isoformat(),
                         "ip_address": ip_address,
-                        "action": "interest_area_creation_success",
+                        "action": "personal_interest_area_creation_success",
                     },
                 )
 
                 return Response(retrieve_serializer.data, status=status.HTTP_201_CREATED)
 
+        except Http404:
+            logger.warning(
+                "Personal interest area creation failed - person profile not found",
+                extra={
+                    "user_id": user.id,
+                    "email": user.email,
+                    "ip_address": ip_address,
+                    "action": "personal_interest_area_creation_no_person_profile",
+                },
+            )
+            return Response({"error": "Person profile not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(
-                "Error creating interest area",
+                "Error creating personal interest area",
                 extra={
                     "user_id": user.id,
                     "error": str(e),
                     "error_type": type(e).__name__,
                     "request_data": request.data,
                     "ip_address": ip_address,
-                    "action": "interest_area_creation_error",
+                    "action": "personal_interest_area_creation_error",
                 },
                 exc_info=True,
             )
@@ -1256,26 +1232,21 @@ class InterestAreaViewSet(FlexibleViewSet):
             )
 
     @extend_schema(
-        summary="Update Interest Area",
+        summary="Update Personal Interest Area",
         description="""
-        Updates an existing interest area with new information.
+        Updates an existing interest area with ownership validation.
         
-        **Update Operations:**
-        - Modify interest area content and metadata
-        - Update categorization and importance levels
-        - Change provider relevance settings
-        - Maintain attention point markings
-        
-        **Authorization:**
-        - User must be authenticated
-        - Interest area must exist and be accessible
-        - User must have update permissions
+        **Security Features:**
+        - Validates interest area belongs to authenticated user
+        - Cannot update other users' interest areas
+        - Ownership verification required
         """,
         request=InterestAreaUpdateSerializer,
         responses={
-            200: {"description": "Interest area updated successfully"},
+            200: InterestAreaRetrieveSerializer,
             400: {"description": "Validation error in update data"},
             401: {"description": "Authentication required"},
+            403: {"description": "Access denied - not your interest area"},
             404: {"description": "Interest area not found"},
         },
     )
@@ -1284,32 +1255,39 @@ class InterestAreaViewSet(FlexibleViewSet):
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
 
         logger.info(
-            "Interest area update requested",
+            "Personal interest area update requested",
             extra={
                 "user_id": user.id,
                 "interest_area_id": pk,
                 "request_data_size": len(str(request.data)),
                 "ip_address": ip_address,
-                "action": "interest_area_update_requested",
+                "action": "personal_interest_area_update_requested",
             },
         )
 
         try:
+            # SECURITY: Verify user has Person profile
+            person = get_object_or_404(Person, user=user)
+
+            # SECURITY: Get interest area and verify ownership
             interest_area = get_object_or_404(
-                Observation, observation_id=pk, observation_concept=get_concept_by_code("INTEREST_AREA")
+                Observation,
+                observation_id=pk,
+                observation_concept=get_concept_by_code("INTEREST_AREA"),
+                person=person,  # CRITICAL: Must belong to this person
             )
 
             # Store original values for logging
             original_content = interest_area.value_as_string
 
             logger.debug(
-                "Interest area found for update",
+                "Personal interest area found for update with ownership verified",
                 extra={
                     "user_id": user.id,
+                    "person_id": person.person_id,
                     "interest_area_id": pk,
                     "original_content_preview": original_content[:100] if original_content else None,
-                    "person_id": interest_area.person_id,
-                    "action": "interest_area_update_found",
+                    "action": "personal_interest_area_update_found",
                 },
             )
 
@@ -1317,13 +1295,14 @@ class InterestAreaViewSet(FlexibleViewSet):
 
             if not serializer.is_valid():
                 logger.warning(
-                    "Interest area update validation failed",
+                    "Personal interest area update validation failed",
                     extra={
                         "user_id": user.id,
+                        "person_id": person.person_id,
                         "interest_area_id": pk,
                         "validation_errors": json.dumps(serializer.errors, ensure_ascii=False),
                         "ip_address": ip_address,
-                        "action": "interest_area_update_validation_failed",
+                        "action": "personal_interest_area_update_validation_failed",
                     },
                 )
                 return Response(
@@ -1335,18 +1314,18 @@ class InterestAreaViewSet(FlexibleViewSet):
                 updated_instance = serializer.save()
 
                 logger.info(
-                    "Interest area update completed successfully",
+                    "Personal interest area update completed successfully",
                     extra={
                         "user_id": user.id,
+                        "person_id": person.person_id,
                         "interest_area_id": pk,
-                        "person_id": updated_instance.person_id,
                         "original_content_preview": original_content[:100] if original_content else None,
                         "updated_content_preview": (
                             updated_instance.value_as_string[:100] if updated_instance.value_as_string else None
                         ),
                         "update_timestamp": timezone.now().isoformat(),
                         "ip_address": ip_address,
-                        "action": "interest_area_update_success",
+                        "action": "personal_interest_area_update_success",
                     },
                 )
 
@@ -1354,18 +1333,21 @@ class InterestAreaViewSet(FlexibleViewSet):
 
         except Http404:
             logger.warning(
-                "Interest area update failed - not found",
+                "Personal interest area update failed - not found or access denied",
                 extra={
                     "user_id": user.id,
                     "interest_area_id": pk,
                     "ip_address": ip_address,
-                    "action": "interest_area_update_not_found",
+                    "action": "personal_interest_area_update_access_denied",
                 },
             )
-            return Response({"error": "Interest area not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Interest area not found or you don't have permission to update it."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         except Exception as e:
             logger.error(
-                "Error updating interest area",
+                "Error updating personal interest area",
                 extra={
                     "user_id": user.id,
                     "interest_area_id": pk,
@@ -1373,7 +1355,7 @@ class InterestAreaViewSet(FlexibleViewSet):
                     "error_type": type(e).__name__,
                     "request_data": request.data,
                     "ip_address": ip_address,
-                    "action": "interest_area_update_error",
+                    "action": "personal_interest_area_update_error",
                 },
                 exc_info=True,
             )
@@ -1387,53 +1369,34 @@ class InterestAreaViewSet(FlexibleViewSet):
     tags=["Provider Interest Management"],
     summary="Mark Interest Area as Attention Point",
     description="""
-    Allows providers to mark or unmark interest areas as attention points for clinical focus.
+    Allows providers to mark interest areas as attention points with relationship validation.
     
-    **Attention Point System:**
-    - Providers can highlight specific interest areas for clinical attention
-    - Multiple providers can mark the same interest area
-    - Markings are tracked by provider name for accountability
-    - Supports collaborative care coordination
-    
-    **Clinical Applications:**
-    - **Care Planning**: Identify interests relevant to treatment
-    - **Communication**: Focus conversations on marked interests
-    - **Progress Monitoring**: Track engagement with marked areas
-    - **Team Coordination**: Share clinical focus areas with care team
-    
-    **Marking Process:**
-    1. **Provider Verification**: Confirms user is authenticated provider
-    2. **Interest Validation**: Verifies interest area exists
-    3. **Marking Logic**: Adds/removes provider from marked_by list
-    4. **Data Update**: Updates interest area metadata
-    5. **Audit Logging**: Records marking actions for accountability
-    
-    **Business Rules:**
+    **Security Requirements:**
     - Provider must be authenticated with valid Provider profile
-    - Interest area must exist in the system
-    - Each provider can mark/unmark independently
-    - Marking status is preserved per provider
-    - Historical marking data is maintained for audit
+    - Interest area must exist and be accessible
+    - Provider must be linked to the Person who owns the interest area
+    - Cannot mark interest areas from non-linked Persons
     
-    **Use Cases:**
-    - **Clinical Assessment**: Mark interests relevant to health conditions
-    - **Treatment Planning**: Highlight areas for therapeutic focus
-    - **Care Coordination**: Share attention points with care team
-    - **Progress Tracking**: Monitor engagement with marked interests
+    **Validation Process:**
+    1. **Provider Authentication**: Confirms valid Provider profile
+    2. **Interest Area Validation**: Verifies interest area exists
+    3. **Relationship Check**: Ensures Provider is linked to interest area owner
+    4. **Marking Authorization**: Validates Provider can mark this area
     """,
     request=MarkAttentionPointSerializer,
     responses={
         200: {"description": "Attention point status updated successfully"},
         400: {"description": "Validation error in marking request"},
         401: {"description": "Authentication required"},
+        403: {"description": "Provider not linked to interest area owner"},
         404: {"description": "Interest area or provider not found"},
     },
 )
 class MarkAttentionPointView(APIView):
     """
-    Provider Interest Area Attention Marking
+    Provider Interest Area Attention Marking with Security
 
-    Enables providers to mark interest areas as clinical attention points.
+    Enables providers to mark interest areas with strict relationship validation.
     """
 
     permission_classes = [IsAuthenticated]
@@ -1453,22 +1416,8 @@ class MarkAttentionPointView(APIView):
         )
 
         try:
-            # Verify user is a provider
-            if not hasattr(user, "provider") or not user.provider:
-                logger.warning(
-                    "Mark attention point failed - no provider profile",
-                    extra={
-                        "user_id": user.id,
-                        "email": user.email,
-                        "ip_address": ip_address,
-                        "action": "mark_attention_point_no_provider_profile",
-                    },
-                )
-                return Response(
-                    {"error": "Provider profile required to mark attention points."}, status=status.HTTP_404_NOT_FOUND
-                )
-
-            provider = user.provider
+            # SECURITY: Verify user is a provider
+            provider = get_object_or_404(Provider, user=user)
 
             logger.debug(
                 "Provider verified for attention point marking",
@@ -1498,26 +1447,59 @@ class MarkAttentionPointView(APIView):
                     {"error": "Validation failed", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Get provider name and validated data
-            provider_name = get_provider_full_name(provider.provider_id)
+            # Get validated data
             data = serializer.validated_data
             area_id = data["area_id"]
             is_attention_point = data["is_attention_point"]
 
+            # SECURITY: Get the interest area observation and verify it exists
+            observation = get_object_or_404(
+                Observation,
+                observation_id=area_id,
+                observation_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
+            )
+
+            # SECURITY: Verify Provider is linked to the Person who owns this interest area
+            if observation.person:
+                relationship_exists = FactRelationship.objects.filter(
+                    fact_id_1=observation.person.person_id,
+                    domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
+                    fact_id_2=provider.provider_id,
+                    domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
+                    relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
+                ).exists()
+
+                if not relationship_exists:
+                    logger.warning(
+                        "Mark attention point access denied - provider not linked to interest area owner",
+                        extra={
+                            "user_id": user.id,
+                            "provider_id": provider.provider_id,
+                            "area_id": area_id,
+                            "area_person_id": observation.person.person_id,
+                            "action": "mark_attention_point_no_relationship",
+                        },
+                    )
+                    return Response(
+                        {"error": "You can only mark attention points for interest areas of linked persons."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
+            # Get provider name for marking
+            provider_name = get_provider_full_name(provider.provider_id)
+
             logger.debug(
-                "Processing attention point marking",
+                "Processing attention point marking with relationship validated",
                 extra={
                     "user_id": user.id,
                     "provider_id": provider.provider_id,
                     "provider_name": provider_name,
                     "area_id": area_id,
+                    "area_person_id": observation.person.person_id if observation.person else None,
                     "is_attention_point": is_attention_point,
                     "action": "mark_attention_point_processing",
                 },
             )
-
-            # Get the interest area observation
-            observation = get_object_or_404(Observation, observation_id=area_id)
 
             # Parse existing interest data
             try:
@@ -1558,12 +1540,13 @@ class MarkAttentionPointView(APIView):
                 observation.save(update_fields=["value_as_string"])
 
                 logger.info(
-                    "Mark attention point completed successfully",
+                    "Mark attention point completed successfully with security validation",
                     extra={
                         "user_id": user.id,
                         "provider_id": provider.provider_id,
                         "provider_name": provider_name,
                         "area_id": area_id,
+                        "area_person_id": observation.person.person_id if observation.person else None,
                         "is_attention_point": is_attention_point,
                         "marking_action": marking_action,
                         "original_marked_by": original_marked_by,
@@ -1587,7 +1570,7 @@ class MarkAttentionPointView(APIView):
 
         except Http404:
             logger.warning(
-                "Mark attention point failed - interest area not found",
+                "Mark attention point failed - interest area or provider not found",
                 extra={
                     "user_id": user.id,
                     "area_id": data.get("area_id") if "data" in locals() else None,
@@ -1595,7 +1578,7 @@ class MarkAttentionPointView(APIView):
                     "action": "mark_attention_point_not_found",
                 },
             )
-            return Response({"error": "Interest area not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Interest area or provider not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(
                 "Error marking attention point",
