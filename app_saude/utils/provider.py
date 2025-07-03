@@ -1,9 +1,13 @@
+import logging
+
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from app_saude.models import FactRelationship, Person, Provider  # ajuste conforme necessário
 
 from .concept import get_concept_by_code
+
+logger = logging.getLogger(__name__)
 
 
 def get_provider_and_linked_persons(request_user):
@@ -41,3 +45,22 @@ def get_provider_full_name(provider_id):
     if provider:
         return provider.social_name if provider.social_name else provider.user.get_full_name()
     return None
+
+
+def validate_user_is_provider(user):
+    """
+    Valida se o usuário tem perfil de Provider.
+    Retorna o Provider ou levanta Http404.
+    """
+    try:
+        return get_object_or_404(Provider, user=user)
+    except Http404:
+        logger.warning(
+            "Acesso negado - usuário não é provider",
+            extra={
+                "user_id": user.id,
+                "email": user.email,
+                "action": "access_denied_not_provider",
+            },
+        )
+        raise Http404("Acesso negado. Esta funcionalidade é exclusiva para profissionais.")

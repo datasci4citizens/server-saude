@@ -342,7 +342,7 @@ class Observation(TimestampedModel):
         null=True,
         db_comment="Patient linked to the observation",
     )
-    provider = models.ForeignKey(
+    provider: Provider = models.ForeignKey(
         Provider,
         on_delete=models.DO_NOTHING,
         blank=True,

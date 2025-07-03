@@ -660,6 +660,7 @@ class ProviderPersonSummarySerializer(serializers.Serializer):
     person_id = serializers.IntegerField()
     name = serializers.CharField()
     age = serializers.IntegerField(allow_null=True)
+    profile_picture = serializers.CharField(allow_null=True)
     last_visit_date = serializers.DateTimeField(allow_null=True)
     last_visit_notes = serializers.CharField(allow_null=True, required=False)
     last_help_date = serializers.DateTimeField(allow_null=True)
@@ -681,7 +682,7 @@ class NextVisitSerializer(serializers.Serializer):
 class InterestAreaTriggerSerializer(serializers.Serializer):
     name = serializers.CharField()
     type = serializers.ChoiceField(choices=["boolean", "text", "int", "scale"], default="boolean")
-    response = serializers.CharField(allow_null=True)
+    response = serializers.CharField(allow_null=True, allow_blank=True)
 
 
 class InterestAreaSerializer(serializers.Serializer):
@@ -809,7 +810,9 @@ class DiaryDeleteSerializer(serializers.Serializer):
 class DiaryRetrieveSerializer(serializers.Serializer):
     diary_id = serializers.IntegerField(source="observation_id")
     date = serializers.DateTimeField(source="observation_date")
-    entries = serializers.SerializerMethodField()
+    text = serializers.SerializerMethodField()
+    text_shared: bool = serializers.SerializerMethodField()
+    date_range_type: str = serializers.SerializerMethodField()
     interest_areas = serializers.SerializerMethodField()
 
     def _load_json(self, diary):
@@ -818,14 +821,17 @@ class DiaryRetrieveSerializer(serializers.Serializer):
         except Exception:
             return {}
 
-    def get_entries(self, diary):
+    def get_text(self, diary):
         data = self._load_json(diary)
-        return [
-            {
-                "text": data.get("text", ""),
-                "text_shared": data.get("text_shared", False),
-            }
-        ]
+        return data.get("text", "")
+
+    def get_text_shared(self, diary):
+        data = self._load_json(diary)
+        return data.get("text_shared", False)
+
+    def get_date_range_type(self, diary):
+        data = self._load_json(diary)
+        return data.get("date_range_type", "today")
 
     def get_interest_areas(self, diary):
         data = self._load_json(diary)
@@ -918,3 +924,33 @@ class AccountRetrieveSerializer(serializers.Serializer):
 
 class AccountDeleteSerializer(serializers.Serializer):
     pass
+
+
+class LinkingCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(
+        max_length=6, help_text="Code generated to link a person to this provider (ex: 'A1B2C3')"
+    )
+    expires_at = serializers.DateTimeField(help_text="Expiration time of the linking code")
+    expires_in_minutes = serializers.IntegerField(help_text="Expiration time in minutes")
+
+    def create(self, validated_data):
+        return {
+            "code": validated_data["code"],
+            "expires_at": validated_data["expires_at"],
+            "expires_in_minutes": validated_data["expires_in_minutes"],
+        }
+
+
+class ProviderPersonLinkStatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["linked", "unlinked"], help_text="Linking status")
+    relationships_removed = serializers.IntegerField(help_text="Number of relationships removed during unlinking")
+    person_id = serializers.IntegerField(help_text="ID of the person involved in the linking")
+    provider_id = serializers.IntegerField(help_text="ID of the provider involved in the linking")
+
+    def create(self, validated_data):
+        return {
+            "status": validated_data["status"],
+            "relationships_removed": validated_data["relationships_removed"],
+            "person_id": validated_data["person_id"],
+            "provider_id": validated_data["provider_id"],
+        }
