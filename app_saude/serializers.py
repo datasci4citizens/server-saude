@@ -809,7 +809,9 @@ class DiaryDeleteSerializer(serializers.Serializer):
 class DiaryRetrieveSerializer(serializers.Serializer):
     diary_id = serializers.IntegerField(source="observation_id")
     date = serializers.DateTimeField(source="observation_date")
-    entries = serializers.SerializerMethodField()
+    text = serializers.SerializerMethodField()
+    text_shared: bool = serializers.SerializerMethodField()
+    date_range_type: str = serializers.SerializerMethodField()
     interest_areas = serializers.SerializerMethodField()
 
     def _load_json(self, diary):
@@ -818,15 +820,17 @@ class DiaryRetrieveSerializer(serializers.Serializer):
         except Exception:
             return {}
 
-    def get_entries(self, diary):
+    def get_text(self, diary):
         data = self._load_json(diary)
-        return [
-            {
-                "text": data.get("text", ""),
-                "text_shared": data.get("text_shared", False),
-                "date_range_type": data.get("date_range_type", "today"),
-            }
-        ]
+        return data.get("text", "")
+
+    def get_text_shared(self, diary):
+        data = self._load_json(diary)
+        return data.get("text_shared", False)
+
+    def get_date_range_type(self, diary):
+        data = self._load_json(diary)
+        return data.get("date_range_type", "today")
 
     def get_interest_areas(self, diary):
         data = self._load_json(diary)
