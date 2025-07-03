@@ -14,52 +14,11 @@ from rest_framework.views import APIView
 
 from ..models import *
 from ..serializers import *
+from ..utils.person import *
 from ..utils.provider import *
 
 User = get_user_model()
 logger = logging.getLogger("app_saude")
-
-
-def get_provider_and_linked_persons(request_user):
-    """
-    Retorna o provider logado e os IDs das pessoas vinculadas a ele.
-    """
-    provider = get_object_or_404(Provider, user=request_user)
-
-    linked_persons_ids = FactRelationship.objects.filter(
-        fact_id_2=provider.provider_id,
-        domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
-        domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
-        relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
-    ).values_list("fact_id_1", flat=True)
-
-    return provider, set(linked_persons_ids)
-
-
-def get_provider_and_linked_person_or_404(request_user, person_id):
-    """
-    Valida se a pessoa está vinculada ao provider logado. Retorna a pessoa ou 404.
-    """
-    provider, linked_ids = get_provider_and_linked_persons(request_user)
-    if int(person_id) not in linked_ids:
-        raise Http404("Esta pessoa não está vinculada a este profissional.")
-    return provider, Person.objects.get(pk=person_id)
-
-
-def get_person_and_linked_providers(request_user):
-    """
-    Retorna o person logado e os IDs dos providers vinculados a ele.
-    """
-    person = get_object_or_404(Person, user=request_user)
-
-    linked_providers_ids = FactRelationship.objects.filter(
-        fact_id_1=person.person_id,
-        domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
-        domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
-        relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
-    ).values_list("fact_id_2", flat=True)
-
-    return person, set(linked_providers_ids)
 
 
 @extend_schema(

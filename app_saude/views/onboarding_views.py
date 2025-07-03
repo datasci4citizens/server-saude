@@ -1,11 +1,13 @@
+import json
 import logging
 
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import IntegrityError, transaction
+from django.http import Http404
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from ..models import *
@@ -17,60 +19,194 @@ User = get_user_model()
 logger = logging.getLogger("app_saude")
 
 
+def validate_user_has_no_existing_profiles(user, requested_profile_type="unknown"):
+    """
+    Valida que o usuário não possui nenhum perfil existente (Person ou Provider).
+    Evita conflitos de múltiplos perfis para o mesmo usuário.
+
+    Args:
+        user: O usuário a ser validado
+        requested_profile_type: Tipo de perfil sendo solicitado ("person" ou "provider")
+
+    Raises:
+        Http404: Se o usuário já possui algum perfil
+    """
+    existing_person = Person.objects.filter(user=user).first()
+    existing_provider = Provider.objects.filter(user=user).first()
+
+    if existing_person:
+        logger.warning(
+            f"Onboarding bloqueado - usuário já possui perfil de Person",
+            extra={
+                "user_id": user.id,
+                "email": user.email,
+                "existing_person_id": existing_person.person_id,
+                "existing_social_name": existing_person.social_name,
+                "requested_profile_type": requested_profile_type,
+                "action": "onboarding_blocked_existing_person_profile",
+            },
+        )
+        raise Http404("Você já possui um perfil de paciente no sistema.")
+
+    if existing_provider:
+        logger.warning(
+            f"Onboarding bloqueado - usuário já possui perfil de Provider",
+            extra={
+                "user_id": user.id,
+                "email": user.email,
+                "existing_provider_id": existing_provider.provider_id,
+                "existing_social_name": existing_provider.social_name,
+                "existing_professional_reg": getattr(existing_provider, "professional_registration", None),
+                "requested_profile_type": requested_profile_type,
+                "action": "onboarding_blocked_existing_provider_profile",
+            },
+        )
+        raise Http404("Você já possui um perfil de profissional no sistema.")
+
+
+def validate_person_onboarding_authorization(user):
+    """
+    Valida se o usuário tem autorização para fazer onboarding como Person.
+
+    Args:
+        user: O usuário autenticado
+
+    Raises:
+        Http404: Se não autorizado
+    """
+    if not user.is_authenticated:
+        logger.warning(
+            "Tentativa de onboarding Person sem autenticação",
+            extra={
+                "user_authenticated": user.is_authenticated,
+                "action": "person_onboarding_no_auth",
+            },
+        )
+        raise Http404("Autenticação necessária para criar perfil de paciente.")
+
+    # Verificar se não possui nenhum perfil existente
+    validate_user_has_no_existing_profiles(user, "person")
+
+
+def validate_provider_registration_data(email, professional_registration):
+    """
+    Valida dados de registro de Provider para evitar duplicatas.
+
+    Args:
+        email: Email do provider
+        professional_registration: Registro profissional
+
+    Raises:
+        Http404: Se dados duplicados encontrados
+    """
+    # Verificar email duplicado
+    if User.objects.filter(email=email).exists():
+        logger.warning(
+            "Registro Provider bloqueado - email já existe",
+            extra={
+                "email": email,
+                "action": "provider_registration_email_duplicate",
+            },
+        )
+        raise Http404("Já existe uma conta com este email.")
+
+    # Verificar registro profissional duplicado
+    if (
+        professional_registration
+        and Provider.objects.filter(professional_registration=professional_registration).exists()
+    ):
+        logger.warning(
+            "Registro Provider bloqueado - registro profissional já existe",
+            extra={
+                "professional_registration": professional_registration,
+                "email": email,
+                "action": "provider_registration_prof_reg_duplicate",
+            },
+        )
+        raise Http404("Já existe um profissional com este registro.")
+
+
+def validate_user_registration_limits(email):
+    """
+    Valida limites de registro por usuário para prevenir spam/abuso.
+
+    Args:
+        email: Email sendo registrado
+    """
+    # Verificar se o domínio do email não está na blacklist (se implementado)
+    email_domain = email.split("@")[1].lower() if "@" in email else ""
+
+    # Lista de domínios temporários/suspeitos (exemplo)
+    suspicious_domains = ["10minutemail.com", "tempmail.org", "guerrillamail.com", "mailinator.com", "throwaway.email"]
+
+    if email_domain in suspicious_domains:
+        logger.warning(
+            "Registro bloqueado - domínio de email suspeito",
+            extra={
+                "email": email,
+                "email_domain": email_domain,
+                "action": "registration_blocked_suspicious_domain",
+            },
+        )
+        raise Http404("Este domínio de email não é permitido para registro.")
+
+
 @extend_schema(
     tags=["Complete Onboarding"],
     summary="Complete Person Onboarding",
     description="""
-    Complete onboarding process for Person profiles with all required information.
+    Completa o processo de onboarding para perfis de Person com todas as informações necessárias.
     
-    **Comprehensive Onboarding Features:**
-    - Creates complete Person profile in single request
-    - Validates all required personal information
-    - Sets up initial preferences and settings
-    - Links to authenticated user account
-    - Performs full data validation and consistency checks
+    **RESTRIÇÕES DE SEGURANÇA:**
+    - **Autenticação Obrigatória**: Usuário deve estar autenticado
+    - **Perfil Único**: Usuário não pode ter perfil existente (Person ou Provider)
+    - **Validação Completa**: Todos os dados são validados antes da criação
     
-    **Business Rules:**
-    - User must be authenticated
-    - User cannot already have a Person profile
-    - All required fields must be provided
-    - Age validation and birth date consistency
-    - Social name must be unique within system
+    **Recursos Abrangentes de Onboarding:**
+    - Cria perfil completo de Person em uma única requisição
+    - Valida todas as informações pessoais necessárias
+    - Configura preferências e configurações iniciais
+    - Vincula à conta de usuário autenticada
+    - Realiza validação completa de dados e verificações de consistência
     
-    **Data Validation:**
-    - Birth date vs age consistency
-    - Required field completeness
-    - Format validation for all inputs
-    - Business rule compliance
-    
-    **Post-Onboarding:**
-    - User gains access to Person features
-    - Profile appears in search results
-    - Can receive services from Providers
-    - Preferences are immediately active
+    **Regras de Negócio:**
+    - Usuário deve estar autenticado
+    - Usuário não pode já ter um perfil de Person
+    - Usuário não pode já ter um perfil de Provider
+    - Todos os campos obrigatórios devem ser fornecidos
+    - Validação de idade e consistência de data de nascimento
+    - Nome social deve ser único no sistema
     """,
     request=FullPersonCreateSerializer,
     responses={
-        201: {"description": "Person onboarding completed successfully"},
-        400: {"description": "Validation error or duplicate registration"},
-        401: {"description": "Authentication required"},
+        201: {"description": "Onboarding de Person completado com sucesso"},
+        400: {"description": "Erro de validação ou registro duplicado"},
+        401: {"description": "Autenticação necessária"},
+        404: {"description": "Acesso negado ou perfil já existe"},
     },
 )
 class FullPersonViewSet(FlexibleViewSet):
     """
-    Complete Person Onboarding
+    Onboarding Completo de Person
 
-    Handles comprehensive Person profile creation with full validation
-    and data consistency checks in a single atomic operation.
+    Lida com criação abrangente de perfil de Person com validação completa
+    e verificações de consistência de dados em uma única operação atômica.
     """
 
     http_method_names = ["post"]  # only allow POST
     queryset = Person.objects.none()  # prevents GET from returning anything
+    permission_classes = [IsAuthenticated]
 
     def create(self, request):
         user = request.user
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
         user_agent = request.META.get("HTTP_USER_AGENT", "Unknown")
+
+        # VALIDAÇÃO DE SEGURANÇA: Verificar autorização para onboarding Person
+        try:
+            validate_person_onboarding_authorization(user)
+        except Http404 as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
         logger.info(
             "Full person onboarding initiated",
@@ -89,26 +225,31 @@ class FullPersonViewSet(FlexibleViewSet):
         serializer: FullPersonCreateSerializer = self.get_serializer(data=request.data, context={"request": request})
 
         try:
-            # Check for existing person registration with detailed logging
-            existing_person = Person.objects.filter(user=request.user).first()
-            if existing_person:
+            # Validação adicional de dados sensíveis
+            social_name = request.data.get("social_name", "").strip()
+            if not social_name:
                 logger.warning(
-                    "Full person onboarding blocked - duplicate registration",
+                    "Person onboarding failed - nome social obrigatório",
                     extra={
                         "user_id": user.id,
-                        "existing_person_id": existing_person.person_id,
-                        "existing_social_name": existing_person.social_name,
-                        "existing_age": getattr(existing_person, "age", None),
-                        "existing_created_date": (
-                            existing_person.created_at.isoformat() if hasattr(existing_person, "created_at") else None
-                        ),
                         "ip_address": ip_address,
-                        "action": "full_person_onboarding_duplicate_blocked",
+                        "action": "person_onboarding_no_social_name",
                     },
                 )
-                return Response(
-                    {"error": "You already have a person registration."}, status=status.HTTP_400_BAD_REQUEST
+                return Response({"error": "Nome social é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Verificar se nome social já existe
+            if Person.objects.filter(social_name=social_name).exists():
+                logger.warning(
+                    "Person onboarding failed - nome social já existe",
+                    extra={
+                        "user_id": user.id,
+                        "social_name": social_name,
+                        "ip_address": ip_address,
+                        "action": "person_onboarding_social_name_exists",
+                    },
                 )
+                return Response({"error": "Este nome social já está em uso."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Validate serializer data
             if not serializer.is_valid():
@@ -132,7 +273,7 @@ class FullPersonViewSet(FlexibleViewSet):
                 extra={
                     "user_id": user.id,
                     "data_fields": list(request.data.keys()),
-                    "social_name": request.data.get("social_name"),
+                    "social_name": social_name,
                     "age": request.data.get("age"),
                     "action": "full_person_onboarding_validated",
                 },
@@ -144,6 +285,9 @@ class FullPersonViewSet(FlexibleViewSet):
                     "Starting atomic transaction for person creation",
                     extra={"user_id": user.id, "action": "full_person_onboarding_transaction_start"},
                 )
+
+                # Validação final antes da criação
+                validate_user_has_no_existing_profiles(user, "person")
 
                 serializer.create(request.data)
 
@@ -172,6 +316,8 @@ class FullPersonViewSet(FlexibleViewSet):
                     status=status.HTTP_201_CREATED,
                 )
 
+        except Http404 as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except ValidationError as ve:
             logger.warning(
                 "Full person onboarding validation failed with ValidationError",
@@ -184,7 +330,22 @@ class FullPersonViewSet(FlexibleViewSet):
                 },
             )
             return Response({"error": str(ve)}, status=status.HTTP_400_BAD_REQUEST)
-
+        except IntegrityError as ie:
+            logger.error(
+                "Integrity error during person onboarding",
+                extra={
+                    "user_id": user.id,
+                    "error": str(ie),
+                    "social_name": request.data.get("social_name"),
+                    "ip_address": ip_address,
+                    "action": "full_person_onboarding_integrity_error",
+                },
+                exc_info=True,
+            )
+            return Response(
+                {"error": "Os dados fornecidos conflitam com registros existentes."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except Exception as e:
             logger.error(
                 "Critical error during full person onboarding",
@@ -208,53 +369,42 @@ class FullPersonViewSet(FlexibleViewSet):
     tags=["Complete Onboarding"],
     summary="Complete Provider Registration",
     description="""
-    Complete registration process for Provider profiles with user account creation.
+    Processo de registro completo para perfis de Provider com criação de conta de usuário.
     
-    **Comprehensive Registration Features:**
-    - Creates both User account and Provider profile
-    - Validates professional credentials
-    - Sets up complete provider information
-    - Handles account activation and permissions
-    - Atomic transaction ensures data consistency
+    **RESTRIÇÕES DE SEGURANÇA:**
+    - **Email Único**: Email deve ser único no sistema
+    - **Registro Profissional Único**: Registro profissional deve ser único
+    - **Validação de Domínio**: Domínios de email suspeitos são bloqueados
+    - **Transação Atômica**: Criação de User e Provider em transação única
     
-    **Account Creation Process:**
-    1. **User Validation**: Email uniqueness and format validation
-    2. **Professional Validation**: Registration number verification
-    3. **Profile Creation**: Complete provider profile setup
-    4. **Account Activation**: User account setup with proper permissions
-    5. **Relationship Setup**: Links user to provider profile
+    **Recursos Abrangentes de Registro:**
+    - Cria tanto conta de User quanto perfil de Provider
+    - Valida credenciais profissionais
+    - Configura informações completas do provider
+    - Lida com ativação de conta e permissões
+    - Transação atômica garante consistência de dados
     
-    **Professional Requirements:**
-    - Valid email address (will become username)
-    - Professional registration number (if applicable)
-    - Specialty/service category specification
-    - Complete contact information
-    
-    **Security Features:**
-    - Password requirements enforcement
-    - Email verification preparation
-    - Professional credential validation
-    - Duplicate registration prevention
-    
-    **Post-Registration:**
-    - Provider can immediately start offering services
-    - Profile appears in provider directories
-    - Can generate link codes for person connections
-    - Access to provider dashboard and features
+    **Processo de Criação de Conta:**
+    1. **Validação de Usuário**: Validação de unicidade e formato de email
+    2. **Validação Profissional**: Verificação de número de registro
+    3. **Criação de Perfil**: Configuração completa do perfil do provider
+    4. **Ativação de Conta**: Configuração da conta do usuário com permissões adequadas
+    5. **Configuração de Relacionamento**: Vincula usuário ao perfil do provider
     """,
     request=FullProviderCreateSerializer,
     responses={
-        201: {"description": "Provider registration completed successfully"},
-        400: {"description": "Validation error or duplicate registration"},
-        500: {"description": "Server error during registration"},
+        201: {"description": "Registro de Provider completado com sucesso"},
+        400: {"description": "Erro de validação ou registro duplicado"},
+        404: {"description": "Dados duplicados ou domínio não permitido"},
+        500: {"description": "Erro do servidor durante registro"},
     },
 )
 class FullProviderViewSet(FlexibleViewSet):
     """
-    Complete Provider Registration
+    Registro Completo de Provider
 
-    Handles comprehensive Provider registration including user account creation
-    and complete professional profile setup in atomic transactions.
+    Lida com registro abrangente de Provider incluindo criação de conta de usuário
+    e configuração completa de perfil profissional em transações atômicas.
     """
 
     http_method_names = ["post"]
@@ -264,8 +414,9 @@ class FullProviderViewSet(FlexibleViewSet):
     def create(self, request):
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
         user_agent = request.META.get("HTTP_USER_AGENT", "Unknown")
-        email = request.data.get("email")
-        professional_registration = request.data.get("professional_registration")
+        email = request.data.get("email", "").strip().lower()
+        professional_registration = request.data.get("professional_registration", "").strip()
+        social_name = request.data.get("social_name", "").strip()
 
         logger.info(
             "Full provider registration initiated",
@@ -274,12 +425,55 @@ class FullProviderViewSet(FlexibleViewSet):
                 "user_agent": user_agent,
                 "email": email,
                 "professional_registration": professional_registration,
+                "social_name": social_name,
                 "specialty": request.data.get("specialty"),
                 "request_data_size": len(str(request.data)),
                 "request_fields": list(request.data.keys()) if request.data else [],
                 "action": "full_provider_registration_start",
             },
         )
+
+        # VALIDAÇÕES DE SEGURANÇA PRELIMINARES
+        try:
+            # Validar email e registro profissional
+            if not email:
+                return Response({"error": "Email é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validar limites e restrições de registro
+            validate_user_registration_limits(email)
+
+            # Validar dados de registro
+            validate_provider_registration_data(email, professional_registration)
+
+        except Http404 as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validações adicionais
+        if not social_name:
+            logger.warning(
+                "Provider registration failed - nome social obrigatório",
+                extra={
+                    "email": email,
+                    "ip_address": ip_address,
+                    "action": "provider_registration_no_social_name",
+                },
+            )
+            return Response({"error": "Nome social é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verificar se nome social já existe para providers
+        if Provider.objects.filter(social_name=social_name).exists():
+            logger.warning(
+                "Provider registration failed - nome social já existe",
+                extra={
+                    "email": email,
+                    "social_name": social_name,
+                    "ip_address": ip_address,
+                    "action": "provider_registration_social_name_exists",
+                },
+            )
+            return Response(
+                {"error": "Este nome social já está em uso por outro profissional."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         serializer = self.get_serializer(data=request.data, context={"request": request})
 
@@ -305,37 +499,6 @@ class FullProviderViewSet(FlexibleViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Check for existing user with same email
-        if User.objects.filter(email=email).exists():
-            logger.warning(
-                "Full provider registration blocked - email already exists",
-                extra={
-                    "email": email,
-                    "ip_address": ip_address,
-                    "action": "full_provider_registration_email_duplicate",
-                },
-            )
-            return Response({"error": "User with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check for existing provider with same professional registration
-        if (
-            professional_registration
-            and Provider.objects.filter(professional_registration=professional_registration).exists()
-        ):
-            logger.warning(
-                "Full provider registration blocked - professional registration already exists",
-                extra={
-                    "professional_registration": professional_registration,
-                    "email": email,
-                    "ip_address": ip_address,
-                    "action": "full_provider_registration_prof_reg_duplicate",
-                },
-            )
-            return Response(
-                {"error": "Provider with this professional registration already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         with transaction.atomic():
             try:
                 logger.debug(
@@ -343,9 +506,13 @@ class FullProviderViewSet(FlexibleViewSet):
                     extra={
                         "email": email,
                         "professional_registration": professional_registration,
+                        "social_name": social_name,
                         "action": "full_provider_registration_transaction_start",
                     },
                 )
+
+                # Validações finais dentro da transação
+                validate_provider_registration_data(email, professional_registration)
 
                 result = serializer.save()
                 response_data = ProviderRetrieveSerializer(result["provider"]).data
@@ -379,6 +546,19 @@ class FullProviderViewSet(FlexibleViewSet):
                     status=status.HTTP_201_CREATED,
                 )
 
+            except Http404 as e:
+                transaction.set_rollback(True)
+                logger.error(
+                    "Provider registration blocked - validation failed within transaction",
+                    extra={
+                        "error": str(e),
+                        "email": email,
+                        "professional_registration": professional_registration,
+                        "ip_address": ip_address,
+                        "action": "full_provider_registration_blocked",
+                    },
+                )
+                return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
             except IntegrityError as ie:
                 transaction.set_rollback(True)
                 logger.error(
@@ -387,6 +567,7 @@ class FullProviderViewSet(FlexibleViewSet):
                         "error": str(ie),
                         "email": email,
                         "professional_registration": professional_registration,
+                        "social_name": social_name,
                         "ip_address": ip_address,
                         "action": "full_provider_registration_integrity_error",
                     },
