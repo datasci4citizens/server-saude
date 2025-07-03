@@ -19,6 +19,8 @@ python manage.py seed_concepts
 echo "Populando interesses"
 python manage.py seed_interests
 
+mkdir -p /app/staticfiles
+python manage.py collectstatic --noinput
 
 # Criação automática do superusuário
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
