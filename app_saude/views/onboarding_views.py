@@ -175,7 +175,6 @@ def validate_user_registration_limits(email):
     - Usuário não pode já ter um perfil de Provider
     - Todos os campos obrigatórios devem ser fornecidos
     - Validação de idade e consistência de data de nascimento
-    - Nome social deve ser único no sistema
     """,
     request=FullPersonCreateSerializer,
     responses={
@@ -225,32 +224,6 @@ class FullPersonViewSet(FlexibleViewSet):
         serializer: FullPersonCreateSerializer = self.get_serializer(data=request.data, context={"request": request})
 
         try:
-            # Validação adicional de dados sensíveis
-            social_name = request.data.get("social_name", "").strip()
-            if not social_name:
-                logger.warning(
-                    "Person onboarding failed - nome social obrigatório",
-                    extra={
-                        "user_id": user.id,
-                        "ip_address": ip_address,
-                        "action": "person_onboarding_no_social_name",
-                    },
-                )
-                return Response({"error": "Nome social é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Verificar se nome social já existe
-            if Person.objects.filter(social_name=social_name).exists():
-                logger.warning(
-                    "Person onboarding failed - nome social já existe",
-                    extra={
-                        "user_id": user.id,
-                        "social_name": social_name,
-                        "ip_address": ip_address,
-                        "action": "person_onboarding_social_name_exists",
-                    },
-                )
-                return Response({"error": "Este nome social já está em uso."}, status=status.HTTP_400_BAD_REQUEST)
-
             # Validate serializer data
             if not serializer.is_valid():
                 validation_errors = serializer.errors
@@ -273,7 +246,6 @@ class FullPersonViewSet(FlexibleViewSet):
                 extra={
                     "user_id": user.id,
                     "data_fields": list(request.data.keys()),
-                    "social_name": social_name,
                     "age": request.data.get("age"),
                     "action": "full_person_onboarding_validated",
                 },
@@ -447,33 +419,6 @@ class FullProviderViewSet(FlexibleViewSet):
 
         except Http404 as e:
             return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
-
-        # Validações adicionais
-        if not social_name:
-            logger.warning(
-                "Provider registration failed - nome social obrigatório",
-                extra={
-                    "email": email,
-                    "ip_address": ip_address,
-                    "action": "provider_registration_no_social_name",
-                },
-            )
-            return Response({"error": "Nome social é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Verificar se nome social já existe para providers
-        if Provider.objects.filter(social_name=social_name).exists():
-            logger.warning(
-                "Provider registration failed - nome social já existe",
-                extra={
-                    "email": email,
-                    "social_name": social_name,
-                    "ip_address": ip_address,
-                    "action": "provider_registration_social_name_exists",
-                },
-            )
-            return Response(
-                {"error": "Este nome social já está em uso por outro profissional."}, status=status.HTTP_400_BAD_REQUEST
-            )
 
         serializer = self.get_serializer(data=request.data, context={"request": request})
 
