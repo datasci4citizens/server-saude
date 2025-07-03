@@ -282,7 +282,6 @@ class SendHelpView(APIView):
                             "observation_concept_id": get_concept_by_code("HELP").concept_id,
                             "value_as_concept_id": get_concept_by_code("ACTIVE").concept_id,
                             "observation_date": current_time,
-                            "observation_type_concept_id": get_concept_by_code("PERSON_GENERATED").concept_id,
                         }
 
                         obs = Observation.objects.create(**observation_data)
