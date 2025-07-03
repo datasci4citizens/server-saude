@@ -1,6 +1,85 @@
 # CHANGELOG
 
 
+## v1.5.0 (2025-07-03)
+
+### Bug Fixes
+
+- **nojira**: Add date range type do retrieve
+  ([`3a0d443`](https://github.com/datasci4citizens/server-saude/commit/3a0d443403447f0cca22137df3106ca03b616b86))
+
+- **nojira**: Add date range type do retrieve
+  ([`1dbcbac`](https://github.com/datasci4citizens/server-saude/commit/1dbcbacae5584bdd22caef5d4c148a6fe002c75e))
+
+- **nojira**: Add serializer types
+  ([`cd1ff0e`](https://github.com/datasci4citizens/server-saude/commit/cd1ff0e9a10d2e3c348dbb14eb810da444b40b9b))
+
+- **nojira**: Add validations to calling user
+  ([`33f53a2`](https://github.com/datasci4citizens/server-saude/commit/33f53a2b20360cff773ed8a18b4f05498be58b1d))
+
+- **nojira**: Add validations to calling user
+  ([`d4f47fa`](https://github.com/datasci4citizens/server-saude/commit/d4f47fa240c737b1883a3259acb6ef05388356ed))
+
+- **nojira**: Add validations to calling user
+  ([`339c70f`](https://github.com/datasci4citizens/server-saude/commit/339c70f14848aeb9b21b6eb1dd1d7cb936778cea))
+
+- **nojira**: Add validations to calling user
+  ([#144](https://github.com/datasci4citizens/server-saude/pull/144),
+  [`d852a2c`](https://github.com/datasci4citizens/server-saude/commit/d852a2cf016f71e6deac574192305b1c472c41e8))
+
+- **nojira**: Fix id access
+  ([`15353d7`](https://github.com/datasci4citizens/server-saude/commit/15353d76fc7921107ecdeede6d5401ca3fb9f226))
+
+- **nojira**: Fix id access
+  ([`6386b69`](https://github.com/datasci4citizens/server-saude/commit/6386b69dc89adf5b2fed333afd0f1cfcdc129db3))
+
+- **nojira**: Fix id access
+  ([`ca17206`](https://github.com/datasci4citizens/server-saude/commit/ca17206a2b6a77f44c22825381c79719451681d7))
+
+- **nojira**: Fix id access
+  ([`a8285ce`](https://github.com/datasci4citizens/server-saude/commit/a8285cefc78d94d37c41a379a48cbe623ab9d3e4))
+
+- **nojira**: Fix id access
+  ([`233528a`](https://github.com/datasci4citizens/server-saude/commit/233528a7f7736d71f7ca9b1ba6f5dbda7a2e3fa5))
+
+- **nojira**: Fix linking
+  ([`c824c9e`](https://github.com/datasci4citizens/server-saude/commit/c824c9ef55f0509ad92cd64e73f51aeb57e1efc5))
+
+- **nojira**: Observation has no id field
+  ([`c5636ab`](https://github.com/datasci4citizens/server-saude/commit/c5636abd2d2aa3fe480011d15086c6ca400c05c5))
+
+- **nojira**: Observation has no id field
+  ([#142](https://github.com/datasci4citizens/server-saude/pull/142),
+  [`cf17ffa`](https://github.com/datasci4citizens/server-saude/commit/cf17ffadc407b25acee5458ea60e80fad296ecc9))
+
+- **nojira**: Remove unknown concept
+  ([`c3c0983`](https://github.com/datasci4citizens/server-saude/commit/c3c09832e7bb250edcc602e959a7ca4d385fb3c2))
+
+- **nojira**: Remove unknown concept
+  ([`f35e4b3`](https://github.com/datasci4citizens/server-saude/commit/f35e4b389b381c89337d7732892e3f13067de511))
+
+- **sau-140**: Add logs and fix unlink
+  ([`80a912e`](https://github.com/datasci4citizens/server-saude/commit/80a912ec172ca9d884806c3f4aef39b4dbe5fc0c))
+
+### Features
+
+- **sau-137**: Separate views and add doc to swagger
+  ([`84be5cf`](https://github.com/datasci4citizens/server-saude/commit/84be5cfdf1dda2a6233502d38b21c1f2c923e9f2))
+
+- **sau-137**: Separate views and add doc to swagger
+  ([#143](https://github.com/datasci4citizens/server-saude/pull/143),
+  [`26ae650`](https://github.com/datasci4citizens/server-saude/commit/26ae6501382f7e6e3afd3fe73b2ef8d8ea473557))
+
+- **sau-140**: Fix unlink and add logs
+  ([#141](https://github.com/datasci4citizens/server-saude/pull/141),
+  [`a03d1b2`](https://github.com/datasci4citizens/server-saude/commit/a03d1b29c818d86e4de1c8c7e95d3e21ec7e46b0))
+
+### Refactoring
+
+- **nojira**: Release ([#145](https://github.com/datasci4citizens/server-saude/pull/145),
+  [`cfcdff2`](https://github.com/datasci4citizens/server-saude/commit/cfcdff27bc92413e26f0147ae29902a1c9cbcb93))
+
+
 ## v1.4.0 (2025-06-27)
 
 ### Bug Fixes
@@ -84,6 +163,12 @@
 - **SAU**: Portuguese concept code
   ([`ac63099`](https://github.com/datasci4citizens/server-saude/commit/ac63099eda6458b4684e2ac9f609114da64fc11c))
 
+- **SAU**: Remove print
+  ([`6ab50ce`](https://github.com/datasci4citizens/server-saude/commit/6ab50ced26bcbabeededdd20b71bbd9037c5ec77))
+
+- **SAU**: Small fixes
+  ([`e8cc2ee`](https://github.com/datasci4citizens/server-saude/commit/e8cc2eef5e267519f0b53ea5a57a1fe52dea5e19))
+
 - **sau-108**: Expose resolve help endpoint
   ([`ea16291`](https://github.com/datasci4citizens/server-saude/commit/ea162915f0efdcfef7e63adb9025a4dbce212ca1))
 
@@ -160,6 +245,20 @@
 
 - **SAU**: Try to reset database ([#122](https://github.com/datasci4citizens/server-saude/pull/122),
   [`12481eb`](https://github.com/datasci4citizens/server-saude/commit/12481eb49dc2952cb4eecf543a4f7fd3c1c6d03d))
+
+### Documentation
+
+- **NOJIRA**: Secao 3 vocabularios
+  ([`ecc383c`](https://github.com/datasci4citizens/server-saude/commit/ecc383cc4c4a13939b22118dfb38e4b973ae75d0))
+
+- **NOJIRA**: Secao 3 vocabularios (#38)
+  ([#136](https://github.com/datasci4citizens/server-saude/pull/136),
+  [`41cb315`](https://github.com/datasci4citizens/server-saude/commit/41cb315f5c7064b4aeb3b51c2d20c4123d8bf532))
+
+Seção 3 Vocabulários documentação finalizada (issue #38)
+
+- **NOJIRA**: Secao 3 vocabularios mod
+  ([`048ef89`](https://github.com/datasci4citizens/server-saude/commit/048ef89914f3689668fc5f8569c740b5cb8fff28))
 
 ### Features
 
@@ -270,9 +369,6 @@
   [`117b9fa`](https://github.com/datasci4citizens/server-saude/commit/117b9fa3f1d168e3fdf0e1de6383949b6cb453aa))
 
 ### Documentation
-
-- **NOJIRA**: Secao 5 ferramentas
-  ([`4e8ea23`](https://github.com/datasci4citizens/server-saude/commit/4e8ea234c57f53a7b1261e61bb102fe22e77cd09))
 
 - **NOJIRA**: Secao 5 ferramentas (issue #38)
   ([#88](https://github.com/datasci4citizens/server-saude/pull/88),
@@ -412,6 +508,9 @@ Finalizada seção 5 da documentação do OMOP CDM (issu #38)
 
 ### Documentation
 
+- **NOJIRA**: Secao 5 ferramentas
+  ([`4e8ea23`](https://github.com/datasci4citizens/server-saude/commit/4e8ea234c57f53a7b1261e61bb102fe22e77cd09))
+
 - **NOJIRA**: Secao ferramentas (issue #38)
   ([`3d4a1ab`](https://github.com/datasci4citizens/server-saude/commit/3d4a1abb09b9220affb4a297ab2ab19bf6911ded))
 
@@ -420,6 +519,9 @@ Finalizada seção 5 da documentação do OMOP CDM (issu #38)
 
 - **NOJIRA**: Secao ferramentas (issue #38)
   ([`5b521a6`](https://github.com/datasci4citizens/server-saude/commit/5b521a67fb4f5556fe5130b6ab44d1bc0dab220d))
+
+- **NOJIRA**: Vocabularios
+  ([`ff8d6ef`](https://github.com/datasci4citizens/server-saude/commit/ff8d6effbbb286526632cf7ed27668bb3697902b))
 
 ### Features
 
@@ -452,6 +554,11 @@ Finalizada seção 5 da documentação do OMOP CDM (issu #38)
 
 - **SAU-53**: Simplify update method
   ([`0cf5c17`](https://github.com/datasci4citizens/server-saude/commit/0cf5c17497de0de585fb6fd0e9de4456f5d5b6e3))
+
+### Testing
+
+- **SAU**: Test
+  ([`2ba7daf`](https://github.com/datasci4citizens/server-saude/commit/2ba7daf8e373d99e5b65169e2cb0b98992481cf8))
 
 
 ## v1.1.0 (2025-05-30)
@@ -573,11 +680,6 @@ Finalizada seção 5 da documentação do OMOP CDM (issu #38)
 
 - Views
   ([`8c577c6`](https://github.com/datasci4citizens/server-saude/commit/8c577c689f4238ffa3600bf1d2a9d6ccb39b2dfd))
-
-### Testing
-
-- **SAU**: Test
-  ([`2ba7daf`](https://github.com/datasci4citizens/server-saude/commit/2ba7daf8e373d99e5b65169e2cb0b98992481cf8))
 
 
 ## v0.9.1 (2025-05-28)
