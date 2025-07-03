@@ -195,7 +195,7 @@ class GenerateProviderLinkCodeView(APIView):
                         "old_date": old_date.isoformat() if old_date else None,
                         "new_code": code,
                         "new_date": current_time.isoformat(),
-                        "observation_id": obs.id,
+                        "observation_id": obs.observation_id,
                         "action": "provider_link_code_updated",
                     },
                 )
@@ -206,7 +206,7 @@ class GenerateProviderLinkCodeView(APIView):
                         "user_id": user.id,
                         "provider_id": provider.provider_id,
                         "code": code,
-                        "observation_id": obs.id,
+                        "observation_id": obs.observation_id,
                         "observation_date": current_time.isoformat(),
                         "action": "provider_link_code_created",
                     },
