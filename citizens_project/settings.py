@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import logging
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -228,6 +229,49 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
+
+class ExtraFormatter(logging.Formatter):
+    def format(self, record):
+        # Formato base
+        base_format = "[{asctime}] {levelname} {name}: {message}"
+
+        # Adicionar campos extras se existirem
+        extra_fields = []
+        for key, value in record.__dict__.items():
+            if key not in [
+                "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+                "getMessage",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "asctime",
+                "message",
+            ]:
+                extra_fields.append(f"{key}={value}")
+
+        if extra_fields:
+            base_format += " | " + " ".join(extra_fields)
+
+        formatter = logging.Formatter(base_format, style="{")
+        return formatter.format(record)
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -236,11 +280,14 @@ LOGGING = {
             "format": "[{asctime}] {levelname} {name}: {message}",
             "style": "{",
         },
+        "extra": {
+            "()": ExtraFormatter,
+        },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "extra",
         },
     },
     "loggers": {
