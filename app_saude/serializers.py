@@ -824,6 +824,7 @@ class DiaryRetrieveSerializer(serializers.Serializer):
             {
                 "text": data.get("text", ""),
                 "text_shared": data.get("text_shared", False),
+                "date_range_type": data.get("date_range_type", "today"),
             }
         ]
 
