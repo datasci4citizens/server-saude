@@ -445,7 +445,6 @@ class PersonLinkProviderView(APIView):
                     value_as_string=code,
                     observation_concept_id=get_concept_by_code("PROVIDER_LINK_CODE").concept_id,
                     observation_date__gte=cutoff_time,
-                    person__isnull=True,  # not used yet
                 )
                 .select_related("provider")
                 .order_by("-observation_date")
