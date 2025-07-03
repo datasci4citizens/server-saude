@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -14,57 +15,116 @@ from rest_framework.views import APIView
 
 from ..models import *
 from ..serializers import *
+from ..utils.person import *
 from ..utils.provider import *
 
 User = get_user_model()
 logger = logging.getLogger("app_saude")
 
 
+def validate_unlink_authorization(user, person_id, provider_id):
+    """
+    Valida se o usuário tem autorização para fazer unlink.
+    Regras:
+    - Person só pode unlinkar a si mesmo
+    - Provider só pode unlinkar pessoas vinculadas a ele
+    """
+    # Verifica se usuário é Person
+    try:
+        person = Person.objects.get(user=user)
+        # Person só pode unlinkar a si mesmo
+        if person.person_id != person_id:
+            logger.warning(
+                "Tentativa de unlink não autorizada - person tentando unlinkar outro person",
+                extra={
+                    "user_id": user.id,
+                    "user_person_id": person.person_id,
+                    "target_person_id": person_id,
+                    "action": "unauthorized_unlink_attempt_person",
+                },
+            )
+            raise Http404("Você só pode remover seus próprios vínculos.")
+        return person, None
+    except Person.DoesNotExist:
+        pass
+
+    # Verifica se usuário é Provider
+    try:
+        provider = Provider.objects.get(user=user)
+        # Provider só pode unlinkar pessoas vinculadas a ele
+        if provider.provider_id != provider_id:
+            logger.warning(
+                "Tentativa de unlink não autorizada - provider tentando unlinkar de outro provider",
+                extra={
+                    "user_id": user.id,
+                    "user_provider_id": provider.provider_id,
+                    "target_provider_id": provider_id,
+                    "action": "unauthorized_unlink_attempt_provider",
+                },
+            )
+            raise Http404("Você só pode remover vínculos de seus próprios pacientes.")
+
+        # Verifica se a pessoa está realmente vinculada a este provider
+        _, linked_persons_ids = get_provider_and_linked_persons(user)
+        if person_id not in linked_persons_ids:
+            logger.warning(
+                "Tentativa de unlink não autorizada - pessoa não vinculada",
+                extra={
+                    "user_id": user.id,
+                    "provider_id": provider.provider_id,
+                    "person_id": person_id,
+                    "action": "unauthorized_unlink_person_not_linked",
+                },
+            )
+            raise Http404("Esta pessoa não está vinculada a você.")
+
+        return None, provider
+    except Provider.DoesNotExist:
+        pass
+
+    # Se chegou aqui, o usuário não é nem Person nem Provider
+    logger.warning(
+        "Tentativa de unlink não autorizada - usuário sem perfil",
+        extra={
+            "user_id": user.id,
+            "email": user.email,
+            "action": "unauthorized_unlink_no_profile",
+        },
+    )
+    raise Http404("Acesso negado. Você precisa ter um perfil de paciente ou profissional.")
+
+
 @extend_schema(
     tags=["Person-Provider Linking"],
     summary="Generate Provider Link Code",
     description="""
-    Generates a temporary 6-digit code for Person-Provider linking.
+    Gera um código temporário de 6 dígitos para vinculação Person-Provider.
     
-    **Link Code System:**
-    - **Purpose**: Secure method for Persons to connect with Providers
-    - **Format**: 6-character alphanumeric code (e.g., 'A1B2C3')
-    - **Expiry**: Valid for 10 minutes from generation
-    - **Usage**: Single-use code that expires after Person links
+    **RESTRIÇÃO DE ACESSO:** Apenas usuários com perfil de Provider podem usar esta funcionalidade.
     
-    **Security Features:**
-    - **Time-Limited**: Codes expire automatically after 10 minutes
-    - **Single-Use**: Code becomes invalid after successful linking
-    - **Provider-Specific**: Each code is tied to specific Provider
-    - **Audit Trail**: All code generation and usage is logged
+    **Sistema de Código de Vinculação:**
+    - **Propósito**: Método seguro para Persons se conectarem com Providers
+    - **Formato**: Código alfanumérico de 6 caracteres (ex: 'A1B2C3')
+    - **Expiração**: Válido por 10 minutos a partir da geração
+    - **Uso**: Código de uso único que expira após Person vincular
     
-    **Usage Flow:**
-    1. **Provider Request**: Provider calls this endpoint to generate code
-    2. **Code Sharing**: Provider shares code with Person (verbally, QR, etc.)
-    3. **Person Linking**: Person uses code to establish connection
-    4. **Code Expiration**: Code becomes invalid after use or timeout
-    
-    **Provider Requirements:**
-    - Must be authenticated as Provider
-    - Must have valid Provider profile
-    - Can generate new codes to replace expired ones
-    
-    **Code Management:**
-    - New codes replace any existing codes for the Provider
-    - Each Provider can only have one active code at a time
-    - Codes are stored securely and tracked for audit purposes
+    **Recursos de Segurança:**
+    - **Limitado por Tempo**: Códigos expiram automaticamente após 10 minutos
+    - **Uso Único**: Código se torna inválido após vinculação bem-sucedida
+    - **Específico do Provider**: Cada código é vinculado a um Provider específico
+    - **Trilha de Auditoria**: Toda geração e uso de código é registrado
     """,
     responses={
         200: LinkingCodeSerializer,
         401: {"description": "Authentication required"},
-        404: {"description": "Provider profile not found"},
+        404: {"description": "Provider profile not found or access denied"},
     },
 )
 class GenerateProviderLinkCodeView(APIView):
     """
-    Provider Link Code Generation
+    Geração de Código de Vinculação do Provider
 
-    Generates secure temporary codes for Person-Provider linking system.
+    Gera códigos temporários seguros para sistema de vinculação Person-Provider.
     """
 
     permission_classes = [IsAuthenticated]
@@ -73,19 +133,8 @@ class GenerateProviderLinkCodeView(APIView):
         user = request.user
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
 
-        try:
-            provider = get_object_or_404(Provider, user=request.user)
-        except Http404:
-            logger.warning(
-                "Provider link code generation failed - no provider profile",
-                extra={
-                    "user_id": user.id,
-                    "email": user.email,
-                    "ip_address": ip_address,
-                    "action": "provider_link_code_no_profile",
-                },
-            )
-            return Response({"error": "Provider profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        # VALIDAÇÃO DE SEGURANÇA: Só providers podem gerar códigos
+        provider = validate_user_is_provider(user)
 
         logger.info(
             "Provider link code generation requested",
@@ -188,51 +237,29 @@ class GenerateProviderLinkCodeView(APIView):
     tags=["Person-Provider Linking"],
     summary="Get Provider Information by Link Code",
     description="""
-    Retrieves Provider information using a link code for preview before linking.
+    Recupera informações do Provider usando um código de vinculação para preview antes da vinculação.
     
-    **Preview Functionality:**
-    - Allows Person to view Provider details before establishing connection
-    - Validates link code without consuming it
-    - Returns comprehensive Provider profile information
-    - Enables informed decision-making before linking
+    **RESTRIÇÃO DE ACESSO:** Apenas usuários com perfil de Person podem usar esta funcionalidade.
     
-    **Code Validation:**
-    - **Time Check**: Code must be within 10-minute validity window
-    - **Format Check**: Code must match expected 6-character format
-    - **Provider Check**: Associated Provider must exist and be active
-    - **Availability Check**: Code must not have been used already
-    
-    **Provider Information Returned:**
-    - Provider name and professional details
-    - Specialty and service categories
-    - Professional registration information
-    - Contact and location details (if available)
-    - Service offerings and capabilities
-    
-    **Use Cases:**
-    - **Preview Before Link**: Person can verify Provider identity
-    - **QR Code Scanning**: Decode QR codes to show Provider info
-    - **Link Validation**: Verify code is valid before proceeding
-    - **Directory Integration**: Show Provider details in search results
-    
-    **Security Features:**
-    - Code preview doesn't consume or invalidate the code
-    - No sensitive Provider information is exposed
-    - All preview activities are logged for audit
-    - Rate limiting prevents code scanning attacks
+    **Funcionalidade de Preview:**
+    - Permite que Person visualize detalhes do Provider antes de estabelecer conexão
+    - Valida código de vinculação sem consumi-lo
+    - Retorna informações abrangentes do perfil do Provider
+    - Permite tomada de decisão informada antes da vinculação
     """,
     request=PersonLinkProviderRequestSerializer,
     responses={
         200: ProviderRetrieveSerializer,
         400: {"description": "Invalid or expired code"},
         401: {"description": "Authentication required"},
+        404: {"description": "Person profile not found or access denied"},
     },
 )
 class ProviderByLinkCodeView(APIView):
     """
-    Provider Information Lookup
+    Busca de Informações do Provider
 
-    Retrieves Provider details using link codes for preview functionality.
+    Recupera detalhes do Provider usando códigos de vinculação para funcionalidade de preview.
     """
 
     permission_classes = [IsAuthenticated]
@@ -242,10 +269,15 @@ class ProviderByLinkCodeView(APIView):
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
         code = request.data.get("code")
 
+        # VALIDAÇÃO DE SEGURANÇA: Só persons podem fazer preview de providers
+        person = validate_user_is_person(user)
+
         logger.debug(
             "Provider lookup by link code requested",
             extra={
                 "user_id": user.id,
+                "person_id": person.person_id,
+                "person_name": person.social_name,
                 "code": code,
                 "ip_address": ip_address,
                 "action": "provider_lookup_by_code_requested",
@@ -255,7 +287,12 @@ class ProviderByLinkCodeView(APIView):
         if not code:
             logger.warning(
                 "Provider lookup failed - no code provided",
-                extra={"user_id": user.id, "ip_address": ip_address, "action": "provider_lookup_no_code"},
+                extra={
+                    "user_id": user.id,
+                    "person_id": person.person_id,
+                    "ip_address": ip_address,
+                    "action": "provider_lookup_no_code",
+                },
             )
             return Response({"error": "Code is required."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -278,6 +315,7 @@ class ProviderByLinkCodeView(APIView):
                     "Provider lookup failed - invalid or expired code",
                     extra={
                         "user_id": user.id,
+                        "person_id": person.person_id,
                         "code": code,
                         "observation_found": obs is not None,
                         "provider_exists": obs.provider is not None if obs else False,
@@ -296,6 +334,8 @@ class ProviderByLinkCodeView(APIView):
                 "Provider successfully retrieved by link code",
                 extra={
                     "user_id": user.id,
+                    "person_id": person.person_id,
+                    "person_name": person.social_name,
                     "code": code,
                     "provider_id": provider.provider_id,
                     "provider_name": provider.social_name,
@@ -323,6 +363,7 @@ class ProviderByLinkCodeView(APIView):
                 "Unexpected error during provider lookup by code",
                 extra={
                     "user_id": user.id,
+                    "person_id": person.person_id,
                     "code": code,
                     "error": str(e),
                     "error_type": type(e).__name__,
@@ -341,53 +382,30 @@ class ProviderByLinkCodeView(APIView):
     tags=["Person-Provider Linking"],
     summary="Link Person to Provider",
     description="""
-    Establishes a connection between Person and Provider using a link code.
+    Estabelece uma conexão entre Person e Provider usando um código de vinculação.
     
-    **Linking Process:**
-    1. **Code Validation**: Verifies code exists and hasn't expired
-    2. **Provider Lookup**: Identifies Provider associated with code
-    3. **Relationship Creation**: Creates Person-Provider relationship
-    4. **Code Invalidation**: Marks code as used to prevent reuse
-    5. **Audit Logging**: Records all linking activities
+    **RESTRIÇÃO DE ACESSO:** Apenas usuários com perfil de Person podem usar esta funcionalidade.
     
-    **Business Rules:**
-    - Code must be valid and not expired (within 10 minutes)
-    - Code must not have been used previously
-    - Person must be authenticated and have Person profile
-    - Relationship is bidirectional but stored once
-    - Duplicate relationships are prevented
-    
-    **Link Code Validation:**
-    - **Time Check**: Must be generated within last 10 minutes
-    - **Usage Check**: Must not have been used by another Person
-    - **Provider Check**: Associated Provider must exist and be active
-    - **Format Check**: Must match expected code format
-    
-    **Relationship Management:**
-    - Creates FactRelationship record linking Person and Provider
-    - Enables Person to receive services from Provider
-    - Enables Provider to deliver services to Person
-    - Supports future service requests and communications
-    
-    **Security Considerations:**
-    - Code sharing should be done securely (in-person, secure channel)
-    - Each code is single-use to prevent unauthorized linking
-    - All linking activities are logged for audit purposes
-    - Expired codes are automatically rejected
+    **Processo de Vinculação:**
+    1. **Validação de Código**: Verifica se código existe e não expirou
+    2. **Busca de Provider**: Identifica Provider associado com código
+    3. **Criação de Relacionamento**: Cria relacionamento Person-Provider
+    4. **Invalidação de Código**: Marca código como usado para prevenir reuso
+    5. **Log de Auditoria**: Registra todas as atividades de vinculação
     """,
     request=PersonLinkProviderRequestSerializer,
     responses={
         200: ProviderPersonLinkStatusSerializer,
         400: {"description": "Invalid or expired code"},
         401: {"description": "Authentication required"},
-        404: {"description": "Person profile not found"},
+        404: {"description": "Person profile not found or access denied"},
     },
 )
 class PersonLinkProviderView(APIView):
     """
-    Person-Provider Linking
+    Vinculação Person-Provider
 
-    Handles secure linking between Persons and Providers using temporary codes.
+    Lida com vinculação segura entre Persons e Providers usando códigos temporários.
     """
 
     permission_classes = [IsAuthenticated]
@@ -397,20 +415,8 @@ class PersonLinkProviderView(APIView):
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
         code = request.data.get("code")
 
-        try:
-            person = get_object_or_404(Person, user=request.user)
-        except Http404:
-            logger.warning(
-                "Person-Provider linking failed - no person profile",
-                extra={
-                    "user_id": user.id,
-                    "email": user.email,
-                    "code": code,
-                    "ip_address": ip_address,
-                    "action": "person_provider_linking_no_person_profile",
-                },
-            )
-            return Response({"error": "Person profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        # VALIDAÇÃO DE SEGURANÇA: Só persons podem se vincular a providers
+        person = validate_user_is_person(user)
 
         logger.info(
             "Person-Provider linking attempted",
@@ -558,60 +564,35 @@ class PersonLinkProviderView(APIView):
     tags=["Person-Provider Linking"],
     summary="Unlink Person from Provider",
     description="""
-    Removes the connection between a Person and Provider.
+    Remove a conexão entre um Person e Provider.
     
-    **⚠️ CRITICAL OPERATION - AFFECTS SERVICE RELATIONSHIPS ⚠️**
+    **⚠️ OPERAÇÃO CRÍTICA - AFETA RELACIONAMENTOS DE SERVIÇO ⚠️**
     
-    **Unlinking Process:**
-    1. **Relationship Validation**: Verifies relationship exists
-    2. **Dependency Check**: Ensures safe removal of relationship
-    3. **Relationship Removal**: Deletes Person-Provider connection
-    4. **Audit Logging**: Records all unlinking activities with full context
-    5. **Notification**: Confirms successful unlinking
+    **REGRAS DE AUTORIZAÇÃO:**
+    - **Person**: Só pode desvincular a si mesmo de providers
+    - **Provider**: Só pode desvincular persons que estão vinculados a ele
+    - **Outros usuários**: Não têm autorização para fazer unlink
     
-    **Business Impact:**
-    - **Service Access**: Person loses access to Provider's services
-    - **Historical Data**: Past interactions remain in system for audit
-    - **Future Services**: New service requests will be blocked
-    - **Communication**: Direct communication channels are severed
-    
-    **Authorization Requirements:**
-    - User must be authenticated
-    - User must be authorized to unlink the specific relationship
-    - Both Person and Provider must exist in system
-    - Relationship must currently exist
-    
-    **Safety Features:**
-    - **Audit Trail**: Complete logging of unlinking with user context
-    - **Relationship Verification**: Confirms relationship exists before removal
-    - **Atomic Operation**: Unlinking happens in single database transaction
-    - **Rollback Capability**: Failed operations don't leave partial states
-    
-    **Use Cases:**
-    - **Service Termination**: End of service relationship
-    - **Provider Change**: Person switching to different Provider
-    - **Data Privacy**: User-requested data relationship removal
-    - **Administrative Action**: System administrator unlinking relationships
-    
-    **Post-Unlinking:**
-    - Person can no longer access Provider's services
-    - Provider can no longer deliver services to Person
-    - New link code required to re-establish connection
-    - Historical service records remain for compliance
+    **Processo de Desvinculação:**
+    1. **Validação de Autorização**: Verifica se usuário pode fazer unlink
+    2. **Validação de Relacionamento**: Confirma que relacionamento existe
+    3. **Verificação de Dependência**: Garante remoção segura do relacionamento
+    4. **Remoção de Relacionamento**: Deleta conexão Person-Provider
+    5. **Log de Auditoria**: Registra todas as atividades de desvinculação com contexto completo
     """,
     request=PersonProviderUnlinkRequestSerializer,
     responses={
         200: {"description": "Person successfully unlinked from Provider"},
         400: {"description": "Invalid request or relationship doesn't exist"},
         401: {"description": "Authentication required"},
-        404: {"description": "Person or Provider not found"},
+        404: {"description": "Person, Provider not found, or unauthorized access"},
     },
 )
 class PersonProviderUnlinkView(APIView):
     """
-    Person-Provider Unlinking
+    Desvinculação Person-Provider
 
-    Handles secure removal of Person-Provider relationships with full audit trail.
+    Lida com remoção segura de relacionamentos Person-Provider com trilha de auditoria completa.
     """
 
     permission_classes = [IsAuthenticated]
@@ -620,6 +601,9 @@ class PersonProviderUnlinkView(APIView):
         user = request.user
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
         user_agent = request.META.get("HTTP_USER_AGENT", "Unknown")
+
+        # VALIDAÇÃO DE SEGURANÇA: Verificar autorização para fazer unlink
+        person_user, provider_user = validate_unlink_authorization(user, person_id, provider_id)
 
         try:
             person = get_object_or_404(Person, person_id=person_id)
@@ -638,10 +622,14 @@ class PersonProviderUnlinkView(APIView):
             )
             return Response({"error": "Person or Provider not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Determinar tipo de usuário que está fazendo unlink
+        user_type = "person" if person_user else "provider"
+
         logger.warning(
             "Person-Provider unlinking requested - CRITICAL ACTION",
             extra={
                 "user_id": user.id,
+                "user_type": user_type,
                 "person_id": person_id,
                 "provider_id": provider_id,
                 "person_name": person.social_name,
@@ -671,6 +659,7 @@ class PersonProviderUnlinkView(APIView):
                     "Person-Provider unlinking failed - no relationship exists",
                     extra={
                         "user_id": user.id,
+                        "user_type": user_type,
                         "person_id": person_id,
                         "provider_id": provider_id,
                         "person_name": person.social_name,
@@ -687,6 +676,7 @@ class PersonProviderUnlinkView(APIView):
                 "Person-Provider relationships identified for deletion",
                 extra={
                     "user_id": user.id,
+                    "user_type": user_type,
                     "person_id": person_id,
                     "provider_id": provider_id,
                     "person_name": person.social_name,
@@ -704,6 +694,7 @@ class PersonProviderUnlinkView(APIView):
                     "Person-Provider unlinking completed successfully",
                     extra={
                         "user_id": user.id,
+                        "user_type": user_type,
                         "person_id": person_id,
                         "provider_id": provider_id,
                         "person_name": person.social_name,
@@ -735,6 +726,7 @@ class PersonProviderUnlinkView(APIView):
                 "Unexpected error during Person-Provider unlinking",
                 extra={
                     "user_id": user.id,
+                    "user_type": user_type,
                     "person_id": person_id,
                     "provider_id": provider_id,
                     "error": str(e),
@@ -754,53 +746,27 @@ class PersonProviderUnlinkView(APIView):
     tags=["Person-Provider Relationships"],
     summary="Get Person's Linked Providers",
     description="""
-    Retrieves all Providers that are currently linked to the authenticated Person.
+    Recupera todos os Providers que estão atualmente vinculados ao Person autenticado.
     
-    **Relationship Query:**
-    - Returns all active Provider relationships for the Person
-    - Includes complete Provider profile information
-    - Ordered by most recent linking first
-    - Filters out inactive or deleted Provider profiles
+    **RESTRIÇÃO DE ACESSO:** Apenas usuários com perfil de Person podem usar esta funcionalidade.
     
-    **Provider Information Included:**
-    - Provider ID and social name
-    - Professional registration and specialty
-    - Contact information and preferences
-    - Service offerings and capabilities
-    - Profile pictures and settings
-    
-    **Use Cases:**
-    - **My Providers Page**: Display Person's current service providers
-    - **Service Selection**: Choose from linked providers for new requests
-    - **Communication**: Access provider contact information
-    - **Service History**: View past and current service relationships
-    
-    **Business Rules:**
-    - Only returns providers currently linked to the Person
-    - Person must be authenticated and have valid Person profile
-    - Inactive provider relationships are excluded
-    - Provider profiles must be active and complete
-    
-    **Frontend Integration:**
-    ```javascript
-    // Example usage
-    const providers = await api.get('/person-providers/');
-    providers.forEach(provider => {
-        console.log(`${provider.social_name} - ${provider.specialty}`);
-    });
-    ```
+    **Consulta de Relacionamento:**
+    - Retorna todos os relacionamentos ativos de Provider para o Person
+    - Inclui informações completas do perfil do Provider
+    - Ordenado por vinculação mais recente primeiro
+    - Filtra perfis de Provider inativos ou deletados
     """,
     responses={
         200: ProviderRetrieveSerializer(many=True),
         401: {"description": "Authentication required"},
-        404: {"description": "Person profile not found"},
+        404: {"description": "Person profile not found or access denied"},
     },
 )
 class PersonProvidersView(APIView):
     """
-    Person's Linked Providers
+    Providers Vinculados do Person
 
-    Retrieves all providers currently linked to the authenticated person.
+    Recupera todos os providers atualmente vinculados ao person autenticado.
     """
 
     permission_classes = [IsAuthenticated]
@@ -809,19 +775,8 @@ class PersonProvidersView(APIView):
         user = request.user
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
 
-        try:
-            person = get_object_or_404(Person, user=request.user)
-        except Http404:
-            logger.warning(
-                "Person's linked providers retrieval failed - no person profile",
-                extra={
-                    "user_id": user.id,
-                    "email": user.email,
-                    "ip_address": ip_address,
-                    "action": "person_providers_no_profile",
-                },
-            )
-            return Response({"error": "Person profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        # VALIDAÇÃO DE SEGURANÇA: Só persons podem ver seus providers
+        person = validate_user_is_person(user)
 
         logger.debug(
             "Person's linked providers retrieval requested",
@@ -892,48 +847,28 @@ class PersonProvidersView(APIView):
     tags=["Person-Provider Relationships"],
     summary="Get Provider's Linked Persons",
     description="""
-    Retrieves all Persons currently linked to the authenticated Provider with comprehensive summary information.
+    Recupera todos os Persons atualmente vinculados ao Provider autenticado com informações de resumo abrangentes.
     
-    **Enhanced Person Information:**
-    - **Basic Profile**: Person ID, name, and contact details
-    - **Age Calculation**: Automatically calculated from birth date or year
-    - **Last Visit Date**: Most recent consultation/visit with this provider
-    - **Last Help Date**: Most recent help request from this person
-    - **Service History**: Summary of past interactions
+    **RESTRIÇÃO DE ACESSO:** Apenas usuários com perfil de Provider podem usar esta funcionalidade.
     
-    **Age Calculation Logic:**
-    1. **Primary**: Uses birth_datetime for precise age calculation
-    2. **Fallback**: Uses year_of_birth for approximate age
-    3. **Handles Edge Cases**: Birthday not yet occurred this year
-    
-    **Visit and Help Tracking:**
-    - **Last Visit**: Most recent VisitOccurrence with this provider
-    - **Last Help**: Most recent active help request observation
-    - **Date Filtering**: Only considers valid, non-null dates
-    - **Provider Specific**: Only shows data related to this provider
-    
-    **Use Cases:**
-    - **Patient Dashboard**: Provider's overview of all linked patients
-    - **Care Management**: Track patient engagement and last interactions
-    - **Service Planning**: Identify patients needing follow-up
-    - **Communication**: Quick access to patient summaries
-    
-    **Performance Optimization:**
-    - Optimized queries with select_related and prefetch_related
-    - Efficient aggregation of visit and help data
-    - Minimal database calls for large patient lists
+    **Informações Ampliadas do Person:**
+    - **Perfil Básico**: ID do Person, nome e detalhes de contato
+    - **Cálculo de Idade**: Calculado automaticamente a partir da data de nascimento ou ano
+    - **Data da Última Visita**: Consulta/visita mais recente com este provider
+    - **Data da Última Ajuda**: Solicitação de ajuda mais recente desta person
+    - **Histórico de Serviços**: Resumo de interações passadas
     """,
     responses={
         200: ProviderPersonSummarySerializer(many=True),
         401: {"description": "Authentication required"},
-        404: {"description": "Provider profile not found"},
+        404: {"description": "Provider profile not found or access denied"},
     },
 )
 class ProviderPersonsView(APIView):
     """
-    Provider's Linked Persons with Summary Information
+    Persons Vinculados do Provider com Informações de Resumo
 
-    Retrieves comprehensive summary of all persons linked to the authenticated provider.
+    Recupera resumo abrangente de todos os persons vinculados ao provider autenticado.
     """
 
     permission_classes = [IsAuthenticated]
@@ -942,20 +877,9 @@ class ProviderPersonsView(APIView):
         user = request.user
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
 
-        try:
-            provider = get_object_or_404(Provider, user=request.user)
-            provider_id = provider.provider_id
-        except Http404:
-            logger.warning(
-                "Provider's linked persons retrieval failed - no provider profile",
-                extra={
-                    "user_id": user.id,
-                    "email": user.email,
-                    "ip_address": ip_address,
-                    "action": "provider_persons_no_profile",
-                },
-            )
-            return Response({"error": "Provider profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        # VALIDAÇÃO DE SEGURANÇA: Só providers podem ver seus persons
+        provider = validate_user_is_provider(user)
+        provider_id = provider.provider_id
 
         logger.debug(
             "Provider's linked persons retrieval requested",
@@ -970,15 +894,8 @@ class ProviderPersonsView(APIView):
         )
 
         try:
-            # Find IDs of persons linked to this provider through FactRelationship
-            linked_persons_relationships = FactRelationship.objects.filter(
-                fact_id_2=provider_id,
-                domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
-                domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
-                relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
-            ).select_related()
-
-            linked_persons_ids = linked_persons_relationships.values_list("fact_id_1", flat=True)
+            # Use helper function to get linked persons
+            _, linked_persons_ids = get_provider_and_linked_persons(user)
 
             # Get persons with optimized queries
             persons = (
@@ -992,7 +909,6 @@ class ProviderPersonsView(APIView):
                     "provider_id": provider_id,
                     "linked_persons_count": len(linked_persons_ids),
                     "person_ids": list(linked_persons_ids),
-                    "relationships_count": linked_persons_relationships.count(),
                     "action": "provider_persons_identified",
                 },
             )

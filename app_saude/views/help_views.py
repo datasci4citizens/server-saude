@@ -1,7 +1,9 @@
+import json
 import logging
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -12,6 +14,7 @@ from rest_framework.views import APIView
 
 from ..models import *
 from ..serializers import *
+from ..utils.person import *
 from ..utils.provider import *
 
 User = get_user_model()
@@ -24,33 +27,23 @@ logger = logging.getLogger("app_saude")
     description="""
     Returns the total count of active help requests for all persons linked to the authenticated provider.
     
+    **Security Features:**
+    - Provider authentication required
+    - Counts only help requests from linked persons
+    - Filtered by authenticated provider only
+    - No access to other providers' help counts
+    
     **Help Count Calculation:**
     - Counts only ACTIVE help observations
     - Includes help requests from all linked persons
     - Filters by the specific provider ID
     - Real-time count (not cached)
     
-    **Business Logic:**
-    1. **Provider Verification**: Confirms user has valid Provider profile
-    2. **Relationship Query**: Finds all persons linked to this provider
-    3. **Help Filtering**: Counts only active help observations
-    4. **Provider Specificity**: Only counts helps directed to this provider
-    
-    **Help Request States:**
-    - **ACTIVE**: Help request is pending and needs attention
-    - **RESOLVED**: Help request has been addressed (not counted)
-    - **CANCELLED**: Help request was cancelled (not counted)
-    
     **Use Cases:**
     - **Dashboard Badge**: Show notification count in provider UI
     - **Workload Management**: Track current help request volume
     - **Priority Alerts**: Trigger notifications for high help counts
     - **Performance Metrics**: Monitor help response patterns
-    
-    **Performance Notes:**
-    - Optimized query using database aggregation
-    - Efficient filtering prevents unnecessary data loading
-    - Real-time count for accurate notifications
     """,
     responses={
         200: HelpCountSerializer,
@@ -60,9 +53,9 @@ logger = logging.getLogger("app_saude")
 )
 class HelpCountView(APIView):
     """
-    Active Help Count for Provider
+    Active Help Count for Provider with Security
 
-    Returns count of pending help requests for the authenticated provider.
+    Returns count of pending help requests for the authenticated provider only.
     """
 
     permission_classes = [IsAuthenticated]
@@ -77,32 +70,24 @@ class HelpCountView(APIView):
         )
 
         try:
-            # Check if user is a provider and get ID
-            provider = get_object_or_404(Provider, user=request.user)
-            provider_id = provider.provider_id
+            # SECURITY: Get provider and linked persons using utility function
+            provider, linked_persons_ids = get_provider_and_linked_persons(request.user)
 
             logger.debug(
-                "Provider identified for help count",
+                "Provider and linked persons identified for help count",
                 extra={
                     "user_id": user.id,
-                    "provider_id": provider_id,
+                    "provider_id": provider.provider_id,
                     "provider_name": provider.social_name,
+                    "linked_persons_count": len(linked_persons_ids),
                     "action": "help_count_provider_identified",
                 },
             )
 
-            # Find IDs of persons linked to the provider through FactRelationship
-            linked_persons_ids = FactRelationship.objects.filter(
-                fact_id_2=provider_id,
-                domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
-                domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
-                relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
-            ).values_list("fact_id_1", flat=True)
-
-            # Count active helps for these persons
+            # SECURITY: Count active helps only from linked persons to this provider
             help_count = Observation.objects.filter(
-                person_id__in=linked_persons_ids,
-                provider_id=provider_id,  # Only helps directed to this provider
+                person_id__in=linked_persons_ids,  # CRITICAL: Only from linked persons
+                provider_id=provider.provider_id,  # CRITICAL: Only to this provider
                 observation_concept_id=get_concept_by_code("HELP").concept_id,
                 value_as_concept_id=get_concept_by_code("ACTIVE").concept_id,
             ).count()
@@ -114,7 +99,7 @@ class HelpCountView(APIView):
                 "Help count retrieval completed successfully",
                 extra={
                     "user_id": user.id,
-                    "provider_id": provider_id,
+                    "provider_id": provider.provider_id,
                     "provider_name": provider.social_name,
                     "help_count": help_count,
                     "linked_persons_count": len(linked_persons_ids),
@@ -158,7 +143,13 @@ class HelpCountView(APIView):
     tags=["Help System"],
     summary="Send Help Request",
     description="""
-    Creates new help requests from authenticated Person to linked Providers.
+    Creates new help requests from authenticated Person to linked Providers only.
+    
+    **Security Requirements:**
+    - Person must be authenticated and have Person profile
+    - Can only send help requests to linked Providers
+    - Cannot send help requests to non-linked Providers
+    - Validates Provider relationship before creating requests
     
     **Help Request System:**
     - Persons can send help requests to their linked Providers
@@ -168,42 +159,31 @@ class HelpCountView(APIView):
     
     **Request Processing:**
     1. **Person Verification**: Confirms user has valid Person profile
-    2. **Bulk Creation**: Processes multiple help requests atomically
-    3. **Auto-Timestamps**: Sets observation_date to current time
-    4. **Status Setting**: Marks all new requests as ACTIVE
-    5. **Audit Logging**: Records all help request creation
+    2. **Provider Validation**: Ensures all target providers are linked
+    3. **Bulk Creation**: Processes multiple help requests atomically
+    4. **Auto-Timestamps**: Sets observation_date to current time
+    5. **Status Setting**: Marks all new requests as ACTIVE
     
-    **Help Request Data:**
-    - **Provider ID**: Target provider for the help request
-    - **Help Type**: Category or type of assistance needed
-    - **Description**: Optional details about the help needed
-    - **Priority**: Urgency level of the request
-    
-    **Business Rules:**
-    - Person must be authenticated and have Person profile
-    - Person must be linked to target Provider
-    - Help requests are immediately visible to Provider
-    - Multiple requests can be active simultaneously
-    
-    **Use Cases:**
-    - **Emergency Requests**: Urgent assistance needs
-    - **Routine Support**: Regular service requests
-    - **Appointment Scheduling**: Request for appointments
-    - **General Inquiries**: Questions or information requests
+    **Security Features:**
+    - Validates Person-Provider relationships before creating requests
+    - Cannot send help to unlinked providers
+    - Atomic transaction ensures data consistency
+    - Complete audit logging of all operations
     """,
     request=HelpCreateSerializer(many=True),
     responses={
-        201: {"description": "Help requests created successfully"},
+        201: ObservationRetrieveSerializer(many=True),
         400: {"description": "Validation error in help request data"},
         401: {"description": "Authentication required"},
+        403: {"description": "Cannot send help to non-linked providers"},
         404: {"description": "Person profile not found"},
     },
 )
 class SendHelpView(APIView):
     """
-    Send Help Requests
+    Send Help Requests with Security Validation
 
-    Creates help requests from Person to linked Providers.
+    Creates help requests from Person to linked Providers with relationship validation.
     """
 
     permission_classes = [IsAuthenticated]
@@ -223,27 +203,16 @@ class SendHelpView(APIView):
         )
 
         try:
-            # Verify user has Person profile
-            if not hasattr(request.user, "person") or not request.user.person:
-                logger.warning(
-                    "Send help request failed - no person profile",
-                    extra={
-                        "user_id": user.id,
-                        "email": user.email,
-                        "ip_address": ip_address,
-                        "action": "send_help_no_person_profile",
-                    },
-                )
-                return Response({"error": "Person profile not found."}, status=status.HTTP_404_NOT_FOUND)
-
-            person = request.user.person
+            # SECURITY: Get person and linked providers using utility function
+            person, linked_providers_ids = get_person_and_linked_providers(request.user)
 
             logger.debug(
-                "Person identified for help request",
+                "Person and linked providers identified for help request",
                 extra={
                     "user_id": user.id,
                     "person_id": person.person_id,
                     "person_name": person.social_name,
+                    "linked_providers_count": len(linked_providers_ids),
                     "action": "send_help_person_identified",
                 },
             )
@@ -267,10 +236,42 @@ class SendHelpView(APIView):
 
             # Process validated data
             data_list = serializer.validated_data
+
+            # SECURITY: Validate all target providers are linked to this person
+            requested_provider_ids = set()
+            for data in data_list:
+                provider_id = data.get("provider_id")
+                if provider_id:
+                    requested_provider_ids.add(str(provider_id))
+
+            # Convert linked_providers_ids to strings for comparison
+            linked_providers_str = {str(pid) for pid in linked_providers_ids}
+            unauthorized_providers = requested_provider_ids - linked_providers_str
+
+            if unauthorized_providers:
+                logger.warning(
+                    "Send help request denied - attempting to send to non-linked providers",
+                    extra={
+                        "user_id": user.id,
+                        "person_id": person.person_id,
+                        "requested_providers": list(requested_provider_ids),
+                        "linked_providers": list(linked_providers_str),
+                        "unauthorized_providers": list(unauthorized_providers),
+                        "ip_address": ip_address,
+                        "action": "send_help_unauthorized_providers",
+                    },
+                )
+                return Response(
+                    {
+                        "error": f"Cannot send help requests to non-linked providers: {', '.join(unauthorized_providers)}"
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
             observations = []
             current_time = timezone.now()
 
-            # Create help observations in bulk
+            # Create help observations in bulk with security validation passed
             with transaction.atomic():
                 for data in data_list:
                     try:
@@ -288,12 +289,13 @@ class SendHelpView(APIView):
                         observations.append(obs)
 
                         logger.debug(
-                            "Individual help request created",
+                            "Individual help request created with security validation",
                             extra={
                                 "user_id": user.id,
                                 "person_id": person.person_id,
                                 "observation_id": obs.observation_id,
                                 "provider_id": data.get("provider_id"),
+                                "relationship_validated": True,
                                 "action": "send_help_individual_created",
                             },
                         )
@@ -317,7 +319,7 @@ class SendHelpView(APIView):
             response_serializer = ObservationRetrieveSerializer(observations, many=True)
 
             logger.info(
-                "Send help request completed successfully",
+                "Send help request completed successfully with security validation",
                 extra={
                     "user_id": user.id,
                     "person_id": person.person_id,
@@ -325,6 +327,7 @@ class SendHelpView(APIView):
                     "help_requests_created": len(observations),
                     "observation_ids": [obs.observation_id for obs in observations],
                     "provider_ids": [data.get("provider_id") for data in data_list],
+                    "all_providers_validated": True,
                     "ip_address": ip_address,
                     "action": "send_help_success",
                 },
@@ -332,6 +335,17 @@ class SendHelpView(APIView):
 
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
+        except Http404:
+            logger.warning(
+                "Send help request failed - person profile not found",
+                extra={
+                    "user_id": user.id,
+                    "email": user.email,
+                    "ip_address": ip_address,
+                    "action": "send_help_no_person_profile",
+                },
+            )
+            return Response({"error": "Person profile not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(
                 "Error during send help request",
@@ -355,7 +369,13 @@ class SendHelpView(APIView):
     tags=["Help System"],
     summary="Get Received Help Requests",
     description="""
-    Retrieves all help requests received by the authenticated Provider.
+    Retrieves all help requests received by the authenticated Provider from linked Persons only.
+    
+    **Security Features:**
+    - Provider authentication required
+    - Returns only help requests directed to this Provider
+    - Includes only requests from linked Persons
+    - Cannot access other providers' help requests
     
     **Help Request Retrieval:**
     - Returns all help observations directed to this Provider
@@ -363,29 +383,11 @@ class SendHelpView(APIView):
     - Ordered by most recent first (latest observation_date)
     - Includes complete help request details and Person information
     
-    **Provider Verification:**
-    - Confirms user has valid Provider profile
-    - Filters help requests specific to this Provider
-    - Ensures proper authorization for data access
-    
-    **Help Request Information:**
-    - **Person Details**: Who sent the help request
-    - **Request Details**: Type, description, priority
-    - **Timestamps**: When help was requested and last updated
-    - **Status**: Current status (ACTIVE, RESOLVED, etc.)
-    - **Provider Context**: Specific provider receiving the request
-    
     **Use Cases:**
     - **Provider Dashboard**: Central view of all incoming help requests
     - **Request Management**: Track and manage help request queue
     - **Response Planning**: Prioritize and organize responses
     - **Service History**: Review past help requests and resolutions
-    
-    **Sorting and Filtering:**
-    - **Default Sort**: Most recent requests first
-    - **Status Filter**: Can be extended to filter by status
-    - **Date Range**: Can be extended to filter by date ranges
-    - **Person Filter**: Can be extended to filter by specific persons
     """,
     responses={
         200: ObservationRetrieveSerializer(many=True),
@@ -395,9 +397,9 @@ class SendHelpView(APIView):
 )
 class ReceivedHelpsView(APIView):
     """
-    Received Help Requests
+    Received Help Requests with Security
 
-    Retrieves all help requests received by the authenticated provider.
+    Retrieves all help requests received by the authenticated provider with security validation.
     """
 
     permission_classes = [IsAuthenticated]
@@ -412,22 +414,26 @@ class ReceivedHelpsView(APIView):
         )
 
         try:
-            provider = get_object_or_404(Provider, user=request.user)
+            # SECURITY: Get provider and linked persons using utility function
+            provider, linked_persons_ids = get_provider_and_linked_persons(request.user)
 
             logger.debug(
-                "Provider identified for received helps",
+                "Provider and linked persons identified for received helps",
                 extra={
                     "user_id": user.id,
                     "provider_id": provider.provider_id,
                     "provider_name": provider.social_name,
+                    "linked_persons_count": len(linked_persons_ids),
                     "action": "received_helps_provider_identified",
                 },
             )
 
-            # Get all help observations directed to this provider
+            # SECURITY: Get help observations directed to this provider from linked persons only
             helps = (
                 Observation.objects.filter(
-                    provider_id=provider.provider_id, observation_concept_id=get_concept_by_code("HELP").concept_id
+                    provider_id=provider.provider_id,  # CRITICAL: Only to this provider
+                    person_id__in=linked_persons_ids,  # CRITICAL: Only from linked persons
+                    observation_concept_id=get_concept_by_code("HELP").concept_id,
                 )
                 .select_related("person__user")
                 .order_by("-observation_date")
@@ -445,9 +451,10 @@ class ReceivedHelpsView(APIView):
                     "user_id": user.id,
                     "provider_id": provider.provider_id,
                     "provider_name": provider.social_name,
-                    "total_helps_count": len(helps),
+                    "total_helps_count": helps.count(),
                     "active_helps_count": active_count,
                     "resolved_helps_count": resolved_count,
+                    "linked_persons_count": len(linked_persons_ids),
                     "help_observation_ids": [help.observation_id for help in helps[:10]],  # First 10 for logging
                     "ip_address": ip_address,
                     "action": "received_helps_success",
@@ -489,50 +496,40 @@ class ReceivedHelpsView(APIView):
     tags=["Help System"],
     summary="Mark Help Request as Resolved",
     description="""
-    Updates a help request status from ACTIVE to RESOLVED.
+    Updates a help request status from ACTIVE to RESOLVED with security validation.
+    
+    **Security Requirements:**
+    - Provider must be authenticated with valid Provider profile
+    - Help request must be directed to this Provider
+    - Help request must be from a linked Person
+    - Cannot resolve other providers' help requests
     
     **Resolution Process:**
-    1. **Help Verification**: Confirms help request exists and is valid
-    2. **Authorization**: Ensures Provider has access to this help request
-    3. **Status Update**: Changes value_as_concept_id from ACTIVE to RESOLVED
-    4. **Audit Logging**: Records resolution action with full context
-    5. **Response**: Returns updated help request details
+    1. **Provider Verification**: Confirms user has valid Provider profile
+    2. **Help Authorization**: Ensures help request belongs to this Provider
+    3. **Relationship Validation**: Verifies help is from linked Person
+    4. **Status Update**: Changes value_as_concept_id from ACTIVE to RESOLVED
+    5. **Audit Logging**: Records resolution action with full context
     
     **Business Rules:**
     - Only ACTIVE help requests can be resolved
     - Provider must be the original recipient of the help request
-    - Help request must exist and be accessible
+    - Help request must be from a linked Person
     - Resolution action is permanent (cannot be undone via API)
-    
-    **Help Request Lifecycle:**
-    - **Created**: Person creates help request (ACTIVE status)
-    - **Received**: Provider sees help request in their queue
-    - **Resolved**: Provider marks help as addressed (RESOLVED status)
-    - **Archived**: Resolved helps are kept for audit and history
-    
-    **Use Cases:**
-    - **Complete Service**: Mark completed service requests
-    - **Close Inquiry**: Resolve answered questions
-    - **Finish Assistance**: Complete provided help
-    - **Queue Management**: Clear resolved items from active queue
-    
-    **Authorization:**
-    - Provider must be authenticated
-    - Provider must be original recipient of the help request
-    - Help request must be in ACTIVE status
     """,
     responses={
-        200: {"description": "Help request marked as resolved successfully"},
+        200: ObservationRetrieveSerializer,
         401: {"description": "Authentication required"},
+        403: {"description": "Cannot resolve help from non-linked person"},
         404: {"description": "Help request not found"},
-        400: {"description": "Help request cannot be resolved (wrong status or authorization)"},
+        400: {"description": "Help request cannot be resolved (wrong status)"},
     },
 )
 class MarkHelpAsResolvedView(APIView):
     """
-    Mark Help Request as Resolved
+    Mark Help Request as Resolved with Security
 
-    Updates help request status to resolved for queue management.
+    Updates help request status to resolved with comprehensive security validation.
     """
 
     permission_classes = [IsAuthenticated]
@@ -552,26 +549,41 @@ class MarkHelpAsResolvedView(APIView):
         )
 
         try:
-            # Verify user is a provider
-            provider = get_object_or_404(Provider, user=request.user)
+            # SECURITY: Get provider and linked persons using utility function
+            provider, linked_persons_ids = get_provider_and_linked_persons(request.user)
 
             logger.debug(
-                "Provider verified for help resolution",
+                "Provider and linked persons verified for help resolution",
                 extra={
                     "user_id": user.id,
                     "provider_id": provider.provider_id,
                     "provider_name": provider.social_name,
                     "help_id": help_id,
+                    "linked_persons_count": len(linked_persons_ids),
                     "action": "mark_help_resolved_provider_verified",
                 },
             )
 
-            # Get the help observation with authorization check
+            # SECURITY: Get the help observation with comprehensive authorization check
             help_observation = get_object_or_404(
                 Observation,
                 observation_id=help_id,
                 observation_concept_id=get_concept_by_code("HELP").concept_id,
-                provider_id=provider.provider_id,  # Ensure provider owns this help request
+                provider_id=provider.provider_id,  # CRITICAL: Must be directed to this provider
+                person_id__in=linked_persons_ids,  # CRITICAL: Must be from linked person
+            )
+
+            logger.debug(
+                "Help request found and security validated",
+                extra={
+                    "user_id": user.id,
+                    "provider_id": provider.provider_id,
+                    "help_id": help_id,
+                    "help_person_id": help_observation.person_id,
+                    "person_is_linked": help_observation.person_id in linked_persons_ids,
+                    "current_status_id": help_observation.value_as_concept_id,
+                    "action": "mark_help_resolved_help_found",
+                },
             )
 
             # Check if help is already resolved
@@ -593,35 +605,37 @@ class MarkHelpAsResolvedView(APIView):
             original_status_id = help_observation.value_as_concept_id
 
             # Update the help observation to mark it as resolved
-            help_observation.value_as_concept_id = get_concept_by_code("RESOLVED").concept_id
-            help_observation.save(update_fields=["value_as_concept_id"])
+            with transaction.atomic():
+                help_observation.value_as_concept_id = get_concept_by_code("RESOLVED").concept_id
+                help_observation.save(update_fields=["value_as_concept_id"])
 
-            serializer = ObservationRetrieveSerializer(help_observation)
+                serializer = ObservationRetrieveSerializer(help_observation)
 
-            logger.info(
-                "Mark help as resolved completed successfully",
-                extra={
-                    "user_id": user.id,
-                    "provider_id": provider.provider_id,
-                    "provider_name": provider.social_name,
-                    "help_id": help_id,
-                    "person_id": help_observation.person_id,
-                    "original_status_id": original_status_id,
-                    "new_status": "RESOLVED",
-                    "observation_date": (
-                        help_observation.observation_date.isoformat() if help_observation.observation_date else None
-                    ),
-                    "resolution_timestamp": timezone.now().isoformat(),
-                    "ip_address": ip_address,
-                    "action": "mark_help_resolved_success",
-                },
-            )
+                logger.info(
+                    "Mark help as resolved completed successfully with security validation",
+                    extra={
+                        "user_id": user.id,
+                        "provider_id": provider.provider_id,
+                        "provider_name": provider.social_name,
+                        "help_id": help_id,
+                        "person_id": help_observation.person_id,
+                        "original_status_id": original_status_id,
+                        "new_status": "RESOLVED",
+                        "observation_date": (
+                            help_observation.observation_date.isoformat() if help_observation.observation_date else None
+                        ),
+                        "resolution_timestamp": timezone.now().isoformat(),
+                        "relationship_validated": True,
+                        "ip_address": ip_address,
+                        "action": "mark_help_resolved_success",
+                    },
+                )
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response(serializer.data, status=status.HTTP_200_OK)
 
         except Http404:
             logger.warning(
-                "Mark help as resolved failed - help request or provider not found",
+                "Mark help as resolved failed - help request not found or access denied",
                 extra={
                     "user_id": user.id,
                     "help_id": help_id,
@@ -630,7 +644,7 @@ class MarkHelpAsResolvedView(APIView):
                 },
             )
             return Response(
-                {"error": "Help request not found or you don't have permission to resolve it."},
+                {"error": "Help request not found, not directed to you, or from non-linked person."},
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
