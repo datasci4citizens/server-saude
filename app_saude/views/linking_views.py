@@ -995,6 +995,7 @@ class ProviderPersonsView(APIView):
                             "person_id": person.person_id,
                             "name": name or "Name not available",
                             "age": age,
+                            "profile_picture": person.profile_picture,
                             "last_visit_date": last_visit,
                             "last_help_date": last_help,
                         }

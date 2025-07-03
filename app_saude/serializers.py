@@ -660,6 +660,7 @@ class ProviderPersonSummarySerializer(serializers.Serializer):
     person_id = serializers.IntegerField()
     name = serializers.CharField()
     age = serializers.IntegerField(allow_null=True)
+    profile_picture = serializers.CharField(allow_null=True)
     last_visit_date = serializers.DateTimeField(allow_null=True)
     last_visit_notes = serializers.CharField(allow_null=True, required=False)
     last_help_date = serializers.DateTimeField(allow_null=True)
