@@ -918,3 +918,33 @@ class AccountRetrieveSerializer(serializers.Serializer):
 
 class AccountDeleteSerializer(serializers.Serializer):
     pass
+
+
+class LinkingCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(
+        max_length=6, help_text="Code generated to link a person to this provider (ex: 'A1B2C3')"
+    )
+    expires_at = serializers.DateTimeField(help_text="Expiration time of the linking code")
+    expires_in_minutes = serializers.IntegerField(help_text="Expiration time in minutes")
+
+    def create(self, validated_data):
+        return {
+            "code": validated_data["code"],
+            "expires_at": validated_data["expires_at"],
+            "expires_in_minutes": validated_data["expires_in_minutes"],
+        }
+
+
+class ProviderPersonLinkStatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["linked", "unlinked"], help_text="Linking status")
+    relationships_removed = serializers.IntegerField(help_text="Number of relationships removed during unlinking")
+    person_id = serializers.IntegerField(help_text="ID of the person involved in the linking")
+    provider_id = serializers.IntegerField(help_text="ID of the provider involved in the linking")
+
+    def create(self, validated_data):
+        return {
+            "status": validated_data["status"],
+            "relationships_removed": validated_data["relationships_removed"],
+            "person_id": validated_data["person_id"],
+            "provider_id": validated_data["provider_id"],
+        }

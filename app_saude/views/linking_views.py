@@ -55,7 +55,7 @@ logger = logging.getLogger("app_saude")
     - Codes are stored securely and tracked for audit purposes
     """,
     responses={
-        200: {"description": "Link code generated successfully"},
+        200: LinkingCodeSerializer,
         401: {"description": "Authentication required"},
         404: {"description": "Provider profile not found"},
     },
@@ -163,7 +163,11 @@ class GenerateProviderLinkCodeView(APIView):
                     },
                 )
 
-            return Response({"code": code, "expires_at": expiry_time.isoformat(), "expires_in_minutes": 10})
+            serializer = LinkingCodeSerializer(data={"code": code, "expires_at": expiry_time, "expires_in_minutes": 10})
+
+            if serializer.is_valid():
+                return Response(serializer.validated_data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             logger.error(
@@ -178,6 +182,159 @@ class GenerateProviderLinkCodeView(APIView):
                 exc_info=True,
             )
             return Response({"error": "Failed to generate link code."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(
+    tags=["Person-Provider Linking"],
+    summary="Get Provider Information by Link Code",
+    description="""
+    Retrieves Provider information using a link code for preview before linking.
+    
+    **Preview Functionality:**
+    - Allows Person to view Provider details before establishing connection
+    - Validates link code without consuming it
+    - Returns comprehensive Provider profile information
+    - Enables informed decision-making before linking
+    
+    **Code Validation:**
+    - **Time Check**: Code must be within 10-minute validity window
+    - **Format Check**: Code must match expected 6-character format
+    - **Provider Check**: Associated Provider must exist and be active
+    - **Availability Check**: Code must not have been used already
+    
+    **Provider Information Returned:**
+    - Provider name and professional details
+    - Specialty and service categories
+    - Professional registration information
+    - Contact and location details (if available)
+    - Service offerings and capabilities
+    
+    **Use Cases:**
+    - **Preview Before Link**: Person can verify Provider identity
+    - **QR Code Scanning**: Decode QR codes to show Provider info
+    - **Link Validation**: Verify code is valid before proceeding
+    - **Directory Integration**: Show Provider details in search results
+    
+    **Security Features:**
+    - Code preview doesn't consume or invalidate the code
+    - No sensitive Provider information is exposed
+    - All preview activities are logged for audit
+    - Rate limiting prevents code scanning attacks
+    """,
+    request=PersonLinkProviderRequestSerializer,
+    responses={
+        200: ProviderRetrieveSerializer,
+        400: {"description": "Invalid or expired code"},
+        401: {"description": "Authentication required"},
+    },
+)
+class ProviderByLinkCodeView(APIView):
+    """
+    Provider Information Lookup
+
+    Retrieves Provider details using link codes for preview functionality.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        ip_address = request.META.get("REMOTE_ADDR", "Unknown")
+        code = request.data.get("code")
+
+        logger.debug(
+            "Provider lookup by link code requested",
+            extra={
+                "user_id": user.id,
+                "code": code,
+                "ip_address": ip_address,
+                "action": "provider_lookup_by_code_requested",
+            },
+        )
+
+        if not code:
+            logger.warning(
+                "Provider lookup failed - no code provided",
+                extra={"user_id": user.id, "ip_address": ip_address, "action": "provider_lookup_no_code"},
+            )
+            return Response({"error": "Code is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Find valid code within time limit (don't check if used - this is just preview)
+            cutoff_time = timezone.now() - timedelta(minutes=10)
+            obs = (
+                Observation.objects.filter(
+                    value_as_string=code,
+                    observation_concept_id=get_concept_by_code("PROVIDER_LINK_CODE").concept_id,
+                    observation_date__gte=cutoff_time,
+                )
+                .select_related("provider")
+                .order_by("-observation_date")
+                .first()
+            )
+
+            if not obs or not obs.provider:
+                logger.warning(
+                    "Provider lookup failed - invalid or expired code",
+                    extra={
+                        "user_id": user.id,
+                        "code": code,
+                        "observation_found": obs is not None,
+                        "provider_exists": obs.provider is not None if obs else False,
+                        "observation_date": obs.observation_date.isoformat() if obs else None,
+                        "cutoff_time": cutoff_time.isoformat(),
+                        "ip_address": ip_address,
+                        "action": "provider_lookup_invalid_code",
+                    },
+                )
+                return Response({"error": "Invalid or expired code."}, status=status.HTTP_400_BAD_REQUEST)
+
+            provider = get_object_or_404(Provider, provider_id=obs.provider.provider_id)
+            serializer = ProviderRetrieveSerializer(provider)
+
+            logger.info(
+                "Provider successfully retrieved by link code",
+                extra={
+                    "user_id": user.id,
+                    "code": code,
+                    "provider_id": provider.provider_id,
+                    "provider_name": provider.social_name,
+                    "professional_registration": getattr(provider, "professional_registration", None),
+                    "specialty": getattr(provider, "specialty", None),
+                    "observation_id": obs.observation_id,
+                    "code_used": obs.person_id is not None,
+                    "code_generation_date": obs.observation_date.isoformat(),
+                    "ip_address": ip_address,
+                    "action": "provider_lookup_success",
+                },
+            )
+
+            response_data = serializer.data
+            response_data["code_status"] = {
+                "is_used": obs.person_id is not None,
+                "generated_at": obs.observation_date.isoformat(),
+                "expires_at": (obs.observation_date + timedelta(minutes=10)).isoformat(),
+            }
+
+            return Response(response_data)
+
+        except Exception as e:
+            logger.error(
+                "Unexpected error during provider lookup by code",
+                extra={
+                    "user_id": user.id,
+                    "code": code,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "ip_address": ip_address,
+                    "action": "provider_lookup_error",
+                },
+                exc_info=True,
+            )
+            return Response(
+                {"error": "An unexpected error occurred during provider lookup."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 @extend_schema(
@@ -220,7 +377,7 @@ class GenerateProviderLinkCodeView(APIView):
     """,
     request=PersonLinkProviderRequestSerializer,
     responses={
-        200: {"description": "Person successfully linked to Provider"},
+        200: ProviderPersonLinkStatusSerializer,
         400: {"description": "Invalid or expired code"},
         401: {"description": "Authentication required"},
         404: {"description": "Person profile not found"},
@@ -365,14 +522,18 @@ class PersonLinkProviderView(APIView):
                 },
             )
 
-            return Response(
-                {
+            serializer = ProviderPersonLinkStatusSerializer(
+                data={
                     "status": "linked",
                     "provider_id": provider.provider_id,
                     "provider_name": provider.social_name,
                     "relationship_created": created,
                 }
             )
+
+            if serializer.is_valid():
+                return Response(serializer.validated_data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             logger.error(
@@ -390,159 +551,6 @@ class PersonLinkProviderView(APIView):
             )
             return Response(
                 {"error": "An unexpected error occurred during linking."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-@extend_schema(
-    tags=["Person-Provider Linking"],
-    summary="Get Provider Information by Link Code",
-    description="""
-    Retrieves Provider information using a link code for preview before linking.
-    
-    **Preview Functionality:**
-    - Allows Person to view Provider details before establishing connection
-    - Validates link code without consuming it
-    - Returns comprehensive Provider profile information
-    - Enables informed decision-making before linking
-    
-    **Code Validation:**
-    - **Time Check**: Code must be within 10-minute validity window
-    - **Format Check**: Code must match expected 6-character format
-    - **Provider Check**: Associated Provider must exist and be active
-    - **Availability Check**: Code must not have been used already
-    
-    **Provider Information Returned:**
-    - Provider name and professional details
-    - Specialty and service categories
-    - Professional registration information
-    - Contact and location details (if available)
-    - Service offerings and capabilities
-    
-    **Use Cases:**
-    - **Preview Before Link**: Person can verify Provider identity
-    - **QR Code Scanning**: Decode QR codes to show Provider info
-    - **Link Validation**: Verify code is valid before proceeding
-    - **Directory Integration**: Show Provider details in search results
-    
-    **Security Features:**
-    - Code preview doesn't consume or invalidate the code
-    - No sensitive Provider information is exposed
-    - All preview activities are logged for audit
-    - Rate limiting prevents code scanning attacks
-    """,
-    request=PersonLinkProviderRequestSerializer,
-    responses={
-        200: {"description": "Provider information retrieved successfully"},
-        400: {"description": "Invalid or expired code"},
-        401: {"description": "Authentication required"},
-    },
-)
-class ProviderByLinkCodeView(APIView):
-    """
-    Provider Information Lookup
-
-    Retrieves Provider details using link codes for preview functionality.
-    """
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        user = request.user
-        ip_address = request.META.get("REMOTE_ADDR", "Unknown")
-        code = request.data.get("code")
-
-        logger.debug(
-            "Provider lookup by link code requested",
-            extra={
-                "user_id": user.id,
-                "code": code,
-                "ip_address": ip_address,
-                "action": "provider_lookup_by_code_requested",
-            },
-        )
-
-        if not code:
-            logger.warning(
-                "Provider lookup failed - no code provided",
-                extra={"user_id": user.id, "ip_address": ip_address, "action": "provider_lookup_no_code"},
-            )
-            return Response({"error": "Code is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            # Find valid code within time limit (don't check if used - this is just preview)
-            cutoff_time = timezone.now() - timedelta(minutes=10)
-            obs = (
-                Observation.objects.filter(
-                    value_as_string=code,
-                    observation_concept_id=get_concept_by_code("PROVIDER_LINK_CODE").concept_id,
-                    observation_date__gte=cutoff_time,
-                )
-                .select_related("provider")
-                .order_by("-observation_date")
-                .first()
-            )
-
-            if not obs or not obs.provider:
-                logger.warning(
-                    "Provider lookup failed - invalid or expired code",
-                    extra={
-                        "user_id": user.id,
-                        "code": code,
-                        "observation_found": obs is not None,
-                        "provider_exists": obs.provider is not None if obs else False,
-                        "observation_date": obs.observation_date.isoformat() if obs else None,
-                        "cutoff_time": cutoff_time.isoformat(),
-                        "ip_address": ip_address,
-                        "action": "provider_lookup_invalid_code",
-                    },
-                )
-                return Response({"error": "Invalid or expired code."}, status=status.HTTP_400_BAD_REQUEST)
-
-            provider = get_object_or_404(Provider, provider_id=obs.provider.provider_id)
-            serializer = ProviderRetrieveSerializer(provider)
-
-            logger.info(
-                "Provider successfully retrieved by link code",
-                extra={
-                    "user_id": user.id,
-                    "code": code,
-                    "provider_id": provider.provider_id,
-                    "provider_name": provider.social_name,
-                    "professional_registration": getattr(provider, "professional_registration", None),
-                    "specialty": getattr(provider, "specialty", None),
-                    "observation_id": obs.observation_id,
-                    "code_used": obs.person_id is not None,
-                    "code_generation_date": obs.observation_date.isoformat(),
-                    "ip_address": ip_address,
-                    "action": "provider_lookup_success",
-                },
-            )
-
-            response_data = serializer.data
-            response_data["code_status"] = {
-                "is_used": obs.person_id is not None,
-                "generated_at": obs.observation_date.isoformat(),
-                "expires_at": (obs.observation_date + timedelta(minutes=10)).isoformat(),
-            }
-
-            return Response(response_data)
-
-        except Exception as e:
-            logger.error(
-                "Unexpected error during provider lookup by code",
-                extra={
-                    "user_id": user.id,
-                    "code": code,
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                    "ip_address": ip_address,
-                    "action": "provider_lookup_error",
-                },
-                exc_info=True,
-            )
-            return Response(
-                {"error": "An unexpected error occurred during provider lookup."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -709,14 +717,18 @@ class PersonProviderUnlinkView(APIView):
                     },
                 )
 
-                return Response(
-                    {
+                serializer = ProviderPersonLinkStatusSerializer(
+                    data={
                         "status": "unlinked",
                         "relationships_removed": deleted_count,
                         "person_id": person_id,
                         "provider_id": provider_id,
                     }
                 )
+
+                if serializer.is_valid():
+                    return Response(serializer.validated_data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             logger.error(
@@ -779,7 +791,7 @@ class PersonProviderUnlinkView(APIView):
     ```
     """,
     responses={
-        200: {"description": "List of linked providers retrieved successfully"},
+        200: ProviderRetrieveSerializer(many=True),
         401: {"description": "Authentication required"},
         404: {"description": "Person profile not found"},
     },
@@ -912,7 +924,7 @@ class PersonProvidersView(APIView):
     - Minimal database calls for large patient lists
     """,
     responses={
-        200: {"description": "List of linked persons with summary information"},
+        200: ProviderPersonSummarySerializer(many=True),
         401: {"description": "Authentication required"},
         404: {"description": "Provider profile not found"},
     },

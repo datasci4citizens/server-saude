@@ -79,6 +79,12 @@ class DiaryView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={
+            200: DiaryRetrieveSerializer(many=True),
+            500: {"description": "Internal server error"},
+        },
+    )
     def get(self, request):
         user = request.user
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
@@ -323,7 +329,7 @@ class DiaryView(APIView):
     - **Data Cleanup**: Remove test or accidental entries
     """,
     responses={
-        200: {"description": "Diary entry details retrieved successfully"},
+        200: DiaryRetrieveSerializer,
         404: {"description": "Diary entry not found"},
         401: {"description": "Authentication required"},
     },
@@ -583,7 +589,7 @@ class DiaryDetailView(APIView):
     - Complete control over personal diary content
     """,
     responses={
-        200: {"description": "Personal diary entries retrieved successfully"},
+        200: DiaryRetrieveSerializer,
         401: {"description": "Authentication required"},
         404: {"description": "Person profile not found"},
     },
@@ -727,7 +733,7 @@ class PersonDiariesView(APIView):
     - **Communication**: Understand patient perspective and concerns
     """,
     responses={
-        200: {"description": "Shared diary entries retrieved successfully"},
+        200: DiaryRetrieveSerializer(many=True),
         401: {"description": "Authentication required"},
         404: {"description": "Provider profile or Person not found"},
         403: {"description": "Provider not linked to specified Person"},
@@ -882,7 +888,7 @@ class ProviderPersonDiariesView(APIView):
     - **Documentation**: Clinical records and care coordination
     """,
     responses={
-        200: {"description": "Shared diary entry details retrieved successfully"},
+        200: DiaryRetrieveSerializer,
         401: {"description": "Authentication required"},
         404: {"description": "Diary entry not found or not shared"},
         403: {"description": "Provider not authorized to view this entry"},

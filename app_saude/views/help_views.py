@@ -53,7 +53,7 @@ logger = logging.getLogger("app_saude")
     - Real-time count for accurate notifications
     """,
     responses={
-        200: {"description": "Help count retrieved successfully"},
+        200: HelpCountSerializer,
         401: {"description": "Authentication required"},
         404: {"description": "Provider profile not found"},
     },
@@ -388,7 +388,7 @@ class SendHelpView(APIView):
     - **Person Filter**: Can be extended to filter by specific persons
     """,
     responses={
-        200: {"description": "Help requests retrieved successfully"},
+        200: ObservationRetrieveSerializer(many=True),
         401: {"description": "Authentication required"},
         404: {"description": "Provider profile not found"},
     },

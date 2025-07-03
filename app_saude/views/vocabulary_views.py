@@ -230,46 +230,7 @@ class ConceptViewSet(FlexibleViewSet):
         - Generating data entry forms with controlled vocabularies
         """,
         responses={
-            200: {
-                "description": "Concepts retrieved successfully",
-                "content": {
-                    "application/json": {
-                        "examples": {
-                            "basic_concepts": {
-                                "summary": "Basic concept list",
-                                "value": [
-                                    {
-                                        "concept_id": 8507,
-                                        "concept_name": "Male",
-                                        "concept_code": "M",
-                                        "concept_class": "Gender",
-                                        "vocabulary": "OMOP_Vocabulary",
-                                        "translated_synonyms": [
-                                            {"synonym_name": "Masculino"},
-                                            {"synonym_name": "Homem"},
-                                        ],
-                                    }
-                                ],
-                            },
-                            "enriched_concepts": {
-                                "summary": "Concepts with relationships",
-                                "value": [
-                                    {
-                                        "concept_id": 8507,
-                                        "concept_name": "Male",
-                                        "concept_code": "M",
-                                        "related_concept": {
-                                            "concept_id": 8521,
-                                            "concept_name": "Gender Value",
-                                            "concept_code": "GENDER_VAL",
-                                        },
-                                    }
-                                ],
-                            },
-                        }
-                    }
-                },
-            }
+            200: ConceptRetrieveSerializer(many=True),
         },
     )
     def list(self, request, *args, **kwargs):
