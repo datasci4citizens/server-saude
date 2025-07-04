@@ -88,69 +88,6 @@ def validate_person_onboarding_authorization(user):
     validate_user_has_no_existing_profiles(user, "person")
 
 
-def validate_provider_registration_data(email, professional_registration):
-    """
-    Valida dados de registro de Provider para evitar duplicatas.
-
-    Args:
-        email: Email do provider
-        professional_registration: Registro profissional
-
-    Raises:
-        Http404: Se dados duplicados encontrados
-    """
-    # Verificar email duplicado
-    if User.objects.filter(email=email).exists():
-        logger.warning(
-            "Registro Provider bloqueado - email já existe",
-            extra={
-                "email": email,
-                "action": "provider_registration_email_duplicate",
-            },
-        )
-        raise Http404("Já existe uma conta com este email.")
-
-    # Verificar registro profissional duplicado
-    if (
-        professional_registration
-        and Provider.objects.filter(professional_registration=professional_registration).exists()
-    ):
-        logger.warning(
-            "Registro Provider bloqueado - registro profissional já existe",
-            extra={
-                "professional_registration": professional_registration,
-                "email": email,
-                "action": "provider_registration_prof_reg_duplicate",
-            },
-        )
-        raise Http404("Já existe um profissional com este registro.")
-
-
-def validate_user_registration_limits(email):
-    """
-    Valida limites de registro por usuário para prevenir spam/abuso.
-
-    Args:
-        email: Email sendo registrado
-    """
-    # Verificar se o domínio do email não está na blacklist (se implementado)
-    email_domain = email.split("@")[1].lower() if "@" in email else ""
-
-    # Lista de domínios temporários/suspeitos (exemplo)
-    suspicious_domains = ["10minutemail.com", "tempmail.org", "guerrillamail.com", "mailinator.com", "throwaway.email"]
-
-    if email_domain in suspicious_domains:
-        logger.warning(
-            "Registro bloqueado - domínio de email suspeito",
-            extra={
-                "email": email,
-                "email_domain": email_domain,
-                "action": "registration_blocked_suspicious_domain",
-            },
-        )
-        raise Http404("Este domínio de email não é permitido para registro.")
-
-
 @extend_schema(
     tags=["Complete Onboarding"],
     summary="Complete Person Onboarding",
@@ -386,39 +323,16 @@ class FullProviderViewSet(FlexibleViewSet):
     def create(self, request):
         ip_address = request.META.get("REMOTE_ADDR", "Unknown")
         user_agent = request.META.get("HTTP_USER_AGENT", "Unknown")
-        email = request.data.get("email", "").strip().lower()
-        professional_registration = request.data.get("professional_registration", "").strip()
-        social_name = request.data.get("social_name", "").strip()
 
         logger.info(
             "Full provider registration initiated",
             extra={
                 "ip_address": ip_address,
                 "user_agent": user_agent,
-                "email": email,
-                "professional_registration": professional_registration,
-                "social_name": social_name,
-                "specialty": request.data.get("specialty"),
-                "request_data_size": len(str(request.data)),
-                "request_fields": list(request.data.keys()) if request.data else [],
+                "request_fields": list(request.data["provider"]) if request.data else [],
                 "action": "full_provider_registration_start",
             },
         )
-
-        # VALIDAÇÕES DE SEGURANÇA PRELIMINARES
-        try:
-            # Validar email e registro profissional
-            if not email:
-                return Response({"error": "Email é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Validar limites e restrições de registro
-            validate_user_registration_limits(email)
-
-            # Validar dados de registro
-            validate_provider_registration_data(email, professional_registration)
-
-        except Http404 as e:
-            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.get_serializer(data=request.data, context={"request": request})
 
@@ -429,8 +343,6 @@ class FullProviderViewSet(FlexibleViewSet):
                 "Full provider registration validation failed",
                 extra={
                     "validation_errors": json.dumps(errors, ensure_ascii=False),
-                    "email": email,
-                    "professional_registration": professional_registration,
                     "request_data_keys": list(request.data.keys()),
                     "ip_address": ip_address,
                     "action": "full_provider_registration_validation_failed",
@@ -449,15 +361,9 @@ class FullProviderViewSet(FlexibleViewSet):
                 logger.debug(
                     "Starting atomic transaction for provider creation",
                     extra={
-                        "email": email,
-                        "professional_registration": professional_registration,
-                        "social_name": social_name,
                         "action": "full_provider_registration_transaction_start",
                     },
                 )
-
-                # Validações finais dentro da transação
-                validate_provider_registration_data(email, professional_registration)
 
                 result = serializer.save()
                 response_data = ProviderRetrieveSerializer(result["provider"]).data
