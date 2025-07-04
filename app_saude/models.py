@@ -335,7 +335,7 @@ class DrugExposure(TimestampedModel):
 
 class Observation(TimestampedModel):
     observation_id = models.AutoField(primary_key=True, db_comment="Primary key of Observation")
-    person = models.ForeignKey(
+    person: Person = models.ForeignKey(
         Person,
         on_delete=models.CASCADE,
         blank=True,

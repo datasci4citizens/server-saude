@@ -440,7 +440,7 @@ class PersonLinkProviderView(APIView):
         try:
             # Find valid, unused code within time limit
             cutoff_time = timezone.now() - timedelta(minutes=10)
-            obs = (
+            obs: Observation = (
                 Observation.objects.filter(
                     value_as_string=code,
                     observation_concept_id=get_concept_by_code("PROVIDER_LINK_CODE").concept_id,
@@ -476,7 +476,7 @@ class PersonLinkProviderView(APIView):
             existing_relationship = FactRelationship.objects.filter(
                 fact_id_1=person.person_id,
                 domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
-                fact_id_2=obs.provider_id,
+                fact_id_2=obs.provider.provider_id,
                 domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
                 relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
             ).exists()
@@ -499,13 +499,13 @@ class PersonLinkProviderView(APIView):
             relationship, created = FactRelationship.objects.get_or_create(
                 fact_id_1=person.person_id,
                 domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
-                fact_id_2=obs.provider_id,
+                fact_id_2=obs.provider.provider_id,
                 domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
                 relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
             )
 
             # Mark code as used
-            obs.person_id = person.person_id
+            obs.person.person_id = person.person_id
             obs.save(update_fields=["person_id"])
 
             logger.info(
@@ -539,6 +539,7 @@ class PersonLinkProviderView(APIView):
             )
 
             if serializer.is_valid():
+                serializer.save()
                 return Response(serializer.validated_data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
