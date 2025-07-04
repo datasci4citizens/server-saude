@@ -327,7 +327,7 @@ class ProviderByLinkCodeView(APIView):
                 )
                 return Response({"error": "Invalid or expired code."}, status=status.HTTP_400_BAD_REQUEST)
 
-            provider = get_object_or_404(Provider, provider_id=obs.provider.provider_id)
+            provider = get_object_or_404(Provider, provider_id=obs.provider_id)
             serializer = ProviderRetrieveSerializer(provider)
 
             logger.info(
@@ -451,7 +451,7 @@ class PersonLinkProviderView(APIView):
                 .first()
             )
 
-            if not obs or not obs.provider or not obs.provider.provider_id:
+            if not obs or not obs.provider_id:
                 logger.warning(
                     "Person-Provider linking failed - invalid or expired code",
                     extra={
@@ -459,8 +459,8 @@ class PersonLinkProviderView(APIView):
                         "person_id": person.person_id,
                         "code": code,
                         "code_found": obs is not None,
-                        "provider_exists": obs.provider is not None if obs else False,
-                        "provider_id_exists": obs.provider.provider_id if obs and obs.provider else None,
+                        "provider_exists": obs.provider_id is not None if obs else False,
+                        "provider_id_exists": obs.provider_id,
                         "observation_date": obs.observation_date.isoformat() if obs else None,
                         "cutoff_time": cutoff_time.isoformat(),
                         "ip_address": ip_address,
@@ -470,13 +470,13 @@ class PersonLinkProviderView(APIView):
                 return Response({"error": "Invalid or expired code."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Get provider details for logging and validation
-            provider = get_object_or_404(Provider, provider_id=obs.provider.provider_id)
+            provider = get_object_or_404(Provider, provider_id=obs.provider_id)
 
             # Check if relationship already exists
             existing_relationship = FactRelationship.objects.filter(
                 fact_id_1=person.person_id,
                 domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
-                fact_id_2=obs.provider.provider_id,
+                fact_id_2=obs.provider_id,
                 domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
                 relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
             ).exists()
@@ -487,7 +487,7 @@ class PersonLinkProviderView(APIView):
                     extra={
                         "user_id": user.id,
                         "person_id": person.person_id,
-                        "provider_id": obs.provider.provider_id,
+                        "provider_id": obs.provider_id,
                         "person_name": person.social_name,
                         "provider_name": provider.social_name,
                         "code": code,
@@ -499,13 +499,13 @@ class PersonLinkProviderView(APIView):
             relationship, created = FactRelationship.objects.get_or_create(
                 fact_id_1=person.person_id,
                 domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
-                fact_id_2=obs.provider.provider_id,
+                fact_id_2=obs.provider_id,
                 domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
                 relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
             )
 
             # Mark code as used
-            obs.person.person_id = person.person_id
+            obs.person_id = person.person_id
             obs.save(update_fields=["person_id"])
 
             logger.info(
@@ -514,7 +514,7 @@ class PersonLinkProviderView(APIView):
                     "user_id": user.id,
                     "person_id": person.person_id,
                     "person_name": person.social_name,
-                    "provider_id": obs.provider.provider_id,
+                    "provider_id": obs.provider_id,
                     "provider_name": provider.social_name,
                     "professional_registration": getattr(provider, "professional_registration", None),
                     "code": code,
