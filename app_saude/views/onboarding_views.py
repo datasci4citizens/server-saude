@@ -39,7 +39,6 @@ def validate_user_has_no_existing_profiles(user, requested_profile_type="unknown
             f"Onboarding bloqueado - usuário já possui perfil de Person",
             extra={
                 "user_id": user.id,
-                "email": user.email,
                 "existing_person_id": existing_person.person_id,
                 "existing_social_name": existing_person.social_name,
                 "requested_profile_type": requested_profile_type,
@@ -53,7 +52,6 @@ def validate_user_has_no_existing_profiles(user, requested_profile_type="unknown
             f"Onboarding bloqueado - usuário já possui perfil de Provider",
             extra={
                 "user_id": user.id,
-                "email": user.email,
                 "existing_provider_id": existing_provider.provider_id,
                 "existing_social_name": existing_provider.social_name,
                 "existing_professional_reg": getattr(existing_provider, "professional_registration", None),
@@ -149,7 +147,6 @@ class FullPersonViewSet(FlexibleViewSet):
             extra={
                 "user_id": user.id,
                 "username": user.username,
-                "email": user.email,
                 "ip_address": ip_address,
                 "user_agent": user_agent,
                 "request_data_size": len(str(request.data)),
@@ -281,9 +278,7 @@ class FullPersonViewSet(FlexibleViewSet):
     Processo de registro completo para perfis de Provider com criação de conta de usuário.
     
     **RESTRIÇÕES DE SEGURANÇA:**
-    - **Email Único**: Email deve ser único no sistema
     - **Registro Profissional Único**: Registro profissional deve ser único
-    - **Validação de Domínio**: Domínios de email suspeitos são bloqueados
     - **Transação Atômica**: Criação de User e Provider em transação única
     
     **Recursos Abrangentes de Registro:**
@@ -294,7 +289,6 @@ class FullPersonViewSet(FlexibleViewSet):
     - Transação atômica garante consistência de dados
     
     **Processo de Criação de Conta:**
-    1. **Validação de Usuário**: Validação de unicidade e formato de email
     2. **Validação Profissional**: Verificação de número de registro
     3. **Criação de Perfil**: Configuração completa do perfil do provider
     4. **Ativação de Conta**: Configuração da conta do usuário com permissões adequadas
@@ -378,9 +372,6 @@ class FullProviderViewSet(FlexibleViewSet):
                         "provider_id": provider.provider_id,
                         "user_id": user.id if user else None,
                         "social_name": provider.social_name,
-                        "professional_registration": getattr(provider, "professional_registration", None),
-                        "specialty": getattr(provider, "specialty", None),
-                        "email": user.email if user else None,
                         "use_dark_mode": getattr(provider, "use_dark_mode", False),
                         "is_active": user.is_active if user else None,
                         "ip_address": ip_address,
@@ -403,8 +394,6 @@ class FullProviderViewSet(FlexibleViewSet):
                     "Provider registration blocked - validation failed within transaction",
                     extra={
                         "error": str(e),
-                        "email": email,
-                        "professional_registration": professional_registration,
                         "ip_address": ip_address,
                         "action": "full_provider_registration_blocked",
                     },
@@ -416,9 +405,6 @@ class FullProviderViewSet(FlexibleViewSet):
                     "Database integrity error during provider creation - transaction rolled back",
                     extra={
                         "error": str(ie),
-                        "email": email,
-                        "professional_registration": professional_registration,
-                        "social_name": social_name,
                         "ip_address": ip_address,
                         "action": "full_provider_registration_integrity_error",
                     },
@@ -435,8 +421,6 @@ class FullProviderViewSet(FlexibleViewSet):
                     extra={
                         "error": str(e),
                         "error_type": type(e).__name__,
-                        "email": email,
-                        "professional_registration": professional_registration,
                         "request_data": request.data,
                         "ip_address": ip_address,
                         "action": "full_provider_registration_critical_error",
