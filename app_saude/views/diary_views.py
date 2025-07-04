@@ -1065,13 +1065,11 @@ class InterestAreaViewSet(FlexibleViewSet):
             queryset = (
                 Observation.objects.filter(
                     observation_concept_id=get_concept_by_code("INTEREST_AREA").concept_id,
-                    person=person,  # CRITICAL: Only this person's interest areas
                 )
                 .select_related("person__user", "observation_concept")
                 .order_by("-observation_date")
             )
 
-            # Additional filtering by person_id (redundant but explicit)
             person_id = self.request.query_params.get("person_id", None)
             if person_id:
                 # SECURITY: Ensure person_id matches authenticated user's person
@@ -1096,6 +1094,8 @@ class InterestAreaViewSet(FlexibleViewSet):
                         "action": "interest_area_person_filter_validated",
                     },
                 )
+
+                queryset = queryset.filter(person_id=person_id)
 
             return queryset
 
