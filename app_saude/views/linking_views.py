@@ -792,14 +792,12 @@ class PersonProvidersView(APIView):
 
         try:
             # Get all relationships where this person is linked to providers
-            relationships = FactRelationship.objects.filter(
+            provider_ids = FactRelationship.objects.filter(
                 fact_id_1=person.person_id,
                 domain_concept_1_id=get_concept_by_code("PERSON").concept_id,
                 domain_concept_2_id=get_concept_by_code("PROVIDER").concept_id,
                 relationship_concept_id=get_concept_by_code("PERSON_PROVIDER").concept_id,
-            ).select_related()
-
-            provider_ids = relationships.values_list("fact_id_2", flat=True)
+            ).values_list("fact_id_2", flat=True)
 
             # Get provider objects with optimized query
             providers = (
@@ -817,7 +815,7 @@ class PersonProvidersView(APIView):
                     "linked_providers_count": len(provider_ids),
                     "provider_ids": list(provider_ids),
                     "provider_names": [p.social_name for p in providers],
-                    "relationships_count": relationships.count(),
+                    "relationships_count": providers.count(),
                     "ip_address": ip_address,
                     "action": "person_providers_retrieval_success",
                 },
