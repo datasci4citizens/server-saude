@@ -52,8 +52,8 @@ cd saude-backend
 ### 2. Crie o ambiente virtual
 
 ```bash
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 ```
 
 ### 3. Instale as dependências
@@ -65,13 +65,24 @@ pip install -r requirements.txt
 ### 4. Suba o banco PostgreSQL com Docker
 
 ```bash
+cd docker
 docker-compose up -d
 ```
 
-### 5. Rode o servidor
+### 5. Rode as Seeds
 
 ```bash
-python manage.py runserver
+python citizens_project/manage.py seed_concept_classes
+python citizens_project/manage.py seed_domains
+python citizens_project/manage.py seed_vocabularies
+python citizens_project/manage.py seed_concepts
+python citizens_project/manage.py seed_interests
+```
+
+### 6. Rode o servidor
+
+```bash
+python citizens_project/manage.py runserver
 ```
 
 ---
@@ -119,17 +130,17 @@ O arquivo .pre-commit-config.yaml já está incluído na raiz do projeto.
 Use o padrão:
 
 ```md
-tipo/SAU-ticket/nome-descritivo
+tipo/ticket/nome-descritivo
 ```
 
-Onde "ticket" é o número do ticket no trello associado com essa mudança.
+Onde "ticket" é o número do ticket no github issues associado com essa mudança.
 
 #### Exemplos:
 
-- `feat/SAU-7/observation-endpoint`
-- `fix/SAU-7/concept-foreign-key-error`
-- `hotfix/SAU-5/production-crash`
-- `docs/SAU-3/readme-ajustes`
+- `feat/7/observation-endpoint`
+- `fix/7/concept-foreign-key-error`
+- `hotfix/5/production-crash`
+- `docs/3/readme-ajustes`
 
 Tipos recomendados:
 - `feat/` → nova funcionalidade
@@ -147,20 +158,17 @@ Tipos recomendados:
 Use:
 
 ```
-- feat(SAU-7): Adiciona endpoint de observações
-- fix(SAU-5): Corrige constraint de concept
-- refactor(SAU-3): Limpa models e serializers
-- docs(SAU-45): Adiciona instruções de setup no README
+- feat(7): Adiciona endpoint de observações
+- fix(5): Corrige constraint de concept
+- refactor(3): Limpa models e serializers
+- docs(45): Adiciona instruções de setup no README
 ```
 
 E sempre adicione:
 
 - O **contexto** da mudança
 - Se afeta algo que precisa ser testado
-- Link para o card no Trello
-
-Que bom que ficou lindo!! 🔥  
-Agora aqui está o texto para você colocar no seu **README.md** explicando direitinho o processo de **mudanças no banco de dados**:
+- Link para o issue no Github
 
 ---
 

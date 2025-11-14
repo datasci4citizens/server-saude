@@ -1,13 +1,3 @@
-from django.conf import settings
-from django.contrib import admin
-from django.urls import include, path
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
-from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenRefreshView
-
 from app_saude.views.account_management_views import *
 from app_saude.views.auth_views import *
 from app_saude.views.diary_views import *
@@ -17,6 +7,15 @@ from app_saude.views.onboarding_views import *
 from app_saude.views.simple_dto_views import *
 from app_saude.views.visit_views import *
 from app_saude.views.vocabulary_views import *
+from django.conf import settings
+from django.contrib import admin
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+from rest_framework import permissions
+from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 
 router = DefaultRouter()
 router.register(r"person", PersonViewSet)
@@ -90,7 +89,7 @@ urlpatterns = [
     path("person/interest-areas/mark-attention-point/", MarkAttentionPointView.as_view()),
     # Docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
 
