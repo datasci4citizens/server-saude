@@ -32,11 +32,10 @@ O SAÚDE! é um sistema em constante evolução que:
 
 ## 🔗 Links úteis
 
-| Recurso | Link |
-|--------|------|
-| 📐 Diagrama do Banco de Dados (OMOP) | [dbdocs.io/saude_mental_database](https://dbdocs.io/André%20Amadeu%20Satorres/SAUDE-DB?view=relationships) |
-| 🎨 Protótipos Figma | [Figma do frontend](https://www.figma.com/design/GNpltZCrw4r6nZ74BG1a0D/SAUDE-TELAS?node-id=50-209&p=f&t=2mutAsoFPhOtujGn-0) |
-| 📋 Quadro de tarefas (Trello) | [Trello do projeto SAÚDE!](https://trello.com/b/zcAUxXKt/saude) |
+|              Recurso                 |              Link                |
+|--------------------------------------|----------------------------------|
+| 📐 Diagrama do Banco de Dados (OMOP) | [dbdocs.io/saude-database](https://dbdocs.io/André%20Amadeu%20Satorres/SAUDE-DB?view=relationships)        |
+| 🎨 Protótipos Figma                  | [Figma do frontend](https://www.figma.com/design/GNpltZCrw4r6nZ74BG1a0D/)               |
 
 ---
 
@@ -45,59 +44,76 @@ O SAÚDE! é um sistema em constante evolução que:
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/saude-backend.git
-cd saude-backend
+git clone https://github.com/datasci4citizens/server-saude
 ```
+### 2. Variáveis de ambiente:
+- Na raiz:
+   Copie `.env.model` para `.env` e ajuste as variáveis:
+      SECRET_KEY (sua chave secreta, é utilizada para manter o login no app/site, guardar tokens, entre outras coisas)
+      VITE_GOOGLE_CLIENT_ID e VITE_GOOGLE_CLIENT_SECRET (permitem fazer o login através da API do Google)
 
-### 2. Crie o ambiente virtual
+- Na pasta 'docker/' 
+
+   Copie `docker-compose-model.yml` para `docker-compose.yml` e ajuste as variaveis:
+      volumes - device (pasta onde será guardado o banco de dados local)
+
+### 3. Crie o ambiente virtual
+(no diretorio server-saude)
 
 ```bash
-python -m venv .venv
+python -m venv .venv  # apenas na primera vez
+
 source .venv/bin/activate
 ```
 
-### 3. Instale as dependências
+### 4. Instale as dependências no ambiente virtual (apenas primeiro acesso)
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Suba o banco PostgreSQL com Docker
+### 5. Suba o banco PostgreSQL com Docker
 
 ```bash
 cd docker
-docker-compose up -d
+docker compose up -d
+cd ..
 ```
 
-### 5. Rode as Seeds
-
+### 6. Faça as migrações iniciais
 ```bash
-python citizens_project/manage.py seed_concept_classes
-python citizens_project/manage.py seed_domains
-python citizens_project/manage.py seed_vocabularies
-python citizens_project/manage.py seed_concepts
-python citizens_project/manage.py seed_interests
+cd citizens_project
+python manage.py makemigrations
+python manage.py migrate
+
 ```
 
-### 6. Rode o servidor
+### 7. Rode as Seeds
 
 ```bash
-python citizens_project/manage.py runserver
+python manage.py seed_all
+```
+
+### 8. Rode o servidor
+
+```bash
+python manage.py runserver
 ```
 
 ---
 
 ## 📌 Endpoints de exemplo
 
-| Endpoint | Descrição |
-|----------|-----------|
-| `/api/concepts/` | Lista de conceitos padrão (mood, hábito, etc) |
-| `/api/observations/` | Registros dos pacientes |
-| `/api/drugexposure/` | Controle de medicação |
-| `/api/person/` | Perfis de pacientes |
-| `/api/provider/` | Profissionais de saúde vinculados |
+|      Endpoint       |                  Descrição                    |
+|---------------------|-----------------------------------------------|
+| `/api/concepts/`    | Lista de conceitos padrão (mood, hábito, etc) |
+| `/api/observations/`| Registros dos pacientes                       |
+| `/api/drugexposure/`| Controle de medicação                         |
+| `/api/person/`      | Perfis de pacientes                           |
+| `/api/provider/`    | Profissionais de saúde vinculados             |
 
 ---
+
 
 ## ✨ Contribuindo
 
@@ -142,7 +158,7 @@ Onde "ticket" é o número do ticket no github issues associado com essa mudanç
 - `hotfix/5/production-crash`
 - `docs/3/readme-ajustes`
 
-Tipos recomendados:
+Tipos:
 - `feat/` → nova funcionalidade
 - `fix/` → correções de bugs
 - `refactor/` → mudanças internas sem mudar comportamento
@@ -151,7 +167,7 @@ Tipos recomendados:
 
 ---
 
-### 🚀 Formato dos Merge Requests
+### 🚀 Formato dos Pull Requests
 
 > Evite nomes genéricos como "Update code" ou "final version"
 
@@ -178,26 +194,28 @@ Sempre que houver alterações no banco de dados, siga este fluxo:
 
 1. **Atualizar o `models.py`**
 
-   - Faça as mudanças necessárias nas classes Django (`app_saude/models.py`).
+   - Faça as mudanças necessárias nas classes Django (`./citizens_project/app_saude/models.py`).
 
 2. **Atualizar o `.dbml`**
 
-   - Atualize o arquivo DBML correspondente na pasta `db/` (`db/saude.dbml`) para refletir as mudanças feitas no `models.py`.
+   - Atualize o arquivo DBML correspondente na pasta `docker/` (`docker/saude.dbml`) para refletir as mudanças feitas no `models.py`.
    - O DBML é usado para gerar a documentação visual do banco.
 
 3. **Subir o banco de dados local**
 
    - Suba o PostgreSQL usando Docker:
    
-     ```bash
-     docker-compose up -d
-     ```
+   ```bash
+      cd docker
+      docker compose up -d
+   ```
 
 4. **Gerar e aplicar migrações**
 
    - Rode o `makemigrations` e `migrate` para aplicar as mudanças no Postgres:
    
      ```bash
+     cd citizens_project
      python manage.py makemigrations
      python manage.py migrate
      ```
@@ -210,7 +228,7 @@ Sempre que houver alterações no banco de dados, siga este fluxo:
 
      ```bash
      dbdocs login    # apenas na primeira vez
-     dbdocs build ./db/saude.dbml
+     dbdocs build ./docker/saude.dbml
      ```
 
    - Isso irá reconstruir e publicar a documentação atualizada.
