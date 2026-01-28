@@ -28,6 +28,3 @@ htmlcov/
 .tox/
 .env*
 .DS_Store
-
-# Docker
-docker-compose.yml

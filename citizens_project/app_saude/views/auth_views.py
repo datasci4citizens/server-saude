@@ -1,17 +1,16 @@
 import logging
 
+from app_saude.serializers import AuthSerializer
 from django.contrib.auth import authenticate, get_user_model
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from libs.google import GoogleUserData, google_get_user_data
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-
-from app_saude.serializers import AuthSerializer
-from libs.google import GoogleUserData, google_get_user_data
 
 from ..models import *
 from ..serializers import *

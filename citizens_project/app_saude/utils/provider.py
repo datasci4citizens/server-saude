@@ -1,9 +1,8 @@
 import logging
 
+from app_saude.models import FactRelationship, Person, Provider  # ajuste conforme necessário
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-
-from app_saude.models import FactRelationship, Person, Provider  # ajuste conforme necessário
 
 from .concept import get_concept_by_code
 

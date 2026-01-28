@@ -1,10 +1,8 @@
-version: '3.9'
-
 services:
   db:
     image: postgres:15
     container_name: saude_postgres
-    restart: always
+    restart: on-failure:5
     environment:
       POSTGRES_DB: saude_db
       POSTGRES_USER: saude_user
@@ -14,19 +12,10 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  web:
-    build:
-      context: ..
-      dockerfile: Dockerfile
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    depends_on:
-      - db
-
 volumes:
   pgdata:
+    driver: "local"
+    driver_opts:
+      type: "none"
+      device: changeme
+      o: "bind"

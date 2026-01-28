@@ -1,10 +1,9 @@
 import logging
 
-from django.http import Http404
-from django.shortcuts import get_object_or_404
-
 from app_saude.models import FactRelationship, Person
 from app_saude.utils.concept import get_concept_by_code
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 
 logger = logging.getLogger(__name__)
 
