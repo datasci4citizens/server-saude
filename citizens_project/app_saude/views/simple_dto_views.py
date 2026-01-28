@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema
+from rest_framework.permissions import IsAuthenticated
 
 from ..models import *
 from ..serializers import *
@@ -46,6 +47,18 @@ class DrugExposureViewSet(FlexibleViewSet):
     """
 
     queryset = DrugExposure.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Filter queryset to only return drug exposures for the authenticated user.
+        Prevents unauthorized access to other users' medication data.
+        """
+        try:
+            person = Person.objects.get(user=self.request.user)
+            return DrugExposure.objects.filter(person=person)
+        except Person.DoesNotExist:
+            return DrugExposure.objects.none()
 
 
 @extend_schema(tags=["Clinical Data"])
@@ -58,6 +71,32 @@ class ObservationViewSet(FlexibleViewSet):
     """
 
     queryset = Observation.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Filter queryset to only return observations for the authenticated user.
+        Supports both Person (patient) and Provider views.
+        """
+        user = self.request.user
+        try:
+            # Check if user is a Person (patient)
+            person = Person.objects.get(user=user)
+            return Observation.objects.filter(person=person)
+        except Person.DoesNotExist:
+            pass
+
+        try:
+            # Check if user is a Provider
+            provider = Provider.objects.get(user=user)
+            # Providers can only see observations where they are the provider
+            # and the person has shared_with_provider=True
+            return Observation.objects.filter(provider=provider, shared_with_provider=True)
+        except Provider.DoesNotExist:
+            pass
+
+        # User is neither Person nor Provider
+        return Observation.objects.none()
 
 
 @extend_schema(tags=["Clinical Data"])
@@ -70,6 +109,31 @@ class VisitOccurrenceViewSet(FlexibleViewSet):
     """
 
     queryset = VisitOccurrence.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Filter queryset to only return visits for the authenticated user.
+        Supports both Person (patient) and Provider views.
+        """
+        user = self.request.user
+        try:
+            # Check if user is a Person (patient)
+            person = Person.objects.get(user=user)
+            return VisitOccurrence.objects.filter(person=person)
+        except Person.DoesNotExist:
+            pass
+
+        try:
+            # Check if user is a Provider
+            provider = Provider.objects.get(user=user)
+            # Providers can only see visits where they are the provider
+            return VisitOccurrence.objects.filter(provider=provider)
+        except Provider.DoesNotExist:
+            pass
+
+        # User is neither Person nor Provider
+        return VisitOccurrence.objects.none()
 
 
 @extend_schema(tags=["Clinical Data"])
@@ -82,6 +146,18 @@ class MeasurementViewSet(FlexibleViewSet):
     """
 
     queryset = Measurement.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Filter queryset to only return measurements for the authenticated user.
+        Prevents unauthorized access to other users' clinical data.
+        """
+        try:
+            person = Person.objects.get(user=self.request.user)
+            return Measurement.objects.filter(person=person)
+        except Person.DoesNotExist:
+            return Measurement.objects.none()
 
 
 @extend_schema(tags=["Data Relationships"])

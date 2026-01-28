@@ -531,6 +531,13 @@ class PersonViewSet(FlexibleViewSet):
     ordering_fields = "__all__"
     search_fields = ["social_name"]
 
+    def get_queryset(self):
+        """
+        Filter queryset to only return the authenticated user's Person profile.
+        This prevents unauthorized access to other users' data.
+        """
+        return Person.objects.filter(user=self.request.user)
+
     @extend_schema(
         summary="Create Person Profile",
         description="""
@@ -743,6 +750,13 @@ class ProviderViewSet(FlexibleViewSet):
     filterset_fields = "__all__"
     ordering_fields = "__all__"
     search_fields = ["social_name"]
+
+    def get_queryset(self):
+        """
+        Filter queryset to only return the authenticated user's Provider profile.
+        This prevents unauthorized access to other users' data.
+        """
+        return Provider.objects.filter(user=self.request.user)
 
     @extend_schema(
         summary="Create Provider Profile",
