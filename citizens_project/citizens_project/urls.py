@@ -64,11 +64,7 @@ urlpatterns = [
     path("api/user-entity/", UserRoleView.as_view(), name="user-entity"),
     path("provider/link-code/", GenerateProviderLinkCodeView.as_view(), name="generate-link-code"),
     path("person/link-code/", PersonLinkProviderView.as_view(), name="person-link-code"),
-    path(
-        "person/<int:person_id>/provider/<int:provider_id>/unlink/",
-        PersonProviderUnlinkView.as_view(),
-        name="person-provider-unlink",
-    ),
+    path("person/<int:person_id>/provider/<int:provider_id>/unlink/", PersonProviderUnlinkView.as_view(), name="person-provider-unlink",),
     path("person/providers/", PersonProvidersView.as_view(), name="person-providers"),
     path("provider/persons/", ProviderPersonsView.as_view(), name="provider-persons"),
     path("provider/by-link-code/", ProviderByLinkCodeView.as_view(), name="provider-by-link-code"),

@@ -58,13 +58,22 @@ git clone https://github.com/datasci4citizens/server-saude
       volumes - device (pasta onde será guardado o banco de dados local)
 
 ### 3. Crie o ambiente virtual
-(no diretorio server-saude)
+(no diretorio server-saude/citizens_project/)
 
 ```bash
-python -m venv .venv  # apenas na primera vez
 
-source .venv/bin/activate
+# é importante utilizar a versão 3.13, pois algumas dependencias não tem suporte para versoes mais novas.
+python3.13 -m venv .venv  # apenas na primera vez
+
+
+#linux
+source .venv/bin/activate 
+
+
+#windows
+.\.venv\Scripts\Activate.ps1
 ```
+
 
 ### 4. Instale as dependências no ambiente virtual (apenas primeiro acesso)
 
@@ -75,18 +84,15 @@ pip install -r requirements.txt
 ### 5. Suba o banco PostgreSQL com Docker
 
 ```bash
-cd docker
-docker compose up -d
-cd ..
+cd ../docker
+docker compose up -d     #linux pode precisar de SUDO
 ```
 
 ### 6. Faça as migrações iniciais
 ```bash
-cd citizens_project
+cd ../citizens_project
 python manage.py makemigrations
 python manage.py migrate
-
-```
 
 ### 7. Rode as Seeds
 

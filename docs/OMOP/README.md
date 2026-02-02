@@ -75,7 +75,7 @@ O [*frequently asked questions*](https://ohdsi.github.io/CommonDataModel/faq.htm
 
 #### 2.1.2 Standardized health system
 
-#### 2.1.1 Standardized vocabularies
+#### 2.1.3 Standardized vocabularies
 
 #### 2.1.4 Standardized health economics
 
