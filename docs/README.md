@@ -34,7 +34,7 @@ O SAÚDE! é um sistema em constante evolução que:
 
 |              Recurso                 |              Link                |
 |--------------------------------------|----------------------------------|
-| 📐 Diagrama do Banco de Dados (OMOP) | [dbdocs.io/saude-database](https://dbdocs.io/André%20Amadeu%20Satorres/SAUDE-DB?view=relationships)        |
+| 📐 Diagrama do Banco de Dados (OMOP) | [dbdocs.io/saude-database](https://dbdocs.io/r247617/Saude_DB?view=relationships)        |
 | 🎨 Protótipos Figma                  | [Figma do frontend](https://www.figma.com/design/GNpltZCrw4r6nZ74BG1a0D/)               |
 
 ---
@@ -62,8 +62,8 @@ git clone https://github.com/datasci4citizens/server-saude
 
 ```bash
 
-# é importante utilizar a versão 3.13, pois algumas dependencias não tem suporte para versoes mais novas.
-python3.13 -m venv .venv  # apenas na primera vez
+# é importante utilizar a versão 3.13, pois algumas dependências não têm suporte para versões mais novas.
+python3.13 -m venv .venv  # apenas na primeira vez
 
 
 #linux
@@ -93,9 +93,9 @@ docker compose up -d     #linux pode precisar de SUDO
 cd ../citizens_project
 python manage.py makemigrations
 python manage.py migrate
+``` 
 
 ### 7. Rode as Seeds
-
 ```bash
 python manage.py seed_all
 ```
@@ -227,20 +227,9 @@ Sempre que houver alterações no banco de dados, siga este fluxo:
      ```
 
    - Se o Django pedir valor default para novos campos, forneça quando aplicável.
-
-5. **Atualizar a documentação DBML**
-
-   - Após tudo estar correto, atualize a documentação no [dbdocs.io](https://dbdocs.io/):
-
-     ```bash
-     dbdocs login    # apenas na primeira vez
-     dbdocs build ./docker/saude.dbml
-     ```
-
-   - Isso irá reconstruir e publicar a documentação atualizada.
-
 ---
 
 #### 📋 Observações Importantes
 - Sempre mantenha o **`models.py`** e o **`saude.dbml`** **sincronizados**.
-- O arquivo `.dbdocs.yml` controla o projeto que será publicado no dbdocs.io.
+- Após qualquer mudança, atualizar o README se necessario.
+- 

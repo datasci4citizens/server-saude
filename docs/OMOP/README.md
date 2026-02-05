@@ -12,11 +12,13 @@ Alguns termos recorrentes para contextualizar o projeto que nosso modelo de banc
 
 Observational Medical Outcomes Partnership (OMOP) ⇒ "a public-private consortium based in the United States of America, created with the goal of improving the state of observational health data for better drug development, which started in response to the U.S. Food and Drug Administration (FDA) Amendments Act of 2007"
 
-Common Data Model (CDM) ⇒ "OMOP developed a CDM, standardizing the way observational data is represented. After OMOP ended, this standard started being maintained and updated by OHDSI"
-
 Observational Health Data Sciences and Informatics (OHDSI) ⇒ "is an international collaborative effort aimed at improving health outcomes through large-scale analytics of health data ..."
+— [Wikipedia: OHDSI](https://en.wikipedia.org/wiki/Observational_Health_Data_Sciences_and_Informatics)
 
-— [Wikipedia](https://en.wikipedia.org/wiki/Observational_Health_Data_Sciences_and_Informatics)
+Common Data Model (CDM) ⇒ "OMOP developed a CDM, standardizing the way observational data is represented. After OMOP ended, this standard started being maintained and updated by OHDSI"
+— [Why do we need a CDM?](https://www.ohdsi.org/data-standardization/)
+
+
 
 "EMR (Electronic Medical Record) : É um registro digital das informações médicas de um paciente criado e mantido por um único provedor de assistência médica ou clínica. Contém informações médicas como histórico médico, diagnósticos, medicações prescritas, resultados de testes laboratoriais, etc., relevantes para o tratamento do paciente dentro de uma única organização médica. O acesso ao EMR é geralmente restrito a profissionais de saúde que trabalham dentro da mesma instituição médica onde o EMR é mantido."
 
@@ -27,7 +29,6 @@ O EHR é projetado para ser acessível por vários prestadores de cuidados de sa
 
 "Observational databases differ in both purpose and design. EMR are aimed at supporting clinical practice at the point of care, while administrative claims data are built for the insurance reimbursement processes. Each has been collected for a different purpose, resulting in different logical organizations and physical formats, and the terminologies used to describe the medicinal products and clinical conditions vary from source to source. The CDM can accommodate both administrative claims and EHR ..."
 
-— [Why do we need a CDM?](https://www.ohdsi.org/data-standardization/)
 
 ### 1.2 Versões utilizadas
 
@@ -36,7 +37,7 @@ O projeto foi desenvolvido considerando para alinhamento do banco de dados a ver
 "As of April 2025, the most recent CDM is at version 6.0, while version 5.4 is the stable version used by most tools in the OMOP ecosystem."  
 — [Wikipedia](https://en.wikipedia.org/wiki/Observational_Health_Data_Sciences_and_Informatics)
 
-Em relação aos conceitos (ou *concepts*), uma das partes centrais do modelo, foram baixados todos os vocabulários disponíveis na plataforma ATHENA no mês de maio. Como a proposta do projeto se expande para além de um prontuário médico, conceitos novos foram adicionados para alcançar nosso objetivo. Tais conceitos, domínios, classes e vocabulários foram adicionados no arquivos arquivos da pasta app_saude/commands/. O nome dos arquivos é seed_, sendo realizada uma divisão de áreas para facilitar as buscas. Uma descrição mais detalhada sobre os conceitos escolhidos pode ser encontrada na seção Vocabulário deste documento. 
+Em relação aos conceitos (ou *concepts*), uma das partes centrais do modelo, foram baixados todos os vocabulários disponíveis na plataforma ATHENA no mês de maio de 2025. Como a proposta do projeto se expande para além de um prontuário médico, conceitos novos foram adicionados para alcançar nosso objetivo. Tais conceitos, domínios, classes e vocabulários foram adicionados nos arquivos da pasta app_saude/management/commands/. O nome dos arquivos é seed_, sendo realizada uma divisão de áreas para facilitar as buscas. Uma descrição mais detalhada sobre os conceitos escolhidos pode ser encontrada na seção Vocabulário deste documento. 
 
 ### 1.3 Links importantes
 
@@ -55,7 +56,7 @@ A seguir serão apresentados fontes importantes de informação criadas pela com
 
 ### 1.4 FAQ
 
-O [*frequently asked questions*](https://ohdsi.github.io/CommonDataModel/faq.html) disponibilizado pelo OHDSI é uma boa fonte para retirar dúvidas pontuais mas é extenso e um pouco díficil de compreender para pessoas sem conhecimento prévio na área. Entretanto, algumas perguntas foram importantes para o grupo entender melhor o modelo:
+O [*frequently asked questions*](https://ohdsi.github.io/CommonDataModel/faq.html) disponibilizado pelo OHDSI é uma boa fonte para retirar dúvidas pontuais mas é extenso e um pouco difícil de compreender para pessoas sem conhecimento prévio na área. Entretanto, algumas perguntas foram importantes para o grupo entender melhor o modelo:
 
 - 2. How does my data get transformed into the common data model?
 - 3. Are any tables or fields optional?
@@ -73,15 +74,51 @@ O [*frequently asked questions*](https://ohdsi.github.io/CommonDataModel/faq.htm
 
 #### 2.1.1 Standardized clinical data
 
+- person
+- observation
+- visit_occurrence
+- measurement
+- drug_exposure
+- condition_occurrence
+- procedure_occurrence
+- device_exposure
+- death
+- note
+- note_nlp
+
 #### 2.1.2 Standardized health system
+
+- care_site
+- provider
+- location
 
 #### 2.1.3 Standardized vocabularies
 
+- concept
+- concept_relationship
+- concept_synonym
+- concept_ancestor
+- domain
+- vocabulary
+- relationship
+- concept_class
+
 #### 2.1.4 Standardized health economics
+
+- cost
+- payer_plan_period
 
 #### 2.1.5 Standardized derived elements
 
+- observation_period
+- drug_era
+- condition_era
+- dose_era
+
 #### 2.1.6 Standardized metadata
+
+- metadata
+- cdm_source
 
 ## 3 Vocabulários
 
@@ -89,13 +126,13 @@ Os conceitos do OMOP CDM talvez sejam um dos principais elementos do modelo e po
 
 Uma questão fundamental de entender é que conceitos não "existem" sozinhos. Eles são agrupados em *domains*, *concept classes* e *vocabularies* (o que cada um desses grupos significa está na referência acima). Ou seja, toda vez que encontrar um conceito novo que esteja alinhado com o propósito desejado será necessário também encontrar os grupos que ele pertence, uma vez que são campos obrigatórios de preenchimento. Os conceitos estão em praticamente todas as tabelas do modelo, logo, para qualquer nova entrada será necessário adicionar conceitos pré-existentes do banco. Daí entra um problema, conhecido da comunidade (por exemplo, nessa discussão [Fórum OHDSI](https://forums.ohdsi.org/t/newbie-vocabulary-import/574/31)), de que para adicionar um conceito são necessários os três grupos citados acima e para definir cada um desses grupos é também exigido um conceito. Temos então um problema cíclico, uma vez que um conceito depende do seu grupo para ser definido e para definir cada grupo é necessário um conceito. Para resolver o problema deixamos que os conceitos possam ser definidos com grupos ainda não existentes ou nulos.
 
-Os conceitos (bem como seus domínios, classes e vocabulários) utilizados podem ser encontrados na pasta app_saude/commands/ em que eles foram divididos em diferentes arquivos seed_ para melhor organização. Para os domínios, classes e vocabulários foram baixados todos os disponíveis pela ferramenta Athena no mês de maio de 2025 para facilitar a adição de conceitos. A escolha de adicionar tais entradas e não adicionar todos os conceitos foi motivada por duas questões: adicionar uma vez os grupos não é pesado uma vez que engloba apenas algumas centenas de entradas, diferentemente de adicionar todos os conceitos, uma vez que só de arquivos teríamos alguns GBs de dados; uma vez adicionadas tais entradas não precisamos nos preocupar mais com elas (para os conceitos disponibilizados pela comunidade) ao adicionar novos conceitos, já que elas estão todas no dados (logicamente novos grupos devem ser tratados separadamente). Pelo escopo da aplicação do momento, não sentimos a necessidade de baixar todos os conceitos. Além disso, como estamos utilizando a tabela ConceptSynonym para adicionar os termos em português dos conceitos (que são os efetivamente apresentados ao usuário), não faria sentido baixar todos os conceitos sem suas traduções (os dados apresentados ao usuário atualmente estão em português apenas). 
+Os conceitos (bem como seus domínios, classes e vocabulários) utilizados podem ser encontrados na pasta app_saude/management/commands/ em que eles foram divididos em diferentes arquivos seed_ para melhor organização. Para os domínios, classes e vocabulários foram baixados todos os disponíveis pela ferramenta Athena no mês de maio de 2025 para facilitar a adição de conceitos. A escolha de adicionar tais entradas e não adicionar todos os conceitos foi motivada por duas questões: adicionar uma vez os grupos não é pesado uma vez que engloba apenas algumas centenas de entradas, diferentemente de adicionar todos os conceitos, uma vez que só de arquivos teríamos alguns GBs de dados; uma vez adicionadas tais entradas não precisamos nos preocupar mais com elas (para os conceitos disponibilizados pela comunidade) ao adicionar novos conceitos, já que elas estão todas no dados (logicamente novos grupos devem ser tratados separadamente). Pelo escopo da aplicação do momento, não sentimos a necessidade de baixar todos os conceitos. Além disso, como estamos utilizando a tabela ConceptSynonym para adicionar os termos em português dos conceitos (que são os efetivamente apresentados ao usuário), não faria sentido baixar todos os conceitos sem suas traduções (os dados apresentados ao usuário atualmente estão em português apenas). 
 
-Baixar conceitos (ou mesmo vocabulários inteiros) não é exatamente díficil, o mais trabalhoso e que exigi um  maior esmero por parte dos desenvolvedores é encontrar os termos existentes que sejam os adequados para a aplicação e sejam do tipo *standard*, pois são esses os recomendados pela OHDSI de serem adotados (no caso de outros termos um mapeamento para termos *standard* é necessário). Como a ideia inicial do projeto era um protótipo de teste para avaliar as funcionalidades, e não exatamente ser o mais robusto possível do ponto de vista de análise de dados, optamos por alinhar os conceitos que de imediato achamos seus valores *standard* dentro do Athenas e outros termos, que foram sendo necessários ao longo do desenvolvimento, foram sendo adicionados como conceitos novos (mas que podem ter termos equivalentes já padronizados). Tais conceitos foram adicionados com ids > 2000000000, como recomendado pelo OHDSI, e estão separados dos conceitos *standard* encontrados. 
+Baixar conceitos (ou mesmo vocabulários inteiros) não é exatamente difícil, o mais trabalhoso e que exige um maior esmero por parte dos desenvolvedores é encontrar os termos existentes que sejam os adequados para a aplicação e sejam do tipo *standard*, pois são esses os recomendados pela OHDSI de serem adotados (no caso de outros termos um mapeamento para termos *standard* é necessário). Como a ideia inicial do projeto era um protótipo de teste para avaliar as funcionalidades, e não exatamente ser o mais robusto possível do ponto de vista de análise de dados, optamos por alinhar os conceitos que de imediato achamos seus valores *standard* dentro do Athenas e outros termos, que foram sendo necessários ao longo do desenvolvimento, foram sendo adicionados como conceitos novos (mas que podem ter termos equivalentes já padronizados). Tais conceitos foram adicionados com ids > 2000000000, como recomendado pelo OHDSI, e estão separados dos conceitos *standard* encontrados. 
 
-Os conceitos padrão, domínios, classes e vocabulários adicionados foram extraídos por scripts auxiliares que estão contidos na pasta docs_omop_cdm/conceitos, juntamente com os arquivos para exstrai-los e criar as funções que popularão as tabelas. O concept cujo id é 0 é *Non-Standard* mas é o recomendado para ser utilizado para dados que o usuário não quer fornecer completamente (como por exemplo, seu sexo). Mais informações de como foram escolhidos os conceitos utilizados até o momento pode ser encontrado na apresentação Conceitos_OMOP_CDM.pdf na pasta docs_omop_cdm/conceitos/. Um caso particular que estamos utilizando conceitos novos criados pelo grupo e existem seus equivalentes *Standard* são dos estados brasileiros. O vocabulário OSM apresenta seus equivalentes já dentro do padrão. Entretanto, como no cliente essses valores estão sendo buscados pela sua *concept_class* *Brazil States*, que também é uma classe criada pelo grupo, segue que caso seja necessário trazer esses valores para o padrão será necessário também modificar como esses dados estão sendo entregues.
+Os conceitos padrão, domínios, classes e vocabulários adicionados foram extraídos por scripts auxiliares que estão contidos na pasta docs/OMOP/conceitos, juntamente com os arquivos para extraí-los e criar as funções que popularão as tabelas. O concept, cujo id é 0 é *Non-Standard* mas é o recomendado para ser utilizado para dados que o usuário não quer fornecer completamente (como por exemplo, seu sexo). Mais informações de como foram escolhidos os conceitos utilizados até o momento pode ser encontrado na apresentação Conceitos_OMOP_CDM.pdf na pasta docs/OMOP/conceitos/. Um caso particular em que estamos utilizando conceitos novos criados pelo grupo e existem seus equivalentes *Standard* são os estados brasileiros. O vocabulário OSM apresenta seus equivalentes já dentro do padrão. Entretanto, como no cliente esses valores estão sendo buscados pela sua *concept_class* *Brazil States*, que também é uma classe criada pelo grupo, segue que caso seja necessário trazer esses valores para o padrão será necessário também modificar como esses dados estão sendo entregues.
 
-Por fim, cabe destacar dois pontos sobre como os conceitos estão sendo criados. O método para criar um novo conceito é add_concept(cid, name, class_id, code, domain_id, vocabulary_id, pt_name=None), logo, além de fornecer os campos do conceito também já fornecemos a sua tradução para o português (pt_name), dessa forma, ao adicionar um conceito, é populada tanto a tabela Concept quanto a tabela ConceptSynonym. O outro ponto importante a discutir são os conceitos novos adicionados que estão relacionados com o diário. Todas as áreas de interesse estão com o mesmo id, no conceito AOI_Trigger. Esses dados foram colocados como json com o intuito de poupar espaço do banco de dados, permitindo que ele escale para muitos usuários de maneira mais eficiente. as áreas de interesse e suas perguntas que já são pré-definidas para o usuário estão no arquivo seed_interests.py.
+Por fim, cabe destacar dois pontos sobre como os conceitos estão sendo criados. O método para criar um novo conceito é add_concept(cid, name, class_id, code, domain_id, vocabulary_id, pt_name=None), logo, além de fornecer os campos do conceito também já fornecemos a sua tradução para o português (pt_name), dessa forma, ao adicionar um conceito, é populada tanto a tabela Concept quanto a tabela ConceptSynonym. O outro ponto importante a discutir são os conceitos novos adicionados que estão relacionados com o diário. Todas as áreas de interesse estão com o mesmo id, no conceito AOI_Trigger. Esses dados foram colocados como json com o intuito de poupar espaço do banco de dados, permitindo que ele escale para muitos usuários de maneira mais eficiente. As áreas de interesse e suas perguntas que já são pré-definidas para o usuário estão no arquivo seed_interests.py.
 
 ## 4 Modelo SAÚDE!
 
@@ -103,27 +140,49 @@ Por fim, cabe destacar dois pontos sobre como os conceitos estão sendo criados.
 
 As tabelas estão divididas em grupos distintos:
 
--**app_saude** são as tabelas aderidas ao OMOP CDM e utilizadas para armazenar dados dentro do prontuário (menos RecurrenceRule)
+-**account:**
+
+Guardam as informações da conta do usuário (ex.: email, confirmação de email).
+
+-**admin:**
+
+Tabelas de auditoria do Django Admin (ex.: log de ações administrativas).
+
+
+
+-**app_saude:**
+
+são as tabelas aderidas ao OMOP CDM e utilizadas para armazenar dados dentro do prontuário (menos RecurrenceRule). Exemplos no projeto: person, provider, care_site, location, concept, concept_class, concept_synonym, domain, vocabulary, drug_exposure, observation, measurement, visit_occurrence, fact_relationship, recurrence_rule, concept_relationship.
 
 As outras tabelas estão relacionadas aos mecanismos de funcionamento do aplicativo e não no "prontuário" aderido ao OMOP CDM.
 
--**auth** dados relacionados a autenticação
+-**auth:** 
 
--**authtoken**
+são as tabelas que guardam dados relacionados à autenticação (users, groups, permissions).
 
--**account**
+-**authtoken:**
 
--**socialaccount**
+Tokens de autenticação para API (DRF Token Auth).
 
--**contenttypes**
+-**contenttypes:**
 
--**admin**
+Mapeia modelos Django para uso genérico de permissões e admin.
 
--**sessions**
+-**sessions:**
 
--**sites**
+Sessões de usuário armazenadas no servidor.
 
-![Banco de dados OMOP CDM](./images/SAUDE-DB.png)
+-**sites:**
+
+Configuração de sites (django.contrib.sites).
+
+-**socialaccount:**
+
+Integração com login social (django-allauth).
+
+
+#### Vizualização
+![Banco de dados OMOP CDM](./images/SAUDE_DB.png)
 
 ### 4.2 Explicação das tabelas e vocabulários escolhidos
 
@@ -134,7 +193,7 @@ Por se tratar de um modelo que vem sendo desenvolvido ao longo de vários anos, 
 ### 5.1 ATHENA
 O [Athena](https://athena.ohdsi.org/search-terms/start) é a fonte para encontrar conceitos necessários para utilizar no banco de dados. Existem duas formas distintas de fazer essa busca, procurar por conceitos específicos ou por vocabulários inteiros. No caso de vocabulários inteiros é necessário fazer um login (2) e clicar no botão do lado superior direito (1). Você será redirecionado para uma lista com todos os vocabulários disponíveis. Alguns não são públicos e só podem ser acessados com uma chave de apropriada. Após a escolha dos vocabulários, o sistema gerará uma pasta com todos os conceitos escolhidos (não só os conceitos daquele vocabulário, mas outros que tenham alguma relação com ele) e também outras entradas importantes, como entradas para as tabelas concept_ancestor, concept_class, concept_relationship, concept_synonym, domain, drug_strengh, relationship e vocabulary. Tais dados já estão com todos os campos existentes para cada conceito, dessa forma, basta importa-los diretamente para o banco. 
 
-Por outro lado, caso a escolha seja por baixar um conjunto menor de conceitos (3), é necessário fazer uma busca por um termo especifíco (4). Nesse caso também é possível filtrar por grupos específicos, como limitar os vocabulários, domínios ou classes em que serão procurados (6). As palavras-chaves utilizadas como filtros serão apresentadas no topo superior esquerdo (5). Como pode ser visto em (7), diferentemente da busca por vocabulários inteiros, ao baixar conceitos diretamente dessa página, alguns dados (como o período de validade do termo) não são baixados conjuntamente. Dessa maneira, não é possível popular tabelas que esperem todos os campos disponíveis no modelo 5.4 diretamente. Uma questão a ser considerada é em relação ao tamanho dos arquivos baixados. Enquanto que ao baixar apenas os conceitos (3), temos um arquivo, em geral, pequeno, de poucos bytes. Por outro lado, ao baixar vocabulários inteiros (1), recebemos outros conceitos que podem não ser de interesse dependendo da complexidade do projeto. Por exemplo, ao baixarmos os arquivos com os conceitos de gênero por (3) recebemos um arquivo de tamanho de 156 bytes enquanto pela rota (1) a pasta baixada é de 79,1 MB. 
+Por outro lado, caso a escolha seja por baixar um conjunto menor de conceitos (3), é necessário fazer uma busca por um termo específico (4). Nesse caso também é possível filtrar por grupos específicos, como limitar os vocabulários, domínios ou classes em que serão procurados (6). As palavras-chaves utilizadas como filtros serão apresentadas no topo superior esquerdo (5). Como pode ser visto em (7), diferentemente da busca por vocabulários inteiros, ao baixar conceitos diretamente dessa página, alguns dados (como o período de validade do termo) não são baixados conjuntamente. Dessa maneira, não é possível popular tabelas que esperem todos os campos disponíveis no modelo 5.4 diretamente. Uma questão a ser considerada é em relação ao tamanho dos arquivos baixados. Enquanto que ao baixar apenas os conceitos (3), temos um arquivo, em geral, pequeno, de poucos bytes. Por outro lado, ao baixar vocabulários inteiros (1), recebemos outros conceitos que podem não ser de interesse dependendo da complexidade do projeto. Por exemplo, ao baixarmos os arquivos com os conceitos de gênero por (3) recebemos um arquivo de tamanho de 156 bytes enquanto pela rota (1) a pasta baixada é de 79,1 MB. 
 
 ![IMAGEM ATHENA 1](./images/ATHENA_1.png)
 
@@ -143,7 +202,7 @@ Caso seja necessário verificar mais detalhes de conceitos (principalmente sua r
 ![IMAGEM ATHENA 2](./images/ATHENA_2.png)
 
 ### 5.2 THEMIS
-O [Themis](https://ohdsi.github.io/Themis/) é uma ferramenta para centralizar questões importantes de como popular as tabelas do OMOP CDM. Foi utilizada pelo grupo para entender certas convenções (por exemplo, quais gêneros ter como opção, como adicionar grupos multiétnicos (ou não), entre outros). Geralmente temas que levantaram algum tipo de questionamento dentro da comunidade são divididos em Issues. Cada Issue tem uma descrição e uma série de seções discutindo qual o correto padrão de funcionamento. Em uma dessas é apresentada a convenção ratificada pela comunidade de como o problema deve ser tratado. Uma questão importante, mas que não foi explorada, é o uso do (DataQualityDashboard). Esse é basicamente uma ferramente utilizada para verificar o quanto o banco de dados em funcionamento está alinhado com as boas práticas definidas pela comunidade do OMOP CDM. Algumas Issues apresentam links para acessar o DQD e qual tipo de verificação é indicado para aquele problema especifico.
+O [Themis](https://ohdsi.github.io/Themis/) é uma ferramenta para centralizar questões importantes de como popular as tabelas do OMOP CDM. Foi utilizada pelo grupo para entender certas convenções (por exemplo, quais gêneros ter como opção, como adicionar grupos multiétnicos (ou não), entre outros). Geralmente temas que levantaram algum tipo de questionamento dentro da comunidade são divididos em Issues. Cada Issue tem uma descrição e uma série de seções discutindo qual o correto padrão de funcionamento. Em uma dessas é apresentada a convenção ratificada pela comunidade de como o problema deve ser tratado. Uma questão importante, mas que não foi explorada, é o uso do (DataQualityDashboard). Esse é basicamente uma ferramenta utilizada para verificar o quanto o banco de dados em funcionamento está alinhado com as boas práticas definidas pela comunidade do OMOP CDM. Algumas Issues apresentam links para acessar o DQD e qual tipo de verificação é indicado para aquele problema específico.
 
 ### 5.3 ATLAS
 O [Atlas](https://atlas-demo.ohdsi.org/) é uma ferramenta para design e análise de dados dentro do padrão OMOP. Não utilizada durante o projeto do MVP do aplicativo, mas pode ser importante para próximas etapas, caso o volume de dados coletados seja relevante. 

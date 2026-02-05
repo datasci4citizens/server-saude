@@ -1,7 +1,7 @@
 Project "SAÚDE" {
   database_type: 'PostgreSQL'
   Note: '''None
-  Last Updated At 05-08-2025 11:49PM UTC'''
+  Last Updated At 02-05-2026 4:38PM UTC'''
 }
 
 enum admin.positive_small_integer_logentry_action_flag {
@@ -158,13 +158,13 @@ ref: app_saude.ConceptClass.concept_class_concept_id > app_saude.Concept.concept
 
 Table app_saude.ConceptSynonym {
   Note: '''
-ConceptSynonym(id, created_at, updated_at, concept, concept_synonym_name, language_concept)
+ConceptSynonym(concept_synonym_id, created_at, updated_at, concept, concept_synonym_name, language_concept)
 
 *DB comment: Synonyms for concepts in OMOP.*
 
 *DB table: concept_synonym*'''
 
-  id big_auto [pk, unique, not null]
+  concept_synonym_id auto [pk, unique, not null]
   created_at date_time [note: '''Creation timestamp''', not null]
   updated_at date_time [note: '''Update timestamp''', not null]
   concept_id foreign_key [note: '''Reference to Concept''', not null]
@@ -174,12 +174,29 @@ ConceptSynonym(id, created_at, updated_at, concept, concept_synonym_name, langua
   indexes {
     (concept_id) [name: 'concept_synonym_concept_id_7f3ed8fa', type: btree]
     (language_concept_id) [name: 'concept_synonym_language_concept_id_1e33a682', type: btree]
-    (id) [pk, unique, name: 'concept_synonym_pkey', type: btree]
+    (concept_synonym_id) [pk, unique, name: 'concept_synonym_pkey', type: btree]
     (concept_id) [name: 'idx_concept_synonym_id', type: btree]
   }
 }
 ref: app_saude.ConceptSynonym.concept_id > app_saude.Concept.concept_id
 ref: app_saude.ConceptSynonym.language_concept_id > app_saude.Concept.concept_id
+
+
+Table app_saude.ConceptRelationship {
+  Note: '''
+ConceptRelationship(id, created_at, updated_at, relationship_id, concept_1, concept_2)
+
+*DB table: app_saude_conceptrelationship*'''
+
+  id big_auto [pk, unique, not null]
+  created_at date_time [note: '''Creation timestamp''', not null]
+  updated_at date_time [note: '''Update timestamp''', not null]
+  relationship_id char [not null]
+  concept_1_id foreign_key [not null]
+  concept_2_id foreign_key [not null]
+}
+ref: app_saude.ConceptRelationship.concept_1_id > app_saude.Concept.concept_id
+ref: app_saude.ConceptRelationship.concept_2_id > app_saude.Concept.concept_id
 
 
 Table app_saude.Domain {
@@ -323,7 +340,7 @@ ref: app_saude.Measurement.measurement_type_concept_id > app_saude.Concept.conce
 
 Table app_saude.Observation {
   Note: '''
-Observation(created_at, updated_at, observation_id, person, provider, observation_concept, value_as_concept, value_as_string, observation_date, observation_type_concept, shared_with_provider)
+Observation(created_at, updated_at, observation_id, person, provider, observation_concept, value_as_concept, value_as_string, observation_date, observation_type_concept, observation_source_value, shared_with_provider)
 
 *DB comment: Captured patient-reported observations.*
 
@@ -336,9 +353,10 @@ Observation(created_at, updated_at, observation_id, person, provider, observatio
   provider_id foreign_key [note: '''Provider attending the visit''', null]
   observation_concept_id foreign_key [note: '''Observation Concept''', null]
   value_as_concept_id foreign_key [note: '''Value as Concept''', null]
-  value_as_string char [note: '''Free-text value''', null]
+  value_as_string text [note: '''Free-text value''', null]
   observation_date date_time [note: '''Date and time of observation''', null]
   observation_type_concept_id foreign_key [note: '''Observation Type Concept''', null]
+  observation_source_value text [note: '''Source value of the observation''', null]
   shared_with_provider boolean [note: '''Visibility to assigned provider''', null]
 
   indexes {
@@ -359,7 +377,7 @@ ref: app_saude.Observation.observation_type_concept_id > app_saude.Concept.conce
 
 Table app_saude.Person {
   Note: '''
-Person(created_at, updated_at, user, social_name, birth_datetime, person_id, year_of_birth, gender_concept, ethnicity_concept, race_concept, location)
+Person(created_at, updated_at, user, social_name, birth_datetime, profile_picture, use_dark_mode, person_id, year_of_birth, gender_concept, ethnicity_concept, race_concept, location)
 
 *DB comment: Represents an individual user who is a patient.*
 
@@ -370,6 +388,8 @@ Person(created_at, updated_at, user, social_name, birth_datetime, person_id, yea
   user_id foreign_key [not null]
   social_name char [null]
   birth_datetime date_time [note: '''Date and time of birth''', null]
+  profile_picture char [note: '''URL of the profile picture''', null]
+  use_dark_mode boolean [note: '''Indicates if the user prefers dark mode''', default:`False`, not null]
   person_id auto [note: '''Primary key of Person''', pk, unique, not null]
   year_of_birth integer [note: '''Year of birth''', null]
   gender_concept_id foreign_key [note: '''Gender Concept''', null]
@@ -395,7 +415,7 @@ ref: app_saude.Person.location_id > app_saude.Location.location_id
 
 Table app_saude.Provider {
   Note: '''
-Provider(created_at, updated_at, user, social_name, birth_datetime, provider_id, professional_registration, specialty_concept, care_site)
+Provider(created_at, updated_at, user, social_name, birth_datetime, profile_picture, use_dark_mode, provider_id, professional_registration, specialty_concept, care_site)
 
 *DB comment: Healthcare providers in OMOP.*
 
@@ -406,14 +426,17 @@ Provider(created_at, updated_at, user, social_name, birth_datetime, provider_id,
   user_id foreign_key [not null]
   social_name char [null]
   birth_datetime date_time [note: '''Date and time of birth''', null]
+  profile_picture char [note: '''URL of the profile picture''', null]
+  use_dark_mode boolean [note: '''Indicates if the user prefers dark mode''', default:`False`, not null]
   provider_id auto [note: '''Primary key of Provider''', pk, unique, not null]
-  professional_registration integer [note: '''Professional registration number''', null]
+  professional_registration integer [note: '''Professional registration number''', not null]
   specialty_concept_id foreign_key [note: '''Specialty Concept''', null]
   care_site_id foreign_key [note: '''Reference to Care Site''', null]
 
   indexes {
     (care_site_id) [name: 'provider_care_site_id_9ff56d28', type: btree]
     (provider_id) [pk, unique, name: 'provider_pkey', type: btree]
+    (professional_registration) [unique, name: 'provider_professional_registration_key', type: btree]
     (specialty_concept_id) [name: 'provider_specialty_concept_id_3e1d2784', type: btree]
     (user_id) [name: 'provider_user_id_aefdb1f6', type: btree]
   }
